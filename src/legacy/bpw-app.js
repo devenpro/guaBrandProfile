@@ -43,7 +43,7 @@ import {
   LANGUAGES, LANG_NAMES, SOCIAL_PLATFORMS, BRAND_ARCHETYPES,
   SECTION_STATES, LEVEL_ORDER, AI_ENDPOINTS, PROVIDER_ICONS
 } from '../core/constants.js';
-import { getDefaultData } from '../core/schema.js';
+import { getDefaultData, getEnabledModules } from '../core/schema.js';
 import { W } from '../core/state.js';
 import { has, isLevel, isLevelOrAbove, typeLabels } from '../core/brand-helpers.js';
 
@@ -367,20 +367,8 @@ import { has, isLevel, isLevelOrAbove, typeLabels } from '../core/brand-helpers.
   // ============================================================
   // SECTION 5: DEFAULT DATA & MODULES
   // ============================================================
-  // getDefaultData moved to ../core/schema.js (imported at file top).
-
-  function getEnabledModules() {
-    var mods = ['identity', 'voice', 'messaging', 'audience', 'offerings'];
-    if (isLevelOrAbove('growing') && (has('commercial') || has('local'))) mods.push('market');
-    if (isLevel('deep') && has('creator')) mods.push('market');
-    if (isLevelOrAbove('growing') && has('creator')) mods.push('content_strategy');
-    if (isLevel('deep') && (has('commercial') || has('local'))) mods.push('content_strategy');
-    if (has('commercial')) mods.push('operations');
-    if (has('local')) mods.push('operations');
-    if (has('nonprofit')) mods.push('operations');
-    if (isLevel('deep')) mods.push('social_proof');
-    return mods;
-  }
+  // getDefaultData and getEnabledModules moved to ../core/schema.js
+  // (imported at the top of this file).
 
   // ============================================================
   // SECTION 6: TYPE DETECTION

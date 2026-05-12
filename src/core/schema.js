@@ -1,4 +1,5 @@
 import { SCHEMA_VERSION } from './constants.js';
+import { has, isLevel, isLevelOrAbove } from './brand-helpers.js';
 
 export function getDefaultData() {
   return {
@@ -18,4 +19,17 @@ export function getDefaultData() {
     identity: {}, voice: {}, messaging: {}, audience: {}, offerings: {},
     ai_preferences: { default_provider: '', default_model: '', custom_instructions: '' }
   };
+}
+
+export function getEnabledModules() {
+  var mods = ['identity', 'voice', 'messaging', 'audience', 'offerings'];
+  if (isLevelOrAbove('growing') && (has('commercial') || has('local'))) mods.push('market');
+  if (isLevel('deep') && has('creator')) mods.push('market');
+  if (isLevelOrAbove('growing') && has('creator')) mods.push('content_strategy');
+  if (isLevel('deep') && (has('commercial') || has('local'))) mods.push('content_strategy');
+  if (has('commercial')) mods.push('operations');
+  if (has('local')) mods.push('operations');
+  if (has('nonprofit')) mods.push('operations');
+  if (isLevel('deep')) mods.push('social_proof');
+  return mods;
 }
