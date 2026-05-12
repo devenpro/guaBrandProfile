@@ -34,6 +34,9 @@
  *
  * @version 1.0.0
  */
+import { esc, generateId, now, formatRelativeTime, deepClone, truncate, isEmpty, debounce, estimateTokens } from '../utils/helpers.js';
+import { icon } from '../utils/dom.js';
+
 (function($, Drupal) {
   'use strict';
 
@@ -463,58 +466,12 @@
   // ============================================================
   // SECTION 4: UTILITIES
   // ============================================================
-
-  function esc(str) {
-    if (str === null || str === undefined) return '';
-    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  }
-
-  function icon(name) {
-    if (!name) return '';
-    if (name.indexOf('fa-') === 0) return '<i class="' + name + '"></i>';
-    return '<i class="fa-solid fa-' + name + '"></i>';
-  }
-
-  function generateId(prefix) {
-    return (prefix || 'id') + '_' + Math.random().toString(36).substr(2, 6);
-  }
-
-  function now() { return new Date().toISOString(); }
-
-  function formatRelativeTime(iso) {
-    if (!iso) return '';
-    var diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-    if (diff < 5) return 'just now';
-    if (diff < 60) return diff + 's ago';
-    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
-    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
-    return Math.floor(diff / 86400) + 'd ago';
-  }
-
-  function deepClone(obj) {
-    try { return JSON.parse(JSON.stringify(obj)); } catch (e) { return obj; }
-  }
-
-  function truncate(str, len) {
-    str = str || '';
-    return str.length > len ? str.substring(0, len) + '...' : str;
-  }
-
-  function isEmpty(val) {
-    if (val === null || val === undefined || val === '') return true;
-    if (Array.isArray(val)) return val.length === 0;
-    if (typeof val === 'object') return Object.keys(val).length === 0;
-    return false;
-  }
-
-  function debounce(fn, ms) {
-    var timer;
-    return function() {
-      var ctx = this, args = arguments;
-      clearTimeout(timer);
-      timer = setTimeout(function() { fn.apply(ctx, args); }, ms);
-    };
-  }
+  //
+  // Pure helpers (esc, generateId, now, formatRelativeTime, deepClone,
+  // truncate, isEmpty, debounce, estimateTokens) and `icon` are imported
+  // from ../utils/ at the top of this file. The functions below depend
+  // on jQuery, the W state object, or the BRAND_TYPES/LEVEL_ORDER
+  // constants and will move to their owning modules in later stages.
 
   function copyToClipboard(text) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -525,10 +482,6 @@
       $tmp.remove();
       toast('Copied!', 'success');
     }
-  }
-
-  function estimateTokens(text) {
-    return Math.ceil((text || '').length / 4);
   }
 
   function has(type) { return W.brandTypes.indexOf(type) !== -1; }

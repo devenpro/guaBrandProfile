@@ -1,0 +1,54 @@
+/* ============================================================
+   S24: RESPONSIVE
+   ============================================================ */
+@media (max-width: 1200px) {
+  .bpw-content { padding: var(--bpw-sp-6) var(--bpw-sp-4) 60px; }
+}
+
+@media (max-width: 992px) {
+  .bpw-level-cards { grid-template-columns: 1fr; gap: var(--bpw-sp-3); }
+  .bpw-progress-line { width: 24px; }
+  .bpw-progress-label { font-size: 8px; }
+  .bpw-header-title { display: none; }
+}
+
+@media (max-width: 768px) {
+  .bpw-step-card { padding: var(--bpw-sp-5); }
+  .bpw-content { padding: var(--bpw-sp-4) var(--bpw-sp-3) 60px; }
+  .bpw-form-row { grid-template-columns: 1fr; }
+  .bpw-detect-grid { grid-template-columns: 1fr; }
+  .bpw-detect-row { flex-direction: column; }
+  .bpw-social-row { grid-template-columns: 1fr; gap: var(--bpw-sp-1); }
+  .bpw-dos-donts { grid-template-columns: 1fr; }
+  .bpw-review-actions { grid-template-columns: 1fr; }
+  .bpw-review-header { flex-wrap: wrap; }
+  .bpw-header { padding: 0 var(--bpw-sp-3); gap: var(--bpw-sp-2); }
+  .bpw-progress { padding: var(--bpw-sp-2); overflow-x: auto; justify-content: flex-start; }
+  .bpw-progress-dot { width: 24px; height: 24px; font-size: 10px; }
+  .bpw-progress-line { width: 16px; }
+  .bpw-progress-label { display: none; }
+  .bpw-comp-row { grid-template-columns: 1fr; }
+  .bpw-actions { flex-direction: column; gap: var(--bpw-sp-3); }
+  .bpw-actions-right { width: 100%; justify-content: flex-end; }
+  .bpw-welcome-title { font-size: var(--bpw-font-2xl); }
+}
+
+@media (max-width: 480px) {
+  .bpw-step-card { padding: var(--bpw-sp-4); border-radius: var(--bpw-radius-md); }
+  .bpw-content { padding: var(--bpw-sp-3) var(--bpw-sp-2) 60px; }
+  .bpw-step-title { font-size: var(--bpw-font-lg); }
+  .bpw-level-cards { gap: var(--bpw-sp-2); }
+  .bpw-level-card { padding: var(--bpw-sp-3); }
+  .bpw-header-save { display: none; }
+  .bpw-header-ai label { display: none; }
+  .bpw-question { padding: var(--bpw-sp-3); }
+  .bpw-ais-header { flex-direction: column; align-items: flex-start; gap: var(--bpw-sp-2); }
+  .bpw-ais-controls { width: 100%; justify-content: flex-end; }
+  .bpw-review-right { flex-wrap: wrap; }
+  .bpw-review-bar { width: 50px; }
+  .bpw-bulk-actions { flex-direction: column; }
+  .bpw-bulk-actions .bpw-btn { width: 100%; justify-content: center; }
+  .bpw-import-url-row { flex-direction: column; }
+  .bpw-panel { width: 100% !important; max-width: 100% !important; }
+  .bpw-header-tools { gap: 2px; }
+}
