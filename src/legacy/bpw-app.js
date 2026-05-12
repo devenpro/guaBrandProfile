@@ -44,6 +44,7 @@ import {
   SECTION_STATES, LEVEL_ORDER, AI_ENDPOINTS, PROVIDER_ICONS
 } from '../core/constants.js';
 import { getDefaultData } from '../core/schema.js';
+import { W } from '../core/state.js';
 
 (function($, Drupal) {
   'use strict';
@@ -86,28 +87,8 @@ import { getDefaultData } from '../core/schema.js';
   // SECTION 1: CONSTANTS — moved to ../core/constants.js
   // (imported at the top of this file)
 
-  // ============================================================
-  // SECTION 2: STATE OBJECT
-  // ============================================================
-
-  var W = {
-    $textarea: null, $form: null, $submitBtn: null,
-    brandLevel: '', brandTypes: [], brandSubtypes: {}, language: 'en',
-    detection: { does: [], where: '', revenue: [] },
-    steps: [], currentStepId: 'welcome', completedSteps: [], skippedSteps: [],
-    seedContext: {}, importedAssets: {}, discoveryAnswers: {},
-    generatedSections: {}, acceptedSections: {},
-    sectionStates: {},
-    data: {},
-    aiProvider: '', aiModel: '',
-    isAIProcessing: false,
-    dirty: false, lastSaved: null, autoSaveTimer: null,
-    initialized: false, _initializing: false, isResuming: false,
-    _socialRows: 1,
-    _identityPhase: 'initial',  // 'initial' | 'mission_options' | 'mission_selected' | 'full_generating' | 'full_complete'
-    _audiencePhase: 'initial',  // 'initial' | 'audience_generated' | 'audience_accepted' | 'offerings_generated'
-    activityLog: []
-  };
+  // SECTION 2: STATE OBJECT — moved to ../core/state.js
+  // (W is imported at the top of this file).
 
   // ============================================================
   // SECTION 3: INITIALIZATION
