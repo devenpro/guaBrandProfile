@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Local tooling
+.claude/
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Temp
+*.tmp
+*.bak
+*.swp
+*~
+
+# NOTE: dist/ is intentionally tracked — public CDN consumers
+# (Drupal Asset Injector via jsDelivr) need it in the repo.

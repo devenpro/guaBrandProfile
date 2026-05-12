@@ -1,0 +1,33 @@
+{
+  "name": "gua-brand-profile",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Brand Profile Wizard — a Drupal Asset Injector app for guided AI brand creation.",
+  "homepage": "https://github.com/devenpro/guaBrandProfile",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devenpro/guaBrandProfile.git"
+  },
+  "bugs": {
+    "url": "https://github.com/devenpro/guaBrandProfile/issues"
+  },
+  "main": "dist/bpw.min.js",
+  "style": "dist/bpw.min.css",
+  "files": [
+    "dist",
+    "src",
+    "docs",
+    "examples",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "watch": "node scripts/build.mjs --watch"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.0"
+  },
+  "license": "MIT",
+  "author": "devenpro"
+}

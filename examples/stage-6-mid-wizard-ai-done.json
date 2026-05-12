@@ -1,0 +1,247 @@
+{
+  "meta": {
+    "schema_version": "2.0",
+    "brand_level": "growing",
+    "brand_types": ["commercial", "creator"],
+    "brand_subtypes": {},
+    "language": "en",
+    "wizard_status": "in_progress",
+    "wizard_progress": {
+      "completed_steps": ["welcome", "detect", "basics", "import", "discovery", "market", "identity_voice"],
+      "current_step": "audience_offerings",
+      "skipped_steps": []
+    },
+    "modules_enabled": [
+      "identity", "voice", "messaging", "audience", "offerings",
+      "market", "content_strategy", "operations"
+    ],
+    "detection_answers": {
+      "does": ["products", "services", "content"],
+      "where": "online",
+      "revenue": ["subscriptions", "ads", "courses"]
+    },
+    "created": "2026-03-23T10:00:00.000Z",
+    "last_modified": "2026-03-23T10:28:55.000Z",
+    "ai_provider_used": "claude",
+    "ai_model_used": "claude-3.5-sonnet"
+  },
+
+  "identity": {
+    "name": "GoUltraAI",
+    "tagline": "System, Not Tools.",
+    "description": "A brand-first marketing execution system for marketers managing multiple brands. Combines modular workflow apps with an action plan engine.",
+    "mission": "Make structured, AI-enhanced marketing accessible to every brand.",
+    "vision": "Every marketer operates from a system, not scattered tools.",
+    "values": [
+      { "value": "Execution over theory", "description": "Every output is actionable — no fluff, no filler." },
+      { "value": "System thinking", "description": "Connected workflows, not isolated features." },
+      { "value": "Brand-first", "description": "All outputs customized from the source of truth." },
+      { "value": "User autonomy", "description": "You control the AI, not the other way around." },
+      { "value": "Practical simplicity", "description": "Powerful doesn't mean complicated." }
+    ],
+    "brand_archetype": "Creator — Driven to build something meaningful and lasting. Values innovation and bringing ideas to life through structured systems.",
+    "elevator_pitch": "GoUltraAI gives you a complete marketing system for your brand. Create one workspace with your profile, offers, voice rules, and audience. Then our workflow apps generate action plans, content briefs, and execution checklists across every channel. You bring the AI. We bring the system.",
+    "website_url": "https://goultraai.com",
+    "industry": "Digital Marketing Technology",
+    "business_model": "b2b",
+    "primary_platform": "youtube",
+    "content_niche": "Marketing systems and AI workflows",
+    "social_profiles": [
+      { "id": "sp_abc123", "platform": "youtube", "url": "https://youtube.com/@GoUltraAI", "handle": "@GoUltraAI" }
+    ]
+  },
+
+  "voice": {
+    "primary_tone": "Practical, clear, and confident — like a senior marketing strategist who gives you the system, not just the theory. Direct without being cold, supportive without being hand-holdy.",
+    "personality_traits": ["system-builder", "practical", "action-oriented", "structured", "no-BS", "framework-thinker"],
+    "dos": [
+      "Lead with action steps",
+      "Use numbered lists and checklists",
+      "Show concrete examples, not abstract advice",
+      "End every piece with 'Next actions'",
+      "Write like you're talking to a smart colleague"
+    ],
+    "donts": [
+      "Never use passive marketing fluff",
+      "Never overpromise results",
+      "Never use jargon without explaining it first",
+      "Never write walls of text without structure",
+      "Never start with 'In today's world...'"
+    ],
+    "vocabulary": {
+      "preferred_terms": ["system", "workflow", "execution", "action plan", "workspace", "brand-first"],
+      "avoided_terms": ["hack", "guru", "revolutionary", "game-changer", "synergy", "disrupt"]
+    },
+    "sample_texts": "New in GoUltraAI: Content Calendar Generator.\n\nYour brand workspace now builds weekly content calendars across all channels. One click. Every platform covered.\n\n1. Open workspace\n2. Set channels\n3. Generate → review → publish\n\nTry it: goultraai.com/calendar"
+  },
+
+  "messaging": {
+    "primary_message": "Stop duct-taping your marketing. Build a system.",
+    "supporting_messages": [
+      "One workspace per brand. Every channel. Execution-ready outputs.",
+      "AI is your co-pilot. The system is your flight plan.",
+      "From blank to plan. System, not tools."
+    ],
+    "headlines": [
+      { "context": "Landing page hero", "headline": "Your Marketing System Starts Here." },
+      { "context": "Freelancer page", "headline": "Onboard Clients in Minutes. Deliver Plans in Hours." },
+      { "context": "YouTube title", "headline": "I Built a Marketing System That Runs Itself (Here's How)" }
+    ]
+  },
+
+  "market": {
+    "category": "Digital Marketing Execution & Workflow Systems",
+    "positioning": "GoUltraAI is the only brand-first marketing execution system that combines modular workflow apps with a built-in action plan engine — unlike generic AI tools, template marketplaces, or disconnected SaaS stacks.",
+    "competitors": [
+      {
+        "name": "Jasper AI",
+        "description": "AI content generation platform for marketing teams",
+        "strengths": ["Large content template library", "Brand voice AI", "Enterprise adoption"],
+        "weaknesses": ["No workflow structure", "Content only — no action plans", "Expensive for solo users"],
+        "comparison": "Jasper generates content; GoUltraAI provides the system that turns content into execution."
+      },
+      {
+        "name": "Copy.ai",
+        "description": "AI writing assistant and workflow automation",
+        "strengths": ["Easy to use", "Good free tier", "Workflow builder"],
+        "weaknesses": ["Content-focused only", "No brand workspace", "Generic outputs"],
+        "comparison": "Copy.ai is a writing tool; GoUltraAI is a marketing execution system."
+      },
+      {
+        "name": "Notion + ChatGPT (DIY stack)",
+        "description": "Manual combination of productivity and AI tools",
+        "strengths": ["Flexible", "Familiar tools", "Low initial cost"],
+        "weaknesses": ["No structure", "Rebuilding for every brand", "No connected workflow"],
+        "comparison": "The DIY stack is what most marketers use today. GoUltraAI replaces the duct tape with a system."
+      }
+    ],
+    "differentiators": [
+      { "point": "Brand-first workspace approach", "evidence": "No other system generates outputs directly from a unified brand workspace." },
+      { "point": "Connected workflow apps", "evidence": "SEO, Social, Ads, Video all read from the same workspace." },
+      { "point": "Built-in action plan engine", "evidence": "Auto-generates weekly action plans based on brand goals and channels." }
+    ]
+  },
+
+  "audience": {},
+  "offerings": {},
+
+  "_wizard_state": {
+    "seed_context": {
+      "name": "GoUltraAI",
+      "description": "A brand-first marketing execution system for marketers managing multiple brands.",
+      "website_url": "https://goultraai.com",
+      "industry": "Digital Marketing Technology",
+      "business_model": "b2b",
+      "primary_platform": "youtube",
+      "content_niche": "Marketing systems and AI workflows",
+      "channel_url": "https://youtube.com/@GoUltraAI",
+      "_knownCompetitors": ["Jasper AI", "Copy.ai"]
+    },
+    "imported_assets": {
+      "website": {
+        "url": "https://goultraai.com",
+        "status": "success",
+        "extracted": {
+          "tagline": "System, Not Tools.",
+          "offerings": ["Brand Workspace", "SEO Workflow", "Local GEO Workflow", "Organic Social Workflow", "Meta Ads Workflow", "AI Video Workflow System"],
+          "target_audience": "Marketers, freelancers, and agencies",
+          "tone_detected": "Practical, action-oriented, structured"
+        },
+        "analyzed_at": "2026-03-23T10:05:30.000Z"
+      },
+      "social_profiles": [
+        {
+          "platform": "youtube",
+          "url": "https://youtube.com/@GoUltraAI",
+          "status": "success",
+          "extracted": {
+            "content_themes": ["Marketing automation", "AI tools", "Content systems"],
+            "posting_frequency": "2x/week"
+          }
+        }
+      ],
+      "pasted_documents": ""
+    },
+    "discovery_answers": {
+      "q1": { "text": "Marketers waste hours stitching together disconnected tools and starting every project from blank." },
+      "q2": { "selected": 4, "detail": "Solo founders, freelancers, and agencies" },
+      "q3": { "selected": 0 },
+      "q4": { "selected": 2 },
+      "q5": { "selected": 1 },
+      "q6": { "text": "Jasper AI, Copy.ai, HubSpot" },
+      "q7": { "text": "Brand-first approach — one workspace powers all workflow apps" },
+      "q8": { "text": "Professional but direct, action-oriented, structured, no fluff" }
+    },
+    "generated_sections": {
+      "market_category": "Digital Marketing Execution & Workflow Systems",
+      "market_positioning": "GoUltraAI is the only brand-first marketing execution system...",
+      "market_competitors": [
+        { "name": "Jasper AI", "description": "AI content generation platform", "strengths": ["Large template library"], "weaknesses": ["No workflow structure"] },
+        { "name": "Copy.ai", "description": "AI writing assistant", "strengths": ["Easy to use"], "weaknesses": ["Content-focused only"] },
+        { "name": "Notion + ChatGPT", "description": "DIY stack", "strengths": ["Flexible"], "weaknesses": ["No structure"] }
+      ],
+      "market_differentiators": [
+        { "point": "Brand-first workspace", "evidence": "No other system generates outputs from a unified brand workspace." },
+        { "point": "Connected workflow apps", "evidence": "All apps read from the same workspace." },
+        { "point": "Action plan engine", "evidence": "Auto-generates weekly plans." }
+      ],
+      "identity_mission_options": [
+        "Make structured, AI-enhanced marketing accessible to every brand.",
+        "Give every marketer a system that works, not just another tool.",
+        "Transform marketing from duct-tape chaos into repeatable systems."
+      ],
+      "identity_mission": "Make structured, AI-enhanced marketing accessible to every brand.",
+      "identity_vision": "Every marketer operates from a system, not scattered tools.",
+      "identity_values": [
+        { "value": "Execution over theory", "description": "Every output is actionable." },
+        { "value": "System thinking", "description": "Connected workflows, not isolated features." },
+        { "value": "Brand-first", "description": "All outputs customized from source of truth." },
+        { "value": "User autonomy", "description": "You control the AI." },
+        { "value": "Practical simplicity", "description": "Powerful doesn't mean complicated." }
+      ],
+      "identity_archetype": "Creator — Driven to build something meaningful and lasting.",
+      "identity_pitch": "GoUltraAI gives you a complete marketing system for your brand...",
+      "voice_tone": "Practical, clear, and confident — like a senior marketing strategist...",
+      "voice_personality": ["system-builder", "practical", "action-oriented", "structured", "no-BS", "framework-thinker"],
+      "messaging_primary": "Stop duct-taping your marketing. Build a system.",
+      "voice_dos": ["Lead with action steps", "Use numbered lists", "Show concrete examples", "End with 'Next actions'", "Write like talking to a smart colleague"],
+      "voice_donts": ["Never use passive marketing fluff", "Never overpromise", "Never use jargon without explaining", "Never write walls of text", "Never start with 'In today's world...'"],
+      "voice_preferred": ["system", "workflow", "execution", "action plan", "workspace", "brand-first"],
+      "voice_avoided": ["hack", "guru", "revolutionary", "game-changer", "synergy", "disrupt"],
+      "messaging_supporting": ["One workspace per brand. Every channel. Execution-ready outputs.", "AI is your co-pilot. The system is your flight plan.", "From blank to plan. System, not tools."],
+      "messaging_headlines": [
+        { "context": "Landing page hero", "headline": "Your Marketing System Starts Here." },
+        { "context": "Freelancer page", "headline": "Onboard Clients in Minutes. Deliver Plans in Hours." },
+        { "context": "YouTube title", "headline": "I Built a Marketing System That Runs Itself" }
+      ],
+      "voice_sample": "New in GoUltraAI: Content Calendar Generator.\n\nYour brand workspace now builds weekly content calendars across all channels..."
+    },
+    "section_states": {
+      "market_category": "accepted",
+      "market_positioning": "accepted",
+      "market_competitors": "accepted",
+      "market_differentiators": "accepted",
+      "identity_mission": "accepted",
+      "identity_mission_options": "accepted",
+      "identity_vision": "accepted",
+      "identity_values": "accepted",
+      "identity_archetype": "accepted",
+      "identity_pitch": "accepted",
+      "voice_tone": "accepted",
+      "voice_personality": "accepted",
+      "voice_dos": "accepted",
+      "voice_donts": "accepted",
+      "voice_preferred": "accepted",
+      "voice_avoided": "accepted",
+      "messaging_primary": "accepted",
+      "messaging_supporting": "accepted",
+      "messaging_headlines": "accepted",
+      "voice_sample": "accepted"
+    }
+  },
+  "ai_preferences": {
+    "default_provider": "claude",
+    "default_model": "claude-3.5-sonnet",
+    "custom_instructions": ""
+  }
+}
