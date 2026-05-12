@@ -46,6 +46,7 @@ import {
 import { getDefaultData, getEnabledModules } from '../core/schema.js';
 import { W } from '../core/state.js';
 import { has, isLevel, isLevelOrAbove, typeLabels } from '../core/brand-helpers.js';
+import { logActivity } from '../activity/log.js';
 
 (function($, Drupal) {
   'use strict';
@@ -1095,17 +1096,7 @@ import { has, isLevel, isLevelOrAbove, typeLabels } from '../core/brand-helpers.
     };
   }
 
-  // Real-time activity logger
-  function logActivity(action, details) {
-    W.activityLog = W.activityLog || [];
-    W.activityLog.push({
-      action: action,
-      details: details || {},
-      timestamp: now()
-    });
-    // Keep log from growing unbounded (keep last 500 entries)
-    if (W.activityLog.length > 500) W.activityLog = W.activityLog.slice(-500);
-  }
+  // logActivity moved to ../activity/log.js (imported at the top of this file).
 
   function buildActivityLog() {
     // Use real-time log if available, otherwise rebuild from state

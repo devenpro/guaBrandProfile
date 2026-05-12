@@ -12,6 +12,7 @@ import { W } from '../core/state.js';
 import { LANGUAGES, LANG_NAMES } from '../core/constants.js';
 import { esc, formatRelativeTime } from '../utils/helpers.js';
 import { icon } from '../utils/dom.js';
+import { logActivity } from '../activity/log.js';
 
 (function($) {
   'use strict';
@@ -24,10 +25,11 @@ import { icon } from '../utils/dom.js';
   // SECTION 1: INIT & IMPORTS
   // ============================================================
 
-  // W, esc, formatRelativeTime, icon, LANGUAGES, LANG_NAMES are imported
-  // at file top. The vars below are still pulled from window._bpw* in
-  // importGlobals() because their producers have not been extracted.
-  var render, autoSave, toast, logActivity;
+  // W, esc, formatRelativeTime, icon, LANGUAGES, LANG_NAMES, logActivity
+  // are imported at file top. The vars below are still pulled from
+  // window._bpw* in importGlobals() because their producers have not
+  // been extracted.
+  var render, autoSave, toast;
   var LLMService;
   var Part1Ready = false, Part2BReady = false;
 
@@ -59,7 +61,6 @@ import { icon } from '../utils/dom.js';
     render = window._bpwRender;
     autoSave = window._bpwAutoSave;
     toast = window._bpwToast;
-    logActivity = window._bpwLogActivity;
     LLMService = window._bpwLLMService;
   }
 
