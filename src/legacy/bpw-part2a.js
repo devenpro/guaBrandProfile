@@ -27,6 +27,7 @@ import { migrateV2toV1 } from '../core/migration.js';
 import { W } from '../core/state.js';
 import { BRAND_TYPES } from '../core/constants.js';
 import { has, isLevel } from '../core/brand-helpers.js';
+import { buildAIContext, getLangInstruction, parseAIResponse, setSectionState } from '../ai/pipeline.js';
 import { esc } from '../utils/helpers.js';
 import { icon } from '../utils/dom.js';
 
@@ -37,14 +38,14 @@ import { icon } from '../utils/dom.js';
   // SECTION 1: INIT & IMPORTS
   // ============================================================
 
-  // W, BRAND_TYPES, has, isLevel, esc, icon are imported at file top.
-  // The vars below are still pulled from window._bpw* in initPart2A()
-  // because their producers (bpw-app.js §6–9, §23–24, etc.) have not
-  // yet been extracted into modules.
+  // W, BRAND_TYPES, has, isLevel, esc, icon, buildAIContext,
+  // getLangInstruction, parseAIResponse, setSectionState are imported
+  // at file top. The vars below are still pulled from window._bpw* in
+  // initPart2A() because their producers have not yet been extracted.
   var LLMService, render, goStep, goNext, toast, buildSteps;
   var autoSave, syncToTextarea, buildFinalProfile;
-  var parseAIResponse, setSectionState, acceptSection, rejectSection;
-  var renderAISection, buildAIContext, getLangInstruction;
+  var acceptSection, rejectSection;
+  var renderAISection;
 
   var LOG = '[BPW-2A]';
   var _pollCount = 0;
@@ -94,13 +95,9 @@ import { icon } from '../utils/dom.js';
     autoSave = window._bpwAutoSave || function() {};
     syncToTextarea = window._bpwSyncToTextarea || function() {};
     buildFinalProfile = window._bpwBuildFinalProfile || function() { return {}; };
-    parseAIResponse = window._bpwParseAIResponse || function(t) { try { return { success: true, data: JSON.parse(t) }; } catch (e) { return { success: false, rawText: t }; } };
-    setSectionState = window._bpwSetSectionState || function(k, s) { W.sectionStates[k] = s; };
     acceptSection = window._bpwAcceptSection || function() {};
     rejectSection = window._bpwRejectSection || function() {};
     renderAISection = window._bpwRenderAISection || function() { return ''; };
-    buildAIContext = window._bpwBuildAIContext || function() { return {}; };
-    getLangInstruction = window._bpwGetLangInstruction || function() { return ''; };
 
     setupPart2AEvents();
 

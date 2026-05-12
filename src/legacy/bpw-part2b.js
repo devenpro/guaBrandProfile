@@ -26,6 +26,7 @@
  */
 import { W } from '../core/state.js';
 import { has, isLevel, isLevelOrAbove, typeLabels } from '../core/brand-helpers.js';
+import { buildAIContext, getLangInstruction, parseAIResponse, setSectionState } from '../ai/pipeline.js';
 import { esc, generateId } from '../utils/helpers.js';
 import { icon } from '../utils/dom.js';
 
@@ -36,13 +37,13 @@ import { icon } from '../utils/dom.js';
   // SECTION 1: INIT & IMPORTS
   // ============================================================
 
-  // W, has, isLevel, isLevelOrAbove, typeLabels, esc, generateId, icon
+  // W, has, isLevel, isLevelOrAbove, typeLabels, esc, generateId, icon,
+  // buildAIContext, getLangInstruction, parseAIResponse, setSectionState
   // are imported at file top. The vars below are still pulled from
   // window._bpw* in initPart2B() because their producers have not yet
   // been extracted into modules.
   var LLMService, render, goStep, toast, autoSave, syncToTextarea;
-  var buildAIContext, getLangInstruction, parseAIResponse;
-  var setSectionState, acceptSection, buildFinalProfile;
+  var acceptSection, buildFinalProfile;
   var Part2A;
 
   var LOG = '[BPW-2B]';
@@ -83,10 +84,6 @@ import { icon } from '../utils/dom.js';
     autoSave = window._bpwAutoSave;
     syncToTextarea = window._bpwSyncToTextarea;
     buildFinalProfile = window._bpwBuildFinalProfile;
-    buildAIContext = window._bpwBuildAIContext;
-    getLangInstruction = window._bpwGetLangInstruction;
-    parseAIResponse = window._bpwParseAIResponse;
-    setSectionState = window._bpwSetSectionState;
     acceptSection = window._bpwAcceptSection;
     Part2A = window._bpwPart2A;
 
