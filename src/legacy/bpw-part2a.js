@@ -26,6 +26,7 @@
 import { migrateV2toV1 } from '../core/migration.js';
 import { W } from '../core/state.js';
 import { BRAND_TYPES } from '../core/constants.js';
+import { has, isLevel } from '../core/brand-helpers.js';
 import { esc } from '../utils/helpers.js';
 import { icon } from '../utils/dom.js';
 
@@ -36,12 +37,11 @@ import { icon } from '../utils/dom.js';
   // SECTION 1: INIT & IMPORTS
   // ============================================================
 
-  // W, BRAND_TYPES, esc, icon are imported at file top. The vars below
-  // are still pulled from window._bpw* in initPart2A() because their
-  // producers (bpw-app.js §6–9, §23–24, etc.) have not yet been
-  // extracted into modules.
+  // W, BRAND_TYPES, has, isLevel, esc, icon are imported at file top.
+  // The vars below are still pulled from window._bpw* in initPart2A()
+  // because their producers (bpw-app.js §6–9, §23–24, etc.) have not
+  // yet been extracted into modules.
   var LLMService, render, goStep, goNext, toast, buildSteps;
-  var has, isLevel, isLevelOrAbove, typeLabels;
   var autoSave, syncToTextarea, buildFinalProfile;
   var parseAIResponse, setSectionState, acceptSection, rejectSection;
   var renderAISection, buildAIContext, getLangInstruction;
@@ -91,10 +91,6 @@ import { icon } from '../utils/dom.js';
     buildSteps = window._bpwBuildSteps;
     goNext = function() { $('[data-action="go-next"]').first().trigger('click'); };
 
-    has = window._bpwHas || function(t) { return W.brandTypes.indexOf(t) !== -1; };
-    isLevel = window._bpwIsLevel || function(l) { return W.brandLevel === l; };
-    isLevelOrAbove = window._bpwIsLevelOrAbove || function(l) { var o = { 'new': 0, 'growing': 1, 'deep': 2 }; return (o[W.brandLevel] || 0) >= (o[l] || 0); };
-    typeLabels = window._bpwTypeLabels || function() { return W.brandTypes.join(', '); };
     autoSave = window._bpwAutoSave || function() {};
     syncToTextarea = window._bpwSyncToTextarea || function() {};
     buildFinalProfile = window._bpwBuildFinalProfile || function() { return {}; };

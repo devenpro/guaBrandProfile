@@ -45,6 +45,7 @@ import {
 } from '../core/constants.js';
 import { getDefaultData } from '../core/schema.js';
 import { W } from '../core/state.js';
+import { has, isLevel, isLevelOrAbove, typeLabels } from '../core/brand-helpers.js';
 
 (function($, Drupal) {
   'use strict';
@@ -342,11 +343,12 @@ import { W } from '../core/state.js';
   // SECTION 4: UTILITIES
   // ============================================================
   //
-  // Pure helpers (esc, generateId, now, formatRelativeTime, deepClone,
-  // truncate, isEmpty, debounce, estimateTokens) and `icon` are imported
-  // from ../utils/ at the top of this file. The functions below depend
-  // on jQuery, the W state object, or the BRAND_TYPES/LEVEL_ORDER
-  // constants and will move to their owning modules in later stages.
+  // Pure helpers (esc, icon, generateId, now, formatRelativeTime,
+  // deepClone, truncate, isEmpty, debounce, estimateTokens) live in
+  // ../utils/. The brand-state helpers (has, isLevel, isLevelOrAbove,
+  // typeLabels) live in ../core/brand-helpers.js. Both are imported at
+  // the top of this file. Only copyToClipboard remains here because it
+  // depends on jQuery and the in-IIFE toast() helper.
 
   function copyToClipboard(text) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -359,17 +361,8 @@ import { W } from '../core/state.js';
     }
   }
 
-  function has(type) { return W.brandTypes.indexOf(type) !== -1; }
-
-  function isLevel(lvl) { return W.brandLevel === lvl; }
-
-  function isLevelOrAbove(lvl) {
-    return (LEVEL_ORDER[W.brandLevel] || 0) >= (LEVEL_ORDER[lvl] || 0);
-  }
-
-  function typeLabels() {
-    return W.brandTypes.map(function(t) { return (BRAND_TYPES[t] || {}).label || t; }).join(' + ');
-  }
+  // has, isLevel, isLevelOrAbove, typeLabels moved to ../core/brand-helpers.js
+  // (imported at the top of this file).
 
   // ============================================================
   // SECTION 5: DEFAULT DATA & MODULES
