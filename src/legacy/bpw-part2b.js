@@ -24,6 +24,10 @@
  *
  * @version 1.0.0
  */
+import { W } from '../core/state.js';
+import { esc, generateId } from '../utils/helpers.js';
+import { icon } from '../utils/dom.js';
+
 (function($, Drupal) {
   'use strict';
 
@@ -31,8 +35,11 @@
   // SECTION 1: INIT & IMPORTS
   // ============================================================
 
-  var W, LLMService, render, goStep, toast, autoSave, syncToTextarea;
-  var esc, icon, generateId, deepClone, has, isLevel, isLevelOrAbove, typeLabels;
+  // W, esc, generateId, icon are imported at file top. The vars below
+  // are still pulled from window._bpw* in initPart2B() because their
+  // producers have not yet been extracted into modules.
+  var LLMService, render, goStep, toast, autoSave, syncToTextarea;
+  var has, isLevel, isLevelOrAbove, typeLabels;
   var buildAIContext, getLangInstruction, parseAIResponse;
   var setSectionState, acceptSection, buildFinalProfile;
   var Part2A;
@@ -68,7 +75,6 @@
   function initPart2B() {
     console.log(LOG, 'Initializing...');
 
-    W = window._bpwState;
     LLMService = window._bpwLLMService;
     render = window._bpwRender;
     goStep = window._bpwGoStep;
@@ -76,10 +82,6 @@
     autoSave = window._bpwAutoSave;
     syncToTextarea = window._bpwSyncToTextarea;
     buildFinalProfile = window._bpwBuildFinalProfile;
-    esc = window._bpwEsc;
-    icon = window._bpwIcon;
-    generateId = window._bpwGenerateId;
-    deepClone = window._bpwDeepClone;
     has = window._bpwHas;
     isLevel = window._bpwIsLevel;
     isLevelOrAbove = window._bpwIsLevelOrAbove;

@@ -8,6 +8,11 @@
  * - Settings modal UI
  * - Event wiring for navbar buttons
  */
+import { W } from '../core/state.js';
+import { LANGUAGES, LANG_NAMES } from '../core/constants.js';
+import { esc, formatRelativeTime } from '../utils/helpers.js';
+import { icon } from '../utils/dom.js';
+
 (function($) {
   'use strict';
 
@@ -19,8 +24,11 @@
   // SECTION 1: INIT & IMPORTS
   // ============================================================
 
-  var W, render, autoSave, toast, esc, icon, logActivity, formatRelativeTime;
-  var LLMService, now;
+  // W, esc, formatRelativeTime, icon, LANGUAGES, LANG_NAMES are imported
+  // at file top. The vars below are still pulled from window._bpw* in
+  // importGlobals() because their producers have not been extracted.
+  var render, autoSave, toast, logActivity;
+  var LLMService;
   var Part1Ready = false, Part2BReady = false;
 
   function waitForDeps() {
@@ -48,16 +56,11 @@
   }
 
   function importGlobals() {
-    W = window._bpwState;
     render = window._bpwRender;
     autoSave = window._bpwAutoSave;
     toast = window._bpwToast;
-    esc = window._bpwEsc;
-    icon = window._bpwIcon;
     logActivity = window._bpwLogActivity;
-    formatRelativeTime = window._bpwFormatRelativeTime;
     LLMService = window._bpwLLMService;
-    now = function() { return new Date().toISOString(); };
   }
 
   // ============================================================
@@ -235,8 +238,6 @@
     h += '</div>';
 
     // Language
-    var LANGUAGES = (window._bpwConstants && window._bpwConstants.LANGUAGES) || ['en'];
-    var LANG_NAMES = (window._bpwConstants && window._bpwConstants.LANG_NAMES) || { en: 'English' };
     h += '<div class="bpw-settings-section">';
     h += '<div class="bpw-settings-title">' + icon('language') + ' Language</div>';
     h += '<div class="bpw-settings-field">';

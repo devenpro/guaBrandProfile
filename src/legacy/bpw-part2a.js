@@ -24,6 +24,10 @@
  * @version 1.0.0
  */
 import { migrateV2toV1 } from '../core/migration.js';
+import { W } from '../core/state.js';
+import { BRAND_TYPES } from '../core/constants.js';
+import { esc } from '../utils/helpers.js';
+import { icon } from '../utils/dom.js';
 
 (function($, Drupal) {
   'use strict';
@@ -32,12 +36,15 @@ import { migrateV2toV1 } from '../core/migration.js';
   // SECTION 1: INIT & IMPORTS
   // ============================================================
 
-  var W, LLMService, render, goStep, goNext, toast, buildSteps;
-  var esc, icon, generateId, deepClone, has, isLevel, isLevelOrAbove, typeLabels;
+  // W, BRAND_TYPES, esc, icon are imported at file top. The vars below
+  // are still pulled from window._bpw* in initPart2A() because their
+  // producers (bpw-app.js §6–9, §23–24, etc.) have not yet been
+  // extracted into modules.
+  var LLMService, render, goStep, goNext, toast, buildSteps;
+  var has, isLevel, isLevelOrAbove, typeLabels;
   var autoSave, syncToTextarea, buildFinalProfile;
   var parseAIResponse, setSectionState, acceptSection, rejectSection;
   var renderAISection, buildAIContext, getLangInstruction;
-  var BRAND_TYPES, LANG_NAMES, SOCIAL_PLATFORMS;
 
   var LOG = '[BPW-2A]';
   var _pollCount = 0;
@@ -77,7 +84,6 @@ import { migrateV2toV1 } from '../core/migration.js';
   function initPart2A() {
     console.log(LOG, 'Initializing...');
 
-    W = window._bpwState;
     LLMService = window._bpwLLMService;
     render = window._bpwRender;
     goStep = window._bpwGoStep;
@@ -85,10 +91,6 @@ import { migrateV2toV1 } from '../core/migration.js';
     buildSteps = window._bpwBuildSteps;
     goNext = function() { $('[data-action="go-next"]').first().trigger('click'); };
 
-    esc = window._bpwEsc || function(s) { return $('<span>').text(s || '').html(); };
-    icon = window._bpwIcon || function(n) { return '<i class="fa-solid fa-' + n + '"></i>'; };
-    generateId = window._bpwGenerateId || function(p) { return p + '_' + Math.random().toString(36).substr(2, 6); };
-    deepClone = window._bpwDeepClone || function(o) { return JSON.parse(JSON.stringify(o)); };
     has = window._bpwHas || function(t) { return W.brandTypes.indexOf(t) !== -1; };
     isLevel = window._bpwIsLevel || function(l) { return W.brandLevel === l; };
     isLevelOrAbove = window._bpwIsLevelOrAbove || function(l) { var o = { 'new': 0, 'growing': 1, 'deep': 2 }; return (o[W.brandLevel] || 0) >= (o[l] || 0); };
@@ -103,9 +105,6 @@ import { migrateV2toV1 } from '../core/migration.js';
     renderAISection = window._bpwRenderAISection || function() { return ''; };
     buildAIContext = window._bpwBuildAIContext || function() { return {}; };
     getLangInstruction = window._bpwGetLangInstruction || function() { return ''; };
-
-    BRAND_TYPES = window._bpwConstants ? window._bpwConstants.BRAND_TYPES : {};
-    LANG_NAMES = window._bpwConstants ? window._bpwConstants.LANG_NAMES : {};
 
     setupPart2AEvents();
 
