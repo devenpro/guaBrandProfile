@@ -46,7 +46,7 @@ import {
 import { getDefaultData, getEnabledModules } from '../core/schema.js';
 import { W } from '../core/state.js';
 import { has, isLevel, isLevelOrAbove, typeLabels } from '../core/brand-helpers.js';
-import { logActivity } from '../activity/log.js';
+import { logActivity, buildActivityLog } from '../activity/log.js';
 import { stepIndex, stepById, isStepAvailable, getStepNumber, getTotalSteps } from '../core/steps.js';
 
 (function($, Drupal) {
@@ -1081,33 +1081,8 @@ import { stepIndex, stepById, isStepAvailable, getStepNumber, getTotalSteps } fr
     };
   }
 
-  // logActivity moved to ../activity/log.js (imported at the top of this file).
-
-  function buildActivityLog() {
-    // Use real-time log if available, otherwise rebuild from state
-    if (W.activityLog && W.activityLog.length > 0) return W.activityLog;
-
-    var log = [];
-    // Fallback: Build log from completedSteps and sectionStates
-    for (var i = 0; i < W.completedSteps.length; i++) {
-      var step = stepById(W.completedSteps[i]);
-      log.push({
-        action: 'step_completed',
-        details: { step: W.completedSteps[i], label: step ? step.label : W.completedSteps[i] },
-        timestamp: now()
-      });
-    }
-    for (var key in W.sectionStates) {
-      if (W.sectionStates.hasOwnProperty(key) && W.sectionStates[key] === 'accepted') {
-        log.push({
-          action: 'section_accepted',
-          details: { section: key, source: W.generatedSections[key] ? 'ai' : 'manual' },
-          timestamp: now()
-        });
-      }
-    }
-    return log;
-  }
+  // logActivity and buildActivityLog moved to ../activity/log.js
+  // (imported at the top of this file).
 
   function syncAllExportFields() {
     _ensureModulesAssembled();
