@@ -1,0 +1,40 @@
+/* ============================================================
+   S2: RESET & BASE
+   ============================================================ */
+#bpwApp {
+  font-family: var(--bpw-font-body);
+  font-size: var(--bpw-font-base);
+  color: var(--bpw-text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  background: var(--bpw-bg);
+  min-height: 100vh;
+}
+#bpwApp *, #bpwApp *::before, #bpwApp *::after { box-sizing: border-box; }
+#bpwApp h1, #bpwApp h2, #bpwApp h3, #bpwApp h4 { font-family: var(--bpw-font-heading); margin: 0; font-weight: 700; letter-spacing: -0.01em; }
+#bpwApp a { color: var(--bpw-primary); text-decoration: none; }
+#bpwApp a:hover { text-decoration: underline; }
+#bpwApp p { margin: 0 0 var(--bpw-sp-3); }
+
+@keyframes bpw-fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Hide Drupal chrome when wizard is active */
+body.bpw-active .region-breadcrumb,
+body.bpw-active .page-title-wrapper,
+body.bpw-active .block-page-title-block,
+body.bpw-active .node-form-options,
+body.bpw-active .field--name-title { display: none !important; }
+/* Form must remain functional for submit — use offscreen, NOT display:none */
+body.bpw-active form.node-brand-profile-form,
+body.bpw-active form.node-brand-profile-edit-form,
+body.bpw-active form[class*="node-brand-profile"] {
+  position: fixed !important;
+  left: -9999px !important;
+  top: -9999px !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+body.bpw-active .local-tasks-wrapper { display: none !important; }

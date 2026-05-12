@@ -1,1 +1,4 @@
+@import './styles/tokens.css';
+@import './styles/reset.css';
 @import './legacy/bpw-app.css';
+@import './styles/responsive.css';
