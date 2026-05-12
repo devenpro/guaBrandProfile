@@ -47,6 +47,7 @@ import { getDefaultData, getEnabledModules } from '../core/schema.js';
 import { W } from '../core/state.js';
 import { has, isLevel, isLevelOrAbove, typeLabels } from '../core/brand-helpers.js';
 import { logActivity } from '../activity/log.js';
+import { stepIndex, stepById, isStepAvailable, getStepNumber, getTotalSteps } from '../core/steps.js';
 
 (function($, Drupal) {
   'use strict';
@@ -471,24 +472,8 @@ import { logActivity } from '../activity/log.js';
     return 'Audience & offerings';
   }
 
-  function stepIndex() {
-    for (var i = 0; i < W.steps.length; i++) {
-      if (W.steps[i].id === W.currentStepId) return i;
-    }
-    return 0;
-  }
-
-  function stepById(id) {
-    for (var i = 0; i < W.steps.length; i++) {
-      if (W.steps[i].id === id) return W.steps[i];
-    }
-    return null;
-  }
-
-  function isStepAvailable(id) { return !!stepById(id); }
-
-  function getStepNumber() { return stepIndex() + 1; }
-  function getTotalSteps() { return W.steps.length; }
+  // stepIndex, stepById, isStepAvailable, getStepNumber, getTotalSteps
+  // moved to ../core/steps.js (imported at the top of this file).
 
   // ============================================================
   // SECTION 8: NAVIGATION
