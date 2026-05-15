@@ -248,7 +248,20 @@
           W.importedAssets = W.importedAssets || {};
           W.importedAssets.website = { url: res.url, status: 'success', extracted: res.extracted, analyzed_at: res.analyzed_at };
         }
-        _setStatus(id, { state: 'done', endedAt: Date.now(), elapsedMs: elapsedMs });
+        // Merged actions can return success with a `partial` flag when
+        // one half (e.g. voice in identity_voice) failed but the other
+        // succeeded. Mark the stage done but warn the user via toast so
+        // they can re-run that section post-setup.
+        var statusPatch = { state: 'done', endedAt: Date.now(), elapsedMs: elapsedMs };
+        if (res.partial) {
+          statusPatch.partial = res.partial;
+          statusPatch.error = res.error || res.partial;
+          if (typeof window._bpwToast === 'function') {
+            window._bpwToast('Partial stage result (' + id + '): ' + (res.error || res.partial) + '. Re-run from the section view.', 'warning');
+          }
+          console.warn(LOG, 'partial stage result:', id, res.partial, res.error);
+        }
+        _setStatus(id, statusPatch);
       } else {
         _setStatus(id, { state: 'failed', error: (res && res.error) || 'Unknown error', endedAt: Date.now(), elapsedMs: elapsedMs });
       }

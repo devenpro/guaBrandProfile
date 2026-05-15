@@ -364,17 +364,22 @@
     $(document).off('click' + ns, '.bpw-setup [data-action="bpw-setup-start"]')
       .on('click' + ns, '.bpw-setup [data-action="bpw-setup-start"]', function(e) {
         e.preventDefault();
+        var toast = window._bpwToast || function(msg) { alert(msg); };
         if (!(W.brandTypes && W.brandTypes.length)) {
-          alert('Pick at least one brand type.');
+          toast('Pick at least one brand type.', 'warning');
           return;
         }
         if (!(W.seedContext && (W.seedContext.url || W.seedContext.name))) {
-          alert('Provide a website URL or a brand name.');
+          toast('Provide a website URL or a brand name.', 'warning');
+          return;
+        }
+        if (!window.LLMService || !window.LLMService.isConfigured()) {
+          toast('No AI provider configured. Add credentials in Drupal AI settings.', 'error');
           return;
         }
         var queue = window._bpwSetupStages.stagesFor(W.brandLevel || 'new', W.brandTypes || []);
         if (!queue.length) {
-          alert('No stages apply to the selected growth phase + types. Pick at least one type that matches.');
+          toast('No stages apply to this growth phase + types combination.', 'warning');
           return;
         }
         _startAutopilot(queue, 'initial');
@@ -392,7 +397,9 @@
     $(document).off('click' + ns, '.bpw-setup [data-action="bpw-setup-exit"]')
       .on('click' + ns, '.bpw-setup [data-action="bpw-setup-exit"]', function(e) {
         e.preventDefault();
-        if (!confirm('Exit the autopilot? Stages already completed are kept. You can re-open it from Settings → Re-run setup.')) return;
+        // Native confirm is intentional here: an irreversible exit
+        // deserves a hard stop. Stages already completed persist.
+        if (!window.confirm('Exit the autopilot? Stages already completed are kept. You can re-open from Settings.')) return;
         // Auto-accept whatever is already generated so the user keeps
         // partial progress, then bail out cleanly.
         if (W.setup) {
