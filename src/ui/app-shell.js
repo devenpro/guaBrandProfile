@@ -24,6 +24,7 @@
   var _pollCount = 0;
 
   // ── BOOT ────────────────────────────────────────────────────────────
+  // Same quiet-on-non-brand-profile policy as src/setup/bpw-setup.js.
   var _bootTimer = setInterval(function() {
     _pollCount++;
     if (window._bpwState && window._bpwState.initialized) {
@@ -33,7 +34,11 @@
     }
     if (_pollCount > 300) {
       clearInterval(_bootTimer);
-      console.warn(LOG, 'gave up waiting for Part 1');
+      var bodyClass = (document.body && document.body.className) || '';
+      var looksLikeBP = bodyClass.indexOf('brand-profile') !== -1 || bodyClass.indexOf('brand_profile') !== -1;
+      if (looksLikeBP) {
+        console.error(LOG, 'App shell never initialised — check legacy boot logs.');
+      }
     }
   }, 100);
 

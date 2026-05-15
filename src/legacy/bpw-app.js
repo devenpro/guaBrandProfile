@@ -580,6 +580,12 @@ import { W } from '../core/state.js';
   function render() {
     var $app = $('#' + APP_ID);
     if (!$app.length) return;
+    // Skip rendering when a new surface owns the screen — the legacy
+    // tree is CSS-hidden anyway, and re-rendering invisible DOM on
+    // every event wastes work. The new modules will re-trigger render
+    // explicitly when they hand control back.
+    var $body = $('body');
+    if ($body.hasClass('bpw-setup-open') || $body.hasClass('bpw-app-shell-active')) return;
 
     var html = '';
     html += renderHeader();

@@ -28,7 +28,9 @@
   var _bootPollCount = 0;
 
   // ── BOOT ────────────────────────────────────────────────────────────
-  // Poll for legacy Part 1 init so W is populated.
+  // Poll for legacy Part 1 init so W is populated. Legacy intentionally
+  // skips init on non-brand-profile pages (no textarea, wrong content
+  // type, etc.) — those are not failures, so we exit quietly.
   var _bootTimer = setInterval(function() {
     _bootPollCount++;
     if (window._bpwState && window._bpwState.initialized) {
@@ -38,7 +40,13 @@
     }
     if (_bootPollCount > 300) {
       clearInterval(_bootTimer);
-      console.warn(LOG, 'gave up waiting for Part 1');
+      // Only complain if this looks like it should have worked. On
+      // non-brand-profile pages legacy bails silently, which is correct.
+      var bodyClass = (document.body && document.body.className) || '';
+      var looksLikeBP = bodyClass.indexOf('brand-profile') !== -1 || bodyClass.indexOf('brand_profile') !== -1;
+      if (looksLikeBP) {
+        console.error(LOG, 'Wizard never initialised — check the JSON textarea and console for legacy errors.');
+      }
     }
   }, 100);
 
