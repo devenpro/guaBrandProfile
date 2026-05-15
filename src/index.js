@@ -32,6 +32,14 @@ import './ai/_helpers.js';
 import './ai/actions/scrape.js';
 import './ai/actions/market.js';
 import './ai/actions/identity.js';
+import './ai/actions/voice.js';
+import './ai/actions/audience.js';
+import './ai/actions/offerings.js';
+import './ai/actions/content.js';
+import './ai/actions/seo.js';
+// Inline-action aliases must follow their source actions.
+import './ai/actions/competitors.js';
+import './ai/actions/personas.js';
 
 // Legacy monolith — still defines its own LLMService closure and
 // `window._bpwLLMService` alias used by bpw-part2a/2b/2c.
