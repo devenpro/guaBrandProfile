@@ -34,10 +34,18 @@
     var creatorFields = _has('creator')    ? ',\n  "offerings_content": "description of content formats and publishing approach",\n  "offerings_revenue": [\n    {"stream":"","status":"active","notes":""}\n  ]' : '';
     var commercFields = _has('commercial') ? ',\n  "offerings_pricing": "brief pricing model description"' : '';
     var nonprofFields = _has('nonprofit')  ? ',\n  "offerings_programs": [\n    {"name":"","category":"","description":"","features":[""],"target_audience":"","status":"active"}\n  ]' : '';
+    var fieldReqs = '\n\nFIELD REQUIREMENTS (every offering and program):\n'
+      + '- name: short distinctive name\n'
+      + '- category: classification\n'
+      + '- description: 1-2 sentences\n'
+      + '- features: at least 2 concrete features (never empty)\n'
+      + '- benefits: at least 2 outcomes (never empty)\n'
+      + '- target_audience: 1 sentence on who this is for\n'
+      + '- status: active / coming soon / sunset';
     return {
       system: 'You are a business strategist. Structure the ' + offeringsType + ' for a ' + typeDesc + ' brand.' + BrandService.getLangSuffix(),
       user:   'Generate offerings profile.' + BrandService.getContextBlock() +
-              '\n\nReturn ONLY valid JSON:\n{\n  "offerings_items": [\n    {"name":"","category":"","description":"","features":[""],"benefits":[""],"target_audience":"","status":"active"}\n  ]' + creatorFields + commercFields + nonprofFields + '\n}\n\nGenerate 3-6 offerings based on available context.' + _jsonOnly()
+              '\n\nReturn ONLY valid JSON:\n{\n  "offerings_items": [\n    {"name":"","category":"","description":"","features":[""],"benefits":[""],"target_audience":"","status":"active"}\n  ]' + creatorFields + commercFields + nonprofFields + '\n}\n\nGenerate 3-6 offerings based on available context.' + fieldReqs + _jsonOnly()
     };
   }
 

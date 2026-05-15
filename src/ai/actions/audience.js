@@ -42,10 +42,21 @@
       ? ',\n  "audience_personas": [\n    {"name":"","role":"","age":"","story":"","pain_points":[""],"goals":[""],"decision_criteria":[""],"journey":""}\n  ]'
       : '';
     var personaInstr = personaCount > 0 ? ' Generate ' + personaCount + ' detailed personas.' : '';
+    var fieldReqs = '\n\nFIELD REQUIREMENTS (every item):\n'
+      + '- segment.pain_points: at least 3 specific pains (no empty array)\n'
+      + '- segment.goals: at least 2 concrete goals\n'
+      + '- segment.channels: at least 2 channels where this segment lives\n'
+      + (personaCount > 0
+          ? '- persona.age: a realistic age or age range\n'
+            + '- persona.journey: 1-2 sentences on how they discover, evaluate, decide\n'
+            + '- persona.decision_criteria: at least 3 concrete criteria\n'
+            + '- persona.pain_points: at least 3 specific pains\n'
+            + '- persona.goals: at least 2 concrete goals\n'
+          : '');
     return {
       system: 'You are an expert audience researcher. Profile the target audience for a ' + typeDesc + ' brand.' + BrandService.getLangSuffix(),
       user:   'Generate audience profile.' + BrandService.getContextBlock() +
-              '\n\nReturn ONLY valid JSON:\n{\n  "audience_primary": "2-3 sentence primary audience description",\n  "audience_segments": [\n    {"name":"","description":"","pain_points":[""],"goals":[""],"channels":[""]}\n  ]' + personaSchema + '\n}\n\nGenerate 2-3 segments.' + personaInstr + _jsonOnly()
+              '\n\nReturn ONLY valid JSON:\n{\n  "audience_primary": "2-3 sentence primary audience description",\n  "audience_segments": [\n    {"name":"","description":"","pain_points":[""],"goals":[""],"channels":[""]}\n  ]' + personaSchema + '\n}\n\nGenerate 2-3 segments.' + personaInstr + fieldReqs + _jsonOnly()
     };
   }
 
@@ -58,10 +69,17 @@
     var creatorFields  = _has('creator')    ? ',\n  "offerings_content": "description of content formats and publishing approach",\n  "offerings_revenue": [\n    {"stream":"","status":"active","notes":""}\n  ]' : '';
     var commercFields  = _has('commercial') ? ',\n  "offerings_pricing": "brief pricing model description"' : '';
     var nonprofFields  = _has('nonprofit')  ? ',\n  "offerings_programs": [\n    {"name":"","category":"","description":"","features":[""],"target_audience":"","status":"active"}\n  ]' : '';
+    var fieldReqs = '\n\nFIELD REQUIREMENTS (every offering and program):\n'
+      + '- name: short distinctive name\n'
+      + '- category: classification (product / service / course / consulting / etc.)\n'
+      + '- features: at least 2 concrete features\n'
+      + '- benefits: at least 2 outcomes the customer experiences\n'
+      + '- target_audience: who this is specifically for (1 sentence)\n'
+      + '- status: one of active / coming soon / sunset';
     return {
       system: 'You are a business strategist. Structure the ' + offeringsType + ' for a ' + typeDesc + ' brand.' + BrandService.getLangSuffix(),
       user:   'Generate offerings profile.' + BrandService.getContextBlock() +
-              '\n\nReturn ONLY valid JSON:\n{\n  "offerings_items": [\n    {"name":"","category":"","description":"","features":[""],"benefits":[""],"target_audience":"","status":"active"}\n  ]' + creatorFields + commercFields + nonprofFields + '\n}\n\nGenerate 3-6 offerings based on available context.' + _jsonOnly()
+              '\n\nReturn ONLY valid JSON:\n{\n  "offerings_items": [\n    {"name":"","category":"","description":"","features":[""],"benefits":[""],"target_audience":"","status":"active"}\n  ]' + creatorFields + commercFields + nonprofFields + '\n}\n\nGenerate 3-6 offerings based on available context.' + fieldReqs + _jsonOnly()
     };
   }
 
