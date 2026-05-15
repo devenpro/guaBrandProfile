@@ -46,15 +46,26 @@ import './setup/bpw-setup-stages.js';
 import './setup/bpw-setup-orchestrator.js';
 import './setup/bpw-setup.js';
 
-// UI shell — three-pane post-setup app. Views (Phase 4.2) populate
-// window._bpwUIViews and load between the shell modules and the
-// app-shell entry so the shell finds them when it first renders.
+// UI shell — three-pane post-setup app. Views populate
+// window._bpwUIViews and must load BEFORE app-shell.js so the shell
+// finds them on first render.
 import './ui/_export-sync.js';
 import './ui/topbar.js';
 import './ui/sidebar.js';
 import './ui/section-list.js';
 import './ui/detail-pane.js';
 import './ui/activity-drawer.js';
+
+// Per-section views.
+import './ui/views/identity.js';
+import './ui/views/voice.js';
+import './ui/views/audience.js';
+import './ui/views/offerings.js';
+import './ui/views/market.js';
+import './ui/views/content.js';
+import './ui/views/seo.js';
+import './ui/views/settings.js';
+
 import './ui/app-shell.js';
 
 // Legacy monolith — still defines its own LLMService closure and
