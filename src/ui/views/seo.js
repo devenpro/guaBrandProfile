@@ -93,7 +93,7 @@
         + '<h3>' + _esc(g.topic || 'Content gap ' + (idx + 1)) + '</h3>'
         + E.renderText({ label: 'Topic', path: gbase + 'topic', value: g.topic })
         + E.renderTextarea({ label: 'Why it matters', path: gbase + 'why_it_matters', value: g.why_it_matters })
-        + E.renderTextarea({ label: 'Suggested angle', path: gbase + 'suggested_angle', value: g.suggested_angle, tall: true })
+        + E.renderField({ type: 'prose', label: 'Suggested angle', path: gbase + 'suggested_angle', value: g.suggested_angle })
         + '</div>';
     }
     if (type === 'quickwin') {

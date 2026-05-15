@@ -76,7 +76,7 @@
     if (selectedId === 'primary') {
       return '<div class="bpw-shell-detail-card">'
         + '<h3>Primary audience</h3>'
-        + E.renderTextarea({ label: 'Description', path: 'audience.primary_description', value: a.primary_description, tall: true })
+        + E.renderField({ type: 'prose', label: 'Description', path: 'audience.primary_description', value: a.primary_description })
         + '</div>';
     }
 
@@ -104,8 +104,8 @@
         + E.renderText({ label: 'Name', path: pbase + 'name', value: p.name })
         + E.renderText({ label: 'Role', path: pbase + 'role', value: p.role })
         + E.renderText({ label: 'Age', path: pbase + 'age', value: p.age })
-        + E.renderTextarea({ label: 'Story', path: pbase + 'story', value: p.story, tall: true })
-        + E.renderTextarea({ label: 'Journey', path: pbase + 'journey', value: p.journey })
+        + E.renderField({ type: 'prose', label: 'Story', path: pbase + 'story', value: p.story })
+        + E.renderField({ type: 'prose', label: 'Journey', path: pbase + 'journey', value: p.journey })
         + E.renderChips({ label: 'Pain points', path: pbase + 'pain_points', value: p.pain_points })
         + E.renderChips({ label: 'Goals', path: pbase + 'goals', value: p.goals })
         + E.renderChips({ label: 'Decision criteria', path: pbase + 'decision_criteria', value: p.decision_criteria })

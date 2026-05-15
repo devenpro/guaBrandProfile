@@ -118,6 +118,10 @@
   function renderField(opts) {
     opts = opts || {};
     switch (opts.type) {
+      case 'prose':
+        if (window._bpwProse) return window._bpwProse.renderProse(opts);
+        // Fallback to textarea if prose module not loaded.
+        return renderTextarea(opts);
       case 'textarea': return renderTextarea(opts);
       case 'chips':    return renderChips(opts);
       case 'list':     return renderList(opts);

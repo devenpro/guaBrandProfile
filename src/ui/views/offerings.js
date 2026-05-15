@@ -95,13 +95,13 @@
     if (selectedId === 'pricing') {
       return '<div class="bpw-shell-detail-card">'
         + '<h3>Pricing model</h3>'
-        + E.renderTextarea({ label: 'Description', path: 'offerings.pricing_model', value: o.pricing_model, tall: true })
+        + E.renderField({ type: 'prose', label: 'Description', path: 'offerings.pricing_model', value: o.pricing_model })
         + '</div>';
     }
     if (selectedId === 'content_desc') {
       return '<div class="bpw-shell-detail-card">'
         + '<h3>Content approach</h3>'
-        + E.renderTextarea({ label: 'Description', path: 'offerings.content_description', value: o.content_description, tall: true })
+        + E.renderField({ type: 'prose', label: 'Description', path: 'offerings.content_description', value: o.content_description })
         + '</div>';
     }
 

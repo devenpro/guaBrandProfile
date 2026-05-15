@@ -12,8 +12,8 @@
   function _E() { return window._bpwEditors; }
 
   var FIELDS = [
-    { id: 'mission',         label: 'Mission',         type: 'textarea', tall: true },
-    { id: 'vision',          label: 'Vision',          type: 'textarea', tall: true },
+    { id: 'mission',         label: 'Mission',         type: 'prose' },
+    { id: 'vision',          label: 'Vision',          type: 'prose' },
     { id: 'values',          label: 'Values',          type: 'list', itemTemplate: { value: '', description: '' },
       listFields: [
         { key: 'value', label: 'Value', type: 'text', placeholder: 'e.g. Craftsmanship' },
@@ -21,9 +21,9 @@
       ]
     },
     { id: 'brand_archetype', label: 'Brand archetype', type: 'text', placeholder: 'e.g. The Creator' },
-    { id: 'elevator_pitch',  label: 'Elevator pitch',  type: 'textarea' },
+    { id: 'elevator_pitch',  label: 'Elevator pitch',  type: 'prose' },
     { id: 'tagline',         label: 'Tagline',         type: 'text' },
-    { id: 'positioning_statement', label: 'Positioning statement', type: 'textarea' }
+    { id: 'positioning_statement', label: 'Positioning statement', type: 'prose' }
   ];
 
   function _identity(W) { return (W.acceptedSections && W.acceptedSections.identity) || {}; }

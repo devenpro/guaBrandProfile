@@ -86,7 +86,7 @@
       return '<div class="bpw-shell-detail-card">'
         + '<h3>Category & positioning</h3>'
         + E.renderText({ label: 'Market category', path: 'market.category', value: m.category })
-        + E.renderTextarea({ label: 'Positioning', path: 'market.positioning', value: m.positioning, tall: true })
+        + E.renderField({ type: 'prose', label: 'Positioning', path: 'market.positioning', value: m.positioning })
         + '</div>';
     }
     if (selectedId === 'trends') {

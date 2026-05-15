@@ -52,6 +52,7 @@ import './setup/bpw-setup.js';
 import './ui/_export-sync.js';
 import './ui/editors/path-store.js';
 import './ui/editors/fields.js';
+import './ui/editors/prose.js';
 import './ui/topbar.js';
 import './ui/sidebar.js';
 import './ui/section-list.js';

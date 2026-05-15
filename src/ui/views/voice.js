@@ -19,8 +19,8 @@
     { id: 'donts',                 label: "DON'Ts",                path: 'voice.donts',                       type: 'chips' },
     { id: 'preferred_terms',       label: 'Preferred terms',       path: 'voice.vocabulary.preferred_terms',  type: 'chips' },
     { id: 'avoided_terms',         label: 'Avoided terms',         path: 'voice.vocabulary.avoided_terms',    type: 'chips' },
-    { id: 'sample_texts',          label: 'Voice sample',          path: 'voice.sample_texts',                type: 'textarea', tall: true },
-    { id: 'primary_message',       label: 'Primary message',       path: 'messaging.primary_message',         type: 'textarea' },
+    { id: 'sample_texts',          label: 'Voice sample',          path: 'voice.sample_texts',                type: 'prose' },
+    { id: 'primary_message',       label: 'Primary message',       path: 'messaging.primary_message',         type: 'prose' },
     { id: 'supporting_messages',   label: 'Supporting messages',   path: 'messaging.supporting_messages',     type: 'chips' },
     { id: 'headlines',             label: 'Headlines',             path: 'messaging.headlines',               type: 'list',
       listFields: [

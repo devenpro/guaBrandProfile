@@ -428,6 +428,65 @@ body.bpw-app-shell-active { overflow: hidden; }
 }
 .bpw-editor-list-add:hover { background: var(--bpw-primary-subtle); border-color: var(--bpw-primary); }
 
+/* ── Prose editor (Tiptap) ───────────────────────────────────────── */
+.bpw-prose-host {
+  border: 1px solid var(--bpw-border);
+  border-radius: var(--bpw-radius-md);
+  background: var(--bpw-white);
+  overflow: hidden;
+  transition: border-color var(--bpw-tr-fast), box-shadow var(--bpw-tr-fast);
+}
+.bpw-prose-host:focus-within {
+  border-color: var(--bpw-border-focus);
+  box-shadow: var(--bpw-shadow-glow);
+}
+.bpw-prose-toolbar {
+  display: flex;
+  gap: var(--bpw-sp-1);
+  padding: var(--bpw-sp-1) var(--bpw-sp-2);
+  background: var(--bpw-gray-50);
+  border-bottom: 1px solid var(--bpw-border);
+}
+.bpw-prose-toolbar button {
+  width: 28px; height: 28px;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: var(--bpw-radius-sm);
+  cursor: pointer;
+  color: var(--bpw-text-sec);
+  font-family: var(--bpw-font-body);
+  font-size: var(--bpw-font-sm);
+  font-weight: 600;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background var(--bpw-tr-fast), color var(--bpw-tr-fast);
+}
+.bpw-prose-toolbar button:hover {
+  background: var(--bpw-white);
+  border-color: var(--bpw-border);
+  color: var(--bpw-text);
+}
+.bpw-prose-surface {
+  padding: var(--bpw-sp-3);
+  min-height: 100px;
+  font-family: var(--bpw-font-body);
+  font-size: var(--bpw-font-base);
+  color: var(--bpw-text);
+  line-height: 1.6;
+}
+.bpw-prose-surface .ProseMirror {
+  outline: none;
+  min-height: 80px;
+}
+.bpw-prose-surface .ProseMirror p { margin: 0 0 var(--bpw-sp-2); }
+.bpw-prose-surface .ProseMirror p:last-child { margin-bottom: 0; }
+.bpw-prose-surface .ProseMirror ul,
+.bpw-prose-surface .ProseMirror ol {
+  margin: 0 0 var(--bpw-sp-2);
+  padding-left: var(--bpw-sp-5);
+}
+.bpw-prose-surface .ProseMirror strong { font-weight: 700; }
+.bpw-prose-surface .ProseMirror em { font-style: italic; }
+
 /* ── Social section rows (variable-items editor) ─────────────────── */
 .bpw-social-rows { display: grid; gap: var(--bpw-sp-2); margin-bottom: var(--bpw-sp-3); }
 .bpw-social-row {
