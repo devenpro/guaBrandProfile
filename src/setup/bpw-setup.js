@@ -220,40 +220,75 @@
     var seed = W.seedContext || {};
     var name = (W.acceptedSections && W.acceptedSections.identity && W.acceptedSections.identity.name) || seed.name || '';
     var url = seed.url || seed.website_url || '';
+    var description = seed.description || '';
+    var customInstructions = seed.customInstructions || '';
     var types = W.brandTypes || [];
-    var disabled = running ? ' disabled' : '';
+    var awaiting = (W.setup && W.setup.awaitingReview) || null;
+    // Form inputs stay editable while paused for review so the user can
+    // refine context before re-running. They lock again once the user
+    // hits Continue and the next stage starts.
+    var locked = running && !awaiting;
+    var disabled = locked ? ' disabled' : '';
 
-    var html = '<section class="bpw-setup-form' + (running ? ' bpw-setup-form-locked' : '') + '">';
-    html += '<h2 class="bpw-setup-form-title">' + (running ? 'Setup details' : 'Set up your brand profile') + '</h2>';
+    var html = '<section class="bpw-setup-form' + (locked ? ' bpw-setup-form-locked' : '') + '">';
+
+    // ── Header ────────────────────────────────────────────────────────
+    html += '<header class="bpw-setup-form-header">';
+    html += '<h2 class="bpw-setup-form-title">' + (running ? 'Brand setup details' : 'Set up your brand profile') + '</h2>';
     if (!running) {
-      html += '<p class="bpw-setup-form-desc">Paste your website. AI handles the rest — you review.</p>';
+      html += '<p class="bpw-setup-form-desc">Tell us about your brand. The more context you give, the better the AI output — generic URLs alone usually produce generic results.</p>';
+    } else if (awaiting) {
+      html += '<p class="bpw-setup-form-desc">Refine the details below and re-run the current step, or continue if the extracted data already looks right.</p>';
     }
+    html += '</header>';
 
-    // Website URL
-    html += '<div class="bpw-setup-field">';
-    html += '<label for="bpw-setup-url">Website URL</label>';
-    html += '<input id="bpw-setup-url" class="bpw-setup-input" data-field="url" type="url" placeholder="https://example.com" value="' + _esc(url) + '"' + disabled + '>';
-    html += '</div>';
+    // ── Section: Brand basics ─────────────────────────────────────────
+    html += '<div class="bpw-setup-section">';
+    html += '<h3 class="bpw-setup-section-title">' + _icon('id-card') + ' Brand basics</h3>';
 
-    // Brand name
     html += '<div class="bpw-setup-field">';
     html += '<label for="bpw-setup-name">Brand name</label>';
     html += '<input id="bpw-setup-name" class="bpw-setup-input" data-field="name" type="text" placeholder="e.g. Acme Studio" value="' + _esc(name) + '"' + disabled + '>';
     html += '</div>';
 
-    // Growth phase (radio)
+    html += '<div class="bpw-setup-field">';
+    html += '<label for="bpw-setup-url">Website URL <span class="bpw-setup-field-hint">optional but helpful</span></label>';
+    html += '<input id="bpw-setup-url" class="bpw-setup-input" data-field="url" type="url" placeholder="https://example.com" value="' + _esc(url) + '"' + disabled + '>';
+    html += '<p class="bpw-setup-help">' + _icon('circle-info') + ' Many AI models can\'t actually open this URL — if results look generic, paste real details below instead.</p>';
+    html += '</div>';
+
+    html += '<div class="bpw-setup-field">';
+    html += '<label for="bpw-setup-description">What does your brand do? <span class="bpw-setup-field-hint">1–2 sentences</span></label>';
+    html += '<textarea id="bpw-setup-description" class="bpw-setup-textarea" data-field="description" rows="2" placeholder="e.g. Acme Studio designs and sells handmade ceramic homeware for small modern kitchens."' + disabled + '>' + _esc(description) + '</textarea>';
+    html += '</div>';
+
+    html += '<div class="bpw-setup-field">';
+    html += '<label for="bpw-setup-custom-instructions">Custom instructions <span class="bpw-setup-field-hint">paste anything that matters</span></label>';
+    html += '<textarea id="bpw-setup-custom-instructions" class="bpw-setup-textarea bpw-setup-textarea-tall" data-field="customInstructions" rows="6" placeholder="Anything that should anchor the AI — your About page copy, key product names, target customer, tone you want, things to avoid, competitors, awards, etc. The richer this is, the better."' + disabled + '>' + _esc(customInstructions) + '</textarea>';
+    html += '<p class="bpw-setup-help">' + _icon('lightbulb') + ' Treat this like a brief for a junior strategist — facts the AI couldn\'t know otherwise.</p>';
+    html += '</div>';
+
+    html += '</div>'; // /bpw-setup-section
+
+    // ── Section: Goals ────────────────────────────────────────────────
+    html += '<div class="bpw-setup-section">';
+    html += '<h3 class="bpw-setup-section-title">' + _icon('bullseye') + ' Profile depth &amp; type</h3>';
+
     html += '<div class="bpw-setup-field">';
     html += '<label>Growth phase</label>';
     html += '<div class="bpw-setup-radio-group">';
-    [['new', 'New'], ['growing', 'Growing'], ['deep', 'Deep dive']].forEach(function(p) {
+    [
+      ['new', 'New', 'Just starting — basics first'],
+      ['growing', 'Growing', 'Established — refine + expand'],
+      ['deep', 'Deep dive', 'Full strategic profile']
+    ].forEach(function(p) {
       var checked = lvl === p[0] ? ' checked' : '';
-      html += '<label class="bpw-setup-radio"><input type="radio" name="bpw-growth" value="' + p[0] + '"' + checked + disabled + '><span>' + _esc(p[1]) + '</span></label>';
+      html += '<label class="bpw-setup-radio"><input type="radio" name="bpw-growth" value="' + p[0] + '"' + checked + disabled + '><span>' + _esc(p[1]) + '<small>' + _esc(p[2]) + '</small></span></label>';
     });
     html += '</div></div>';
 
-    // Brand types (checkboxes)
     html += '<div class="bpw-setup-field">';
-    html += '<label>Brand types</label>';
+    html += '<label>Brand types <span class="bpw-setup-field-hint">pick all that apply</span></label>';
     html += '<div class="bpw-setup-checkbox-group">';
     [['commercial', 'Commercial'], ['local', 'Local'], ['creator', 'Creator'], ['nonprofit', 'Cause']].forEach(function(t) {
       var checked = types.indexOf(t[0]) !== -1 ? ' checked' : '';
@@ -262,10 +297,13 @@
     });
     html += '</div></div>';
 
-    // AI provider + model
+    html += '</div>'; // /bpw-setup-section
+
+    // ── Section: AI provider ──────────────────────────────────────────
     var configured = window.LLMService && window.LLMService.isConfigured();
+    html += '<div class="bpw-setup-section">';
+    html += '<h3 class="bpw-setup-section-title">' + _icon('robot') + ' AI provider</h3>';
     html += '<div class="bpw-setup-field bpw-setup-field-ai">';
-    html += '<label>AI provider &amp; model</label>';
     if (configured) {
       html += '<div class="bpw-setup-ai-selects">';
       html += window.LLMService.renderProviderSelect();
@@ -274,12 +312,13 @@
     } else {
       html += '<div class="bpw-setup-warn">' + _icon('triangle-exclamation') + ' No AI providers configured — add credentials in Drupal AI settings.</div>';
     }
-    html += '</div>';
+    html += '</div></div>';
 
     if (!running) {
       var disabledStart = configured ? '' : ' disabled';
       html += '<div class="bpw-setup-actions">';
       html += '<button class="bpw-setup-start" data-action="bpw-setup-start" type="button"' + disabledStart + '>' + _icon('play') + ' Start autopilot</button>';
+      html += '<p class="bpw-setup-actions-hint">We\'ll pause after the first step so you can confirm we understood your brand correctly.</p>';
       html += '</div>';
     }
     html += '</section>';
@@ -316,18 +355,26 @@
     var summary = '';
     try { summary = summaryFn ? summaryFn(W) : ''; } catch (e) { summary = ''; }
 
-    var html = '<article class="bpw-setup-stage bpw-setup-stage--' + status.state + '" data-stage-id="' + _esc(stage.id) + '">';
+    var awaitingReview = W.setup && W.setup.awaitingReview === stage.id;
+    var classes = 'bpw-setup-stage bpw-setup-stage--' + status.state + (awaitingReview ? ' bpw-setup-stage--review' : '');
+
+    var html = '<article class="' + classes + '" data-stage-id="' + _esc(stage.id) + '">';
     html += '<div class="bpw-setup-stage-head">';
     html += '<span class="bpw-setup-stage-icon">' + _icon(iconMap[status.state] || 'circle') + '</span>';
     html += '<div class="bpw-setup-stage-titles">';
-    html += '<div class="bpw-setup-stage-label">' + _esc(stage.label) + '</div>';
-    html += '<div class="bpw-setup-stage-status">' + _esc(status.state) + elapsed + '</div>';
+    html += '<div class="bpw-setup-stage-label">' + _esc(stage.label) + (awaitingReview ? ' <span class="bpw-setup-stage-badge">Awaiting your review</span>' : '') + '</div>';
+    html += '<div class="bpw-setup-stage-status">' + _esc(awaitingReview ? 'paused — confirm or refine' : status.state) + elapsed + '</div>';
     html += '</div>';
-    if (status.state === 'done' || status.state === 'failed') {
-      html += '<button class="bpw-setup-stage-expand" data-action="bpw-setup-expand" data-stage-id="' + _esc(stage.id) + '" type="button" aria-expanded="false">' + _icon('chevron-down') + ' Edit</button>';
+    if ((status.state === 'done' || status.state === 'failed') && !awaitingReview) {
+      html += '<button class="bpw-setup-stage-expand" data-action="bpw-setup-expand" data-stage-id="' + _esc(stage.id) + '" type="button" aria-expanded="false">' + _icon('chevron-down') + ' Details</button>';
     }
     html += '</div>';
     if (summary) html += '<div class="bpw-setup-stage-summary">' + _esc(summary) + '</div>';
+
+    if (awaitingReview) {
+      html += _renderReviewPanel(stage);
+    }
+
     if (status.state === 'failed' && status.error) {
       html += '<div class="bpw-setup-stage-error">' + _icon('triangle-exclamation') + ' ' + _esc(status.error) + '</div>';
       html += '<div class="bpw-setup-stage-actions">';
@@ -335,8 +382,23 @@
       html += '<button class="bpw-setup-stage-skip" data-action="bpw-setup-skip" data-stage-id="' + _esc(stage.id) + '" type="button">Skip</button>';
       html += '</div>';
     }
-    html += '<div class="bpw-setup-stage-expansion" hidden></div>';
+    html += '<div class="bpw-setup-stage-expansion"' + (awaitingReview ? '' : ' hidden') + '>';
+    if (awaitingReview) {
+      try { html += (stage.expandRenderer && stage.expandRenderer(W)) || ''; } catch (e) {}
+    }
+    html += '</div>';
     html += '</article>';
+    return html;
+  }
+
+  function _renderReviewPanel(stage) {
+    var html = '<div class="bpw-setup-review">';
+    html += '<div class="bpw-setup-review-prompt">' + _icon('clipboard-check') + ' <strong>Does this look like your actual brand?</strong> If anything is generic or wrong, add detail in the form on the left and re-run — every later step builds on this.</div>';
+    html += '<div class="bpw-setup-review-actions">';
+    html += '<button class="bpw-setup-review-continue" data-action="bpw-setup-continue-review" type="button">' + _icon('circle-check') + ' Looks right — continue</button>';
+    html += '<button class="bpw-setup-review-rerun" data-action="bpw-setup-rerun-stage" data-stage-id="' + _esc(stage.id) + '" type="button">' + _icon('rotate-right') + ' Re-run with my edits</button>';
+    html += '<button class="bpw-setup-review-skip" data-action="bpw-setup-skip-review" data-stage-id="' + _esc(stage.id) + '" type="button">' + _icon('forward') + ' Skip — use my notes only</button>';
+    html += '</div></div>';
     return html;
   }
 
@@ -348,8 +410,10 @@
       .on('input' + ns, '.bpw-setup [data-field]', function() {
         var field = $(this).data('field');
         W.seedContext = W.seedContext || {};
-        if (field === 'url')  W.seedContext.url  = $(this).val();
-        if (field === 'name') W.seedContext.name = $(this).val();
+        if (field === 'url')                W.seedContext.url                = $(this).val();
+        if (field === 'name')               W.seedContext.name               = $(this).val();
+        if (field === 'description')        W.seedContext.description        = $(this).val();
+        if (field === 'customInstructions') W.seedContext.customInstructions = $(this).val();
         // Don't mirror into W.acceptedSections — that would trip
         // openIfFirstRun()'s "existing profile" guard on reload.
         // BrandService.getIdentity() falls back to seedContext.name
@@ -465,6 +529,43 @@
       .on('click' + ns, '.bpw-setup [data-action="bpw-setup-skip"]', function(e) {
         e.preventDefault();
         window._bpwSetupOrchestrator && window._bpwSetupOrchestrator.skipCurrent();
+        _render();
+      });
+
+    $(document).off('click' + ns, '.bpw-setup [data-action="bpw-setup-continue-review"]')
+      .on('click' + ns, '.bpw-setup [data-action="bpw-setup-continue-review"]', function(e) {
+        e.preventDefault();
+        var orch = window._bpwSetupOrchestrator;
+        if (!orch || !orch.continueReview) return;
+        orch.continueReview();
+        _render();
+      });
+
+    $(document).off('click' + ns, '.bpw-setup [data-action="bpw-setup-rerun-stage"]')
+      .on('click' + ns, '.bpw-setup [data-action="bpw-setup-rerun-stage"]', function(e) {
+        e.preventDefault();
+        var orch = window._bpwSetupOrchestrator;
+        if (!orch || !orch.rerunStage) return;
+        var stageId = $(this).data('stage-id');
+        // Need at least a URL or some context to re-run scrape.
+        if (stageId === 'scrape') {
+          var seed = W.seedContext || {};
+          if (!(seed.url || seed.description || seed.customInstructions)) {
+            if (window._bpwToast) window._bpwToast('Add a URL, description, or custom instructions before re-running.', 'warning');
+            return;
+          }
+        }
+        orch.rerunStage(stageId);
+        _render();
+      });
+
+    $(document).off('click' + ns, '.bpw-setup [data-action="bpw-setup-skip-review"]')
+      .on('click' + ns, '.bpw-setup [data-action="bpw-setup-skip-review"]', function(e) {
+        e.preventDefault();
+        var orch = window._bpwSetupOrchestrator;
+        if (!orch) return;
+        // Mark current review-gated stage as skipped and move on.
+        orch.skipCurrent();
         _render();
       });
 

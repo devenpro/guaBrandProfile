@@ -134,6 +134,7 @@
       stageStatus: status,
       totalElapsedMs: 0,
       paused: false,
+      awaitingReview: null,
       startedAt: Date.now()
     };
 
@@ -174,8 +175,32 @@
     var id = W.setup.currentStageId;
     if (!id) return;
     _setStatus(id, { state: 'skipped', endedAt: Date.now() });
+    if (W.setup.awaitingReview === id) W.setup.awaitingReview = null;
     _hooks.onStageExit(id);
     _advance();
+  }
+
+  // Clear the review gate and let the autopilot continue. Used by the
+  // "Looks good — continue" button in the setup UI.
+  function continueReview() {
+    var W = _W();
+    if (!W || !W.setup || !W.setup.awaitingReview) return;
+    W.setup.awaitingReview = null;
+    _advance();
+  }
+
+  // Re-run a specific stage (typically the one awaiting review) so the
+  // user can correct extracted data by editing the setup form first
+  // (custom instructions, description) and re-running.
+  function rerunStage(stageId) {
+    var W = _W();
+    if (!W || !W.setup) return;
+    if (!stageId) stageId = W.setup.awaitingReview || W.setup.currentStageId;
+    if (!stageId) return;
+    W.setup.awaitingReview = null;
+    _setStatus(stageId, { state: 'queued', error: undefined, startedAt: undefined, endedAt: undefined, elapsedMs: undefined });
+    W.setup.currentStageId = stageId;
+    _runStage(stageId);
   }
 
   function state() {
@@ -188,6 +213,9 @@
     var W = _W();
     if (!W || !W.setup) return;
     if (W.setup.paused) { _resumeFn = _runNext; return; }
+    // Block further stages until the user confirms the awaiting-review
+    // stage. continueReview() / rerunStage() / skipCurrent() clear it.
+    if (W.setup.awaitingReview) return;
 
     // Find the next queued stage.
     var queue = W.setup.stagesQueue;
@@ -240,6 +268,7 @@
       var startedAt = (W.setup.stageStatus[id] || {}).startedAt || Date.now();
       var elapsedMs = Date.now() - startedAt;
       W.setup.totalElapsedMs += elapsedMs;
+      var becameReview = false;
       if (res && res.success) {
         _writeFlatKeys(res.data);
         // Special: the scrape action returns extracted under `extracted`,
@@ -262,10 +291,18 @@
           console.warn(LOG, 'partial stage result:', id, res.partial, res.error);
         }
         _setStatus(id, statusPatch);
+        // Stages flagged needsReview pause the autopilot here so the
+        // user can confirm the extracted data is actually about their
+        // brand (not generic info hallucinated from the URL).
+        if (stage.needsReview) {
+          W.setup.awaitingReview = id;
+          becameReview = true;
+        }
       } else {
         _setStatus(id, { state: 'failed', error: (res && res.error) || 'Unknown error', endedAt: Date.now(), elapsedMs: elapsedMs });
       }
       _hooks.onStageExit(id);
+      if (becameReview) return;
       _advance();
     };
 
@@ -315,6 +352,8 @@
     resume: resume,
     recoverCurrent: recoverCurrent,
     skipCurrent: skipCurrent,
+    continueReview: continueReview,
+    rerunStage: rerunStage,
     state: state
   };
 })();

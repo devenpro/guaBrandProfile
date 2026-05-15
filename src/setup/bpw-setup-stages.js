@@ -77,11 +77,16 @@
   var STAGE_REGISTRY = [
     {
       id: 'scrape',
-      label: 'Scrape & basics',
+      label: 'Read website & basics',
       group: 'foundation',
       gate: { growthPhase: ['new', 'growing', 'deep'] },
       dependsOn: [],
       aiActionRef: 'scrape.run',
+      // The scrape stage anchors every later stage. If the AI can't
+      // actually fetch the URL it tends to produce generic content,
+      // which then poisons identity/voice/audience downstream. Pause
+      // here so the user can verify before we burn more API calls.
+      needsReview: true,
       summaryLine: function(state) {
         var seed = state && state.seedContext || {};
         return seed.url ? 'Reading ' + seed.url : 'Reading website…';
@@ -99,11 +104,19 @@
       expandRenderer: function(state) {
         var web = ((state && state.importedAssets) || {}).website || {};
         var ex = web.extracted || {};
-        return '<div class="bpw-setup-stage-detail">'
+        var offerings = (ex.offerings || []).filter(Boolean);
+        var themes = (ex.content_themes || []).filter(Boolean);
+        var messages = (ex.key_messages || []).filter(Boolean);
+        var html = '<div class="bpw-setup-stage-detail">'
           + '<div class="bpw-setup-field"><label>Tagline</label><div class="bpw-setup-readonly">' + _esc(ex.tagline || '—') + '</div></div>'
           + '<div class="bpw-setup-field"><label>Description</label><div class="bpw-setup-readonly">' + _esc(ex.description || '—') + '</div></div>'
+          + '<div class="bpw-setup-field"><label>Target audience</label><div class="bpw-setup-readonly">' + _esc(ex.target_audience || '—') + '</div></div>'
           + '<div class="bpw-setup-field"><label>Detected tone</label><div class="bpw-setup-readonly">' + _esc(ex.tone_detected || '—') + '</div></div>'
+          + '<div class="bpw-setup-field"><label>Offerings</label><div class="bpw-setup-readonly">' + _esc(offerings.length ? offerings.join(', ') : '—') + '</div></div>'
+          + '<div class="bpw-setup-field"><label>Key messages</label><div class="bpw-setup-readonly">' + _esc(messages.length ? messages.join(' · ') : '—') + '</div></div>'
+          + '<div class="bpw-setup-field"><label>Content themes</label><div class="bpw-setup-readonly">' + _esc(themes.length ? themes.join(', ') : '—') + '</div></div>'
           + '</div>';
+        return html;
       }
     },
 
