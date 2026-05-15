@@ -134,6 +134,35 @@
         W.ui.activityOpen = false;
         render();
       });
+
+    $(document).off('click' + ns, '#bpwAppShell [data-action="save"]')
+      .on('click' + ns, '#bpwAppShell [data-action="save"]', function(e) {
+        e.preventDefault();
+        if (W._saving) return;
+        if (typeof window._bpwSaveProgress !== 'function') {
+          console.warn(LOG, 'Save not available — _bpwSaveProgress missing.');
+          return;
+        }
+        W._saving = true;
+        render();
+        try {
+          window._bpwSaveProgress();
+        } finally {
+          // The Drupal submit reloads the page on success; if we're still
+          // here a moment later, just drop the saving flag and re-render.
+          setTimeout(function() {
+            if (!W) return;
+            W._saving = false;
+            render();
+          }, 1500);
+        }
+      });
+
+    // Re-render the topbar when the dirty / last-saved state flips elsewhere
+    // (autosave, debounced syncToTextarea). Cheap full re-render is fine.
+    if (!window._bpwAppShell_dirtyHook) {
+      window._bpwAppShell_dirtyHook = function() { if (W) render(); };
+    }
   }
 
   window._bpwAppShell = {

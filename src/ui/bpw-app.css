@@ -42,17 +42,46 @@ body.bpw-app-shell-active { overflow: hidden; }
 }
 .bpw-shell-topbar-crumb-active { color: var(--bpw-text, #111); font-weight: 600; }
 .bpw-shell-topbar-crumb-sep { opacity: 0.6; }
-.bpw-shell-topbar-actions { display: flex; gap: 8px; }
+.bpw-shell-topbar-actions { display: flex; align-items: center; gap: var(--bpw-sp-2, 8px); }
+.bpw-shell-topbar-saved {
+  font-size: var(--bpw-font-xs, 11px);
+  color: var(--bpw-text-muted, #9aa0a6);
+  margin-right: var(--bpw-sp-2, 8px);
+  white-space: nowrap;
+}
 .bpw-shell-topbar-btn {
-  width: 36px; height: 36px;
-  border: 1px solid var(--bpw-border, #e6e8eb);
-  background: #fff;
-  border-radius: 8px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0 var(--bpw-sp-2, 8px);
+  border: 1px solid var(--bpw-border, #e8eaed);
+  background: var(--bpw-white, #fff);
+  border-radius: var(--bpw-radius-md, 10px);
   cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center;
-  color: var(--bpw-text, #111);
+  gap: var(--bpw-sp-2, 8px);
+  color: var(--bpw-text, #202124);
+  font-family: var(--bpw-font-body);
+  font-size: var(--bpw-font-sm, 13px);
+  transition: background var(--bpw-tr-fast, 0.15s), border-color var(--bpw-tr-fast, 0.15s), box-shadow var(--bpw-tr-fast, 0.15s);
 }
-.bpw-shell-topbar-btn:hover { background: var(--bpw-bg, #f5f6f8); }
+.bpw-shell-topbar-btn:hover { background: var(--bpw-gray-50, #f8f9fa); }
+.bpw-shell-topbar-btn-label { font-weight: 600; }
+.bpw-shell-topbar-btn-primary {
+  padding: 0 var(--bpw-sp-4, 16px);
+  background: var(--bpw-primary, #1a73e8);
+  border-color: var(--bpw-primary, #1a73e8);
+  color: var(--bpw-white, #fff);
+}
+.bpw-shell-topbar-btn-primary:hover {
+  background: var(--bpw-primary-hover, #1557b0);
+  border-color: var(--bpw-primary-hover, #1557b0);
+}
+.bpw-shell-topbar-btn-primary.is-dirty { box-shadow: var(--bpw-shadow-glow, 0 0 0 4px rgba(26,115,232,0.15)); }
+.bpw-shell-topbar-btn-primary.is-saving,
+.bpw-shell-topbar-btn-primary[disabled] {
+  opacity: 0.7;
+  cursor: progress;
+}
 
 /* ── Body (three-pane) ──────────────────────────────────────────── */
 .bpw-shell-body {

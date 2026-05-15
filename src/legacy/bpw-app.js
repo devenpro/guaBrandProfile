@@ -662,12 +662,14 @@ import { W } from '../core/state.js';
     W.lastSaved = now();
     W.dirty = false;
     console.log(LOG_PREFIX, 'Auto-saved. Step:', W.currentStepId);
+    if (window._bpwAppShell_dirtyHook) window._bpwAppShell_dirtyHook();
   }
 
   var _debouncedSave = debounce(function() { syncToTextarea(); }, 1000);
 
   function autoSave() {
     W.dirty = true;
+    if (window._bpwAppShell_dirtyHook) window._bpwAppShell_dirtyHook();
     _debouncedSave();
   }
 
