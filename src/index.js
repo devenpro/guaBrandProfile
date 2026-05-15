@@ -53,6 +53,7 @@ import './ui/_export-sync.js';
 import './ui/editors/path-store.js';
 import './ui/editors/fields.js';
 import './ui/editors/prose.js';
+import './ui/refine-modal.js';
 import './ui/topbar.js';
 import './ui/sidebar.js';
 import './ui/section-list.js';

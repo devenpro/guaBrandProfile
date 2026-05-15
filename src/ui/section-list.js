@@ -37,8 +37,16 @@
     var views = window._bpwUIViews || {};
     var view = views[sectionId];
 
+    var REFINEABLE_SECTIONS = { identity: 1, voice: 1, audience: 1, offerings: 1, market: 1, content: 1, seo: 1 };
+    var canRefine = !!REFINEABLE_SECTIONS[sectionId];
+
     var html = '<section class="bpw-shell-list" aria-label="Section items">';
-    html += '<header class="bpw-shell-list-header"><h2>' + _esc(view ? view.title : sectionId) + '</h2></header>';
+    html += '<header class="bpw-shell-list-header">';
+    html += '<h2>' + _esc(view ? view.title : sectionId) + '</h2>';
+    if (canRefine) {
+      html += '<button class="bpw-shell-list-regenerate" data-action="bpw-section-regenerate" data-section-id="' + _esc(sectionId) + '" data-section-label="' + _esc(view ? view.title : sectionId) + '" type="button" title="Regenerate this section with AI">' + _icon('arrows-rotate') + '</button>';
+    }
+    html += '</header>';
 
     if (!view) {
       html += '<div class="bpw-shell-list-empty">' + _icon('flask') + '<p>View module not loaded.</p></div>';
@@ -78,6 +86,13 @@
   // new item so the detail pane focuses on it for editing.
   if (window.jQuery) {
     var $ = window.jQuery;
+    $(document).off('click.bpw-section-regen').on('click.bpw-section-regen', '[data-action="bpw-section-regenerate"]', function(e) {
+      e.preventDefault();
+      var sectionId = $(this).attr('data-section-id');
+      var label = $(this).attr('data-section-label') || sectionId;
+      if (window._bpwRefineModal) window._bpwRefineModal.openSection(sectionId, label);
+    });
+
     $(document).off('click.bpw-section-add-row').on('click.bpw-section-add-row', '[data-action="bpw-section-add-row"]', function(e) {
       e.preventDefault();
       var path = $(this).attr('data-list-path');

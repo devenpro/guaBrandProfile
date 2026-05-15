@@ -38,12 +38,29 @@
     })(n);
   }
 
+  // Improve button shown next to the label of every field with a path.
+  // Opens the refine modal pointed at this field's flat key.
+  function _improveBtn(path, label) {
+    if (!path) return '';
+    return '<button class="bpw-editor-improve" data-action="bpw-editor-improve" data-improve-path="' + _esc(path) + '" data-improve-label="' + _esc(label || path) + '" type="button" title="Improve with AI">'
+      + _icon('wand-magic-sparkles')
+      + '</button>';
+  }
+
+  function _labelRow(label, path) {
+    if (!label && !path) return '';
+    return '<div class="bpw-editor-label-row">'
+      +    (label ? '<label class="bpw-editor-label">' + _esc(label) + '</label>' : '<span></span>')
+      +    _improveBtn(path, label)
+      +    '</div>';
+  }
+
   // ── Single-line text ───────────────────────────────────────────────
   function renderText(opts) {
     opts = opts || {};
     var v = opts.value == null ? '' : String(opts.value);
     return '<div class="bpw-editor bpw-editor--text">'
-      +    (opts.label ? '<label class="bpw-editor-label">' + _esc(opts.label) + '</label>' : '')
+      +    _labelRow(opts.label, opts.path)
       +    '<input class="bpw-editor-input" type="text" data-path="' + _esc(opts.path) + '" value="' + _esc(v) + '"'
       +      (opts.placeholder ? ' placeholder="' + _esc(opts.placeholder) + '"' : '') + '>'
       +    '</div>';
@@ -55,7 +72,7 @@
     var v = opts.value == null ? '' : String(opts.value);
     var rows = opts.rows || (opts.tall ? 6 : 3);
     return '<div class="bpw-editor bpw-editor--textarea">'
-      +    (opts.label ? '<label class="bpw-editor-label">' + _esc(opts.label) + '</label>' : '')
+      +    _labelRow(opts.label, opts.path)
       +    '<textarea class="bpw-editor-textarea' + (opts.tall ? ' is-tall' : '') + '" rows="' + rows + '" data-path="' + _esc(opts.path) + '"'
       +      (opts.placeholder ? ' placeholder="' + _esc(opts.placeholder) + '"' : '') + '>' + _esc(v) + '</textarea>'
       +    '</div>';
@@ -189,6 +206,15 @@
   function _deepClone(o) {
     try { return JSON.parse(JSON.stringify(o)); } catch (e) { return {}; }
   }
+
+  // Improve-with-AI button → opens the refine modal pointed at a path.
+  $(document).off('click.bpw-editor-improve', '[data-action="bpw-editor-improve"]')
+    .on('click.bpw-editor-improve', '[data-action="bpw-editor-improve"]', function(e) {
+      e.preventDefault();
+      var path = $(this).attr('data-improve-path');
+      var label = $(this).attr('data-improve-label');
+      if (window._bpwRefineModal) window._bpwRefineModal.openField(path, label);
+    });
 
   window._bpwEditors = {
     renderField: renderField,
