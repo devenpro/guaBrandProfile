@@ -46,6 +46,17 @@ import './setup/bpw-setup-stages.js';
 import './setup/bpw-setup-orchestrator.js';
 import './setup/bpw-setup.js';
 
+// UI shell — three-pane post-setup app. Views (Phase 4.2) populate
+// window._bpwUIViews and load between the shell modules and the
+// app-shell entry so the shell finds them when it first renders.
+import './ui/_export-sync.js';
+import './ui/topbar.js';
+import './ui/sidebar.js';
+import './ui/section-list.js';
+import './ui/detail-pane.js';
+import './ui/activity-drawer.js';
+import './ui/app-shell.js';
+
 // Legacy monolith — still defines its own LLMService closure and
 // `window._bpwLLMService` alias used by bpw-part2a/2b/2c. Loaded last
 // so legacy globals (_bpwAcceptSection, _bpwSetSectionState, _bpwIcon,
