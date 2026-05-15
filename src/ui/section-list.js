@@ -50,7 +50,14 @@
       html += '<div class="bpw-shell-list-actions">';
       for (var i = 0; i < view.inlineActions.length; i++) {
         var a = view.inlineActions[i];
-        html += '<button class="bpw-shell-action-btn" data-action="' + _esc(a.id) + '" type="button">' + _icon(a.icon || 'sparkles') + ' ' + _esc(a.label) + '</button>';
+        // "add-row" actions append an empty item to a list path and
+        // select the new row. Distinct from AI inline actions which
+        // own their own click handlers via [data-action="<id>"].
+        if (a.type === 'add-row') {
+          html += '<button class="bpw-shell-action-btn" data-action="bpw-section-add-row" data-list-path="' + _esc(a.listPath) + '" data-item-template=\'' + _esc(JSON.stringify(a.itemTemplate || {})) + '\' data-item-prefix="' + _esc(a.itemPrefix || '') + '" type="button">' + _icon(a.icon || 'plus') + ' ' + _esc(a.label) + '</button>';
+        } else {
+          html += '<button class="bpw-shell-action-btn" data-action="' + _esc(a.id) + '" type="button">' + _icon(a.icon || 'sparkles') + ' ' + _esc(a.label) + '</button>';
+        }
       }
       html += '</div>';
     }
@@ -63,6 +70,34 @@
     html += '<div class="bpw-shell-list-body">' + body + '</div>';
     html += '</section>';
     return html;
+  }
+
+  // ── Generic "Add row" handler ─────────────────────────────────────
+  // Triggered by inline actions of type "add-row". Appends a deep
+  // clone of itemTemplate to the list at listPath, then selects the
+  // new item so the detail pane focuses on it for editing.
+  if (window.jQuery) {
+    var $ = window.jQuery;
+    $(document).off('click.bpw-section-add-row').on('click.bpw-section-add-row', '[data-action="bpw-section-add-row"]', function(e) {
+      e.preventDefault();
+      var path = $(this).attr('data-list-path');
+      var prefix = $(this).attr('data-item-prefix') || '';
+      if (!path) return;
+      var tmpl = {};
+      try { tmpl = JSON.parse($(this).attr('data-item-template') || '{}'); } catch (err) {}
+      var store = window._bpwPathStore;
+      if (!store) return;
+      var arr = store.get(path) || [];
+      var idx = arr.length;
+      store.push(path, JSON.parse(JSON.stringify(tmpl)));
+      store.persist();
+      // Select the new row, then re-render.
+      if (window._bpwAppShell && prefix) {
+        window._bpwAppShell.setActiveItem(prefix + ':' + idx);
+      } else if (window._bpwAppShell) {
+        window._bpwAppShell.render();
+      }
+    });
   }
 
   window._bpwSectionList = { render: render };

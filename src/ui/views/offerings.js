@@ -146,6 +146,13 @@
     listMode: 'variable-items',
     renderList: renderList,
     renderDetail: renderDetail,
-    inlineActions: []
+    inlineActions: [
+      { type: 'add-row', label: 'Add offering', icon: 'plus',
+        listPath: 'offerings.items', itemPrefix: 'item',
+        itemTemplate: { name: '', category: '', description: '', features: [], benefits: [], target_audience: '', status: 'active' } },
+      { type: 'add-row', label: 'Add program', icon: 'plus',
+        listPath: 'offerings.programs', itemPrefix: 'program',
+        itemTemplate: { name: '', category: '', description: '', features: [], target_audience: '' } }
+    ]
   };
 })();

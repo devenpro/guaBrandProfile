@@ -162,7 +162,13 @@
     renderList: renderList,
     renderDetail: renderDetail,
     inlineActions: [
-      { id: 'find-more-competitors', label: 'Find more competitors', icon: 'sparkles' }
+      { id: 'find-more-competitors', label: 'Find more competitors', icon: 'sparkles' },
+      { type: 'add-row', label: 'Add competitor', icon: 'plus',
+        listPath: 'market.competitors', itemPrefix: 'competitor',
+        itemTemplate: { name: '', url: '', description: '', strengths: [], weaknesses: [], comparison: '' } },
+      { type: 'add-row', label: 'Add differentiator', icon: 'plus',
+        listPath: 'market.differentiators', itemPrefix: 'differentiator',
+        itemTemplate: { point: '', evidence: '' } }
     ]
   };
 })();

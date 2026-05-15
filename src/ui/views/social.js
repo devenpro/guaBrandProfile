@@ -153,6 +153,10 @@
     listMode: 'variable-items',
     renderList: renderList,
     renderDetail: renderDetail,
-    inlineActions: []
+    inlineActions: [
+      { type: 'add-row', label: 'Add profile', icon: 'plus',
+        listPath: 'social.profiles', itemPrefix: 'profile',
+        itemTemplate: { platform: 'other', handle: '', url: '' } }
+    ]
   };
 })();

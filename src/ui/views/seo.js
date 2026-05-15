@@ -139,7 +139,16 @@
     renderList: renderList,
     renderDetail: renderDetail,
     inlineActions: [
-      { id: 'run-seo-audit', label: 'Run SEO audit', icon: 'sparkles' }
+      { id: 'run-seo-audit', label: 'Run SEO audit', icon: 'sparkles' },
+      { type: 'add-row', label: 'Add keyword cluster', icon: 'plus',
+        listPath: 'seo.keyword_clusters', itemPrefix: 'cluster',
+        itemTemplate: { cluster: '', seed_keyword: '', intent: '', difficulty: '', keywords: [] } },
+      { type: 'add-row', label: 'Add content gap', icon: 'plus',
+        listPath: 'seo.content_gaps', itemPrefix: 'gap',
+        itemTemplate: { topic: '', why_it_matters: '', suggested_angle: '' } },
+      { type: 'add-row', label: 'Add quick win', icon: 'plus',
+        listPath: 'seo.quick_wins', itemPrefix: 'quickwin',
+        itemTemplate: { action: '', impact: '', effort: '' } }
     ]
   };
 })();

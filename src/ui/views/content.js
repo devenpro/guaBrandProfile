@@ -121,6 +121,13 @@
     listMode: 'variable-items',
     renderList: renderList,
     renderDetail: renderDetail,
-    inlineActions: []
+    inlineActions: [
+      { type: 'add-row', label: 'Add pillar', icon: 'plus',
+        listPath: 'content_strategy.pillars', itemPrefix: 'pillar',
+        itemTemplate: { pillar: '', description: '', topics: [] } },
+      { type: 'add-row', label: 'Add channel', icon: 'plus',
+        listPath: 'content_strategy.channels', itemPrefix: 'channel',
+        itemTemplate: { channel: '', purpose: '', frequency: '', format: '' } }
+    ]
   };
 })();

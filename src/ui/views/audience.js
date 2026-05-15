@@ -145,7 +145,13 @@
     renderList: renderList,
     renderDetail: renderDetail,
     inlineActions: [
-      { id: 'generate-more-personas', label: 'Generate more personas', icon: 'sparkles' }
+      { id: 'generate-more-personas', label: 'Generate more personas', icon: 'sparkles' },
+      { type: 'add-row', label: 'Add segment', icon: 'plus',
+        listPath: 'audience.segments', itemPrefix: 'segment',
+        itemTemplate: { name: '', description: '', pain_points: [], goals: [], channels: [] } },
+      { type: 'add-row', label: 'Add persona', icon: 'plus',
+        listPath: 'audience.personas', itemPrefix: 'persona',
+        itemTemplate: { name: '', role: '', age: '', story: '', journey: '', pain_points: [], goals: [], decision_criteria: [] } }
     ]
   };
 })();
