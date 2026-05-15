@@ -73,6 +73,22 @@
     _open();
   }
 
+  // Forces the autopilot open even when an existing profile is present
+  // (openIfFirstRun bails on existing profiles). Used by Settings →
+  // Re-run setup. Computes the full stage queue for the current level.
+  function forceOpen() {
+    if (!W) return;
+    var stagesMod = window._bpwSetupStages;
+    if (!stagesMod) return;
+    var queue = stagesMod.stagesFor(W.brandLevel || 'new', W.brandTypes || []);
+    if (!queue.length) {
+      if (window._bpwToast) window._bpwToast('No stages match the current growth phase + brand types.', 'warning');
+      return;
+    }
+    if (W.setup) W.setup.finishedAt = null;
+    _open({ mode: 'initial', queueIds: queue });
+  }
+
   function openDelta(newLevel) {
     if (!W) return;
     var stagesMod = window._bpwSetupStages;
@@ -506,6 +522,7 @@
   window._bpwSetup = {
     openIfFirstRun: openIfFirstRun,
     openDelta: openDelta,
+    forceOpen: forceOpen,
     close: close,
     render: _render
   };

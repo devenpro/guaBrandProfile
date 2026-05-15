@@ -127,7 +127,7 @@
     };
     callAIWithRetry(prompt.user, function(rawText) {
       var parsed = parseJSON(rawText);
-      if (callback) callback({ success: true, personas: parsed.personas || [] });
+      if (callback) callback({ success: true, data: { personas: parsed.personas || [] } });
     }, function(err) {
       if (callback) callback({ success: false, error: err });
     }, 'ai-generate-more-personas', prompt.system);

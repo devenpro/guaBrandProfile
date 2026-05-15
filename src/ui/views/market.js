@@ -137,14 +137,15 @@
     action('', function(res) {
       $btn.prop('disabled', false).html(_icon('sparkles') + ' Find more competitors');
       if (!res || !res.success) { if (window._bpwToast) window._bpwToast(res && res.error || 'Failed', 'error'); return; }
+      var competitors = (res.data && res.data.competitors) || [];
       W.acceptedSections = W.acceptedSections || {};
       W.acceptedSections.market = W.acceptedSections.market || {};
-      W.acceptedSections.market.competitors = (W.acceptedSections.market.competitors || []).concat(res.competitors || []);
+      W.acceptedSections.market.competitors = (W.acceptedSections.market.competitors || []).concat(competitors);
       if (window._bpwExportSync) window._bpwExportSync.syncAll();
       if (window._bpwSyncToTextarea) window._bpwSyncToTextarea();
       if (window._bpwAutoSave) window._bpwAutoSave();
       if (window._bpwAppShell) window._bpwAppShell.render();
-      if (window._bpwToast) window._bpwToast('Added ' + (res.competitors || []).length + ' competitors', 'success');
+      if (window._bpwToast) window._bpwToast('Added ' + competitors.length + ' competitors', 'success');
     });
   });
 
