@@ -169,6 +169,28 @@
     return _renderTopbar(running) + _renderBody(running);
   }
 
+  // Derive which of the three workflow stages we're in.
+  //   inputs   → user is filling in basics / hasn't started, OR is between
+  //              autopilot runs with no review gate active
+  //   website  → autopilot paused at the scrape review gate; user reviews
+  //              extracted summary + socials before AI runs continue
+  //   ai_run   → autopilot running through the rest of the queue
+  //   done     → setup finished (the shell will close shortly after)
+  function _workflowStage() {
+    var s = W.setup || {};
+    if (s.finishedAt) return 'done';
+    if (!s.open) return 'inputs';
+    if (s.awaitingReview === 'scrape') return 'website';
+    if (s.currentStageId === 'scrape') return 'website';
+    return 'ai_run';
+  }
+
+  var WORKFLOW_STAGES = [
+    { id: 'inputs',  label: 'Initial inputs', sub: 'Brand basics, growth phase, AI provider', icon: 'pen-to-square' },
+    { id: 'website', label: 'Website & socials', sub: 'Review what the AI extracted, edit socials', icon: 'globe' },
+    { id: 'ai_run',  label: 'AI auto-run', sub: 'Identity, audience, content, SEO', icon: 'robot' }
+  ];
+
   function _renderTopbar(running) {
     var elapsed = running ? _fmtElapsed(W.setup.totalElapsedMs + (W.setup.startedAt ? (Date.now() - W.setup.startedAt) : 0)) : '';
     var total = running ? W.setup.stagesQueue.length : 0;
@@ -207,10 +229,163 @@
   }
 
   function _renderBody(running) {
-    var html = '<div class="bpw-setup-body">';
-    html += _renderForm(running);
-    if (running) html += _renderRail();
+    var stage = _workflowStage();
+    var html = '<div class="bpw-setup-body bpw-setup-body--workflow">';
+    html += _renderLeftRail(stage);
+    html += '<div class="bpw-setup-main">';
+    if (stage === 'inputs') {
+      html += _renderForm(running);
+    } else if (stage === 'website') {
+      html += _renderWebsiteStage();
+    } else {
+      // ai_run / done — AI stage rail with the form collapsed as a
+      // context card so users can still see (and refine) the inputs.
+      html += _renderAIRunStage();
+    }
+    html += '</div></div>';
+    return html;
+  }
+
+  function _renderLeftRail(currentStageId) {
+    var s = W.setup || {};
+    var html = '<aside class="bpw-setup-leftrail" aria-label="Setup workflow">';
+    html += '<div class="bpw-setup-leftrail-title">Setup workflow</div>';
+    for (var i = 0; i < WORKFLOW_STAGES.length; i++) {
+      var ws = WORKFLOW_STAGES[i];
+      var state = 'queued';
+      if (ws.id === currentStageId) {
+        state = (currentStageId === 'ai_run' && s.paused) ? 'paused' : 'active';
+      } else {
+        // Order: inputs(0) < website(1) < ai_run(2). Anything before
+        // the current stage is done; anything after is queued.
+        var currentIdx = -1;
+        for (var j = 0; j < WORKFLOW_STAGES.length; j++) {
+          if (WORKFLOW_STAGES[j].id === currentStageId) { currentIdx = j; break; }
+        }
+        if (i < currentIdx) state = 'done';
+      }
+      var iconName = state === 'done' ? 'circle-check'
+                   : state === 'active' ? ws.icon
+                   : state === 'paused' ? 'pause'
+                   : 'circle';
+      html += '<div class="bpw-setup-leftrail-item bpw-setup-leftrail-item--' + state + '">';
+      html += '<span class="bpw-setup-leftrail-icon">' + _icon(iconName) + '</span>';
+      html += '<div class="bpw-setup-leftrail-text">';
+      html += '<div class="bpw-setup-leftrail-label">' + _esc(ws.label) + '</div>';
+      html += '<div class="bpw-setup-leftrail-sub">' + _esc(ws.sub) + '</div>';
+      html += '</div>';
+      html += '</div>';
+    }
+    html += '</aside>';
+    return html;
+  }
+
+  function _renderWebsiteStage() {
+    // Phase 2 of the workflow: scrape is done (paused awaiting review).
+    // Show extracted summary + editable social profiles + the inputs
+    // form so users can refine + re-run scrape if anything is off.
+    var web = ((W.importedAssets || {}).website) || {};
+    var ex = web.extracted || {};
+    var html = '<section class="bpw-setup-stage-pane">';
+    html += '<header class="bpw-setup-pane-header">';
+    html += '<h2 class="bpw-setup-pane-title">' + _icon('globe') + ' Website &amp; socials</h2>';
+    html += '<p class="bpw-setup-pane-desc">We analysed your website. Confirm the basics below and edit any social profiles we missed before the AI builds the rest of your brand profile.</p>';
+    html += '</header>';
+
+    // Extracted summary card (read-only — the inputs form below is where
+    // users edit context and re-run scrape).
+    html += '<div class="bpw-setup-extract-card">';
+    html += '<h3 class="bpw-setup-extract-title">' + _icon('clipboard-list') + ' What we extracted</h3>';
+    html += _renderExtractRow('Tagline', ex.tagline);
+    html += _renderExtractRow('Description', ex.description);
+    html += _renderExtractRow('Target audience', ex.target_audience);
+    html += _renderExtractRow('Detected tone', ex.tone_detected);
+    html += _renderExtractRow('Offerings', (ex.offerings || []).filter(Boolean).join(', '));
+    html += _renderExtractRow('Key messages', (ex.key_messages || []).filter(Boolean).join(' · '));
+    html += _renderExtractRow('Content themes', (ex.content_themes || []).filter(Boolean).join(', '));
     html += '</div>';
+
+    // Social profiles editor.
+    html += _renderSocialsEditor(ex.social_profiles || []);
+
+    // Review actions (Continue / Re-run / Skip).
+    html += '<div class="bpw-setup-pane-actions">';
+    html += '<button class="bpw-setup-review-continue" data-action="bpw-setup-continue-review" type="button">' + _icon('arrow-right') + ' Continue to AI auto-run</button>';
+    html += '<button class="bpw-setup-review-rerun" data-action="bpw-setup-rerun-stage" data-stage-id="scrape" type="button">' + _icon('rotate-right') + ' Re-run with my edits</button>';
+    html += '<button class="bpw-setup-review-skip" data-action="bpw-setup-skip-review" data-stage-id="scrape" type="button">' + _icon('forward') + ' Skip — use my inputs only</button>';
+    html += '</div>';
+    html += '</section>';
+
+    // Inputs form as a refinement card. The form sets W.seedContext.*
+    // via the existing [data-field] input handler — re-running scrape
+    // picks the latest values up.
+    html += '<details class="bpw-setup-context-card" open>';
+    html += '<summary>' + _icon('pen-to-square') + ' Refine brand context</summary>';
+    html += _renderForm(true);
+    html += '</details>';
+
+    return html;
+  }
+
+  function _renderExtractRow(label, value) {
+    var v = value && String(value).trim() ? String(value) : '—';
+    return '<div class="bpw-setup-extract-row">'
+      +    '<span class="bpw-setup-extract-label">' + _esc(label) + '</span>'
+      +    '<span class="bpw-setup-extract-value">' + _esc(v) + '</span>'
+      +    '</div>';
+  }
+
+  function _renderSocialsEditor(profiles) {
+    profiles = profiles || [];
+    var PLATFORMS = ['youtube', 'instagram', 'linkedin', 'twitter_x', 'facebook', 'tiktok', 'google_business', 'other'];
+    var html = '<div class="bpw-setup-socials">';
+    html += '<div class="bpw-setup-socials-header">';
+    html += '<h3 class="bpw-setup-socials-title">' + _icon('share-nodes') + ' Social profiles</h3>';
+    html += '<button class="bpw-setup-socials-add" data-action="bpw-setup-social-add" type="button">' + _icon('plus') + ' Add profile</button>';
+    html += '</div>';
+
+    if (!profiles.length) {
+      html += '<p class="bpw-setup-socials-empty">No social profiles detected. Add the ones we missed.</p>';
+    } else {
+      html += '<div class="bpw-setup-socials-list">';
+      for (var i = 0; i < profiles.length; i++) {
+        var p = profiles[i] || {};
+        html += '<div class="bpw-setup-socials-row" data-social-idx="' + i + '">';
+        html += '<select class="bpw-setup-socials-platform" data-social-field="platform">';
+        for (var k = 0; k < PLATFORMS.length; k++) {
+          var key = PLATFORMS[k];
+          html += '<option value="' + key + '"' + (p.platform === key ? ' selected' : '') + '>' + _esc(_platformLabel(key)) + '</option>';
+        }
+        html += '</select>';
+        html += '<input class="bpw-setup-socials-handle" data-social-field="handle" type="text" placeholder="@handle" value="' + _esc(p.handle || '') + '">';
+        html += '<input class="bpw-setup-socials-url" data-social-field="url" type="url" placeholder="https://…" value="' + _esc(p.url || '') + '">';
+        html += '<button class="bpw-setup-socials-remove" data-action="bpw-setup-social-remove" type="button" title="Remove">' + _icon('trash') + '</button>';
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function _platformLabel(key) {
+    var map = {
+      youtube: 'YouTube', instagram: 'Instagram', linkedin: 'LinkedIn',
+      twitter_x: 'X (Twitter)', facebook: 'Facebook', tiktok: 'TikTok',
+      google_business: 'Google Business', other: 'Other'
+    };
+    return map[key] || key;
+  }
+
+  function _renderAIRunStage() {
+    var html = '';
+    html += _renderRail();
+    // Inputs form collapsed as context so users can still see basics
+    // (and refine them at any future review gate).
+    html += '<details class="bpw-setup-context-card">';
+    html += '<summary>' + _icon('pen-to-square') + ' Brand context</summary>';
+    html += _renderForm(true);
+    html += '</details>';
     return html;
   }
 
@@ -566,6 +741,45 @@
         if (!orch) return;
         // Mark current review-gated stage as skipped and move on.
         orch.skipCurrent();
+        _render();
+      });
+
+    $(document).off('input' + ns + ' change' + ns, '.bpw-setup [data-social-field]')
+      .on('input' + ns + ' change' + ns, '.bpw-setup [data-social-field]', function() {
+        var $row = $(this).closest('.bpw-setup-socials-row');
+        var idx = parseInt($row.attr('data-social-idx'), 10);
+        if (isNaN(idx)) return;
+        W.importedAssets = W.importedAssets || {};
+        W.importedAssets.website = W.importedAssets.website || {};
+        W.importedAssets.website.extracted = W.importedAssets.website.extracted || {};
+        var arr = W.importedAssets.website.extracted.social_profiles = W.importedAssets.website.extracted.social_profiles || [];
+        arr[idx] = arr[idx] || {};
+        arr[idx][$(this).data('social-field')] = $(this).val();
+        if (window._bpwAutoSave) window._bpwAutoSave();
+      });
+
+    $(document).off('click' + ns, '.bpw-setup [data-action="bpw-setup-social-add"]')
+      .on('click' + ns, '.bpw-setup [data-action="bpw-setup-social-add"]', function(e) {
+        e.preventDefault();
+        W.importedAssets = W.importedAssets || {};
+        W.importedAssets.website = W.importedAssets.website || {};
+        W.importedAssets.website.extracted = W.importedAssets.website.extracted || {};
+        var arr = W.importedAssets.website.extracted.social_profiles = W.importedAssets.website.extracted.social_profiles || [];
+        arr.push({ platform: 'other', handle: '', url: '' });
+        if (window._bpwAutoSave) window._bpwAutoSave();
+        _render();
+      });
+
+    $(document).off('click' + ns, '.bpw-setup [data-action="bpw-setup-social-remove"]')
+      .on('click' + ns, '.bpw-setup [data-action="bpw-setup-social-remove"]', function(e) {
+        e.preventDefault();
+        var $row = $(this).closest('.bpw-setup-socials-row');
+        var idx = parseInt($row.attr('data-social-idx'), 10);
+        if (isNaN(idx)) return;
+        var ex = ((W.importedAssets || {}).website || {}).extracted || {};
+        if (!Array.isArray(ex.social_profiles)) return;
+        ex.social_profiles.splice(idx, 1);
+        if (window._bpwAutoSave) window._bpwAutoSave();
         _render();
       });
 
