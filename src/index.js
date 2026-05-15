@@ -64,6 +64,7 @@ import './ui/views/offerings.js';
 import './ui/views/market.js';
 import './ui/views/content.js';
 import './ui/views/seo.js';
+import './ui/views/social.js';
 import './ui/views/settings.js';
 
 import './ui/app-shell.js';

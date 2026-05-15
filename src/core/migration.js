@@ -28,16 +28,21 @@ export function migrateV2toV1(v2) {
     });
   }
 
-  if (id.social_profiles && Array.isArray(id.social_profiles)) {
-    for (var si = 0; si < id.social_profiles.length; si++) {
-      var sp = id.social_profiles[si];
-      var platKey = sp.platform || 'other';
-      if (f.social_profiles[platKey]) {
-        f.social_profiles[platKey] = { url: sp.url || '', handle: sp.handle || '' };
-      } else {
-        f.social_profiles.other = f.social_profiles.other || [];
-        f.social_profiles.other.push({ platform: platKey, url: sp.url || '', handle: sp.handle || '' });
-      }
+  // Social profiles can live at v2.social.profiles (new schema) or
+  // v2.identity.social_profiles (legacy). Read both and merge in order
+  // so new-schema entries win when keys collide.
+  var socialList = [];
+  if (v2.social && Array.isArray(v2.social.profiles)) socialList = socialList.concat(v2.social.profiles);
+  if (id.social_profiles && Array.isArray(id.social_profiles)) socialList = socialList.concat(id.social_profiles);
+  for (var si = 0; si < socialList.length; si++) {
+    var sp = socialList[si] || {};
+    if (!sp.url && !sp.handle) continue;
+    var platKey = sp.platform || 'other';
+    if (f.social_profiles[platKey]) {
+      f.social_profiles[platKey] = { url: sp.url || '', handle: sp.handle || '' };
+    } else {
+      f.social_profiles.other = f.social_profiles.other || [];
+      f.social_profiles.other.push({ platform: platKey, url: sp.url || '', handle: sp.handle || '' });
     }
   }
 

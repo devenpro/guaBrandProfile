@@ -335,6 +335,21 @@ import { W } from '../core/state.js';
       }
     }
 
+    // Backfill: profiles saved before the standalone social schema
+    // landed live in W.importedAssets.social_profiles. Seed the new
+    // schema slot once so the Social section + export pipeline find
+    // them on first render.
+    if (!W.acceptedSections.social || !Array.isArray(W.acceptedSections.social.profiles) || !W.acceptedSections.social.profiles.length) {
+      var legacyProfiles = (W.importedAssets && W.importedAssets.social_profiles) || [];
+      if (Array.isArray(legacyProfiles) && legacyProfiles.length) {
+        W.acceptedSections.social = {
+          profiles: legacyProfiles.map(function(sp) {
+            return { platform: sp.platform || 'other', handle: sp.handle || '', url: sp.url || '' };
+          })
+        };
+      }
+    }
+
     console.log(LOG_PREFIX, 'Resumed from save. Step:', W.currentStepId, 'Completed:', W.completedSteps.length);
   }
 
@@ -751,11 +766,18 @@ import { W } from '../core/state.js';
     return null;
   }
 
-  // Helper: get social profiles for export
+  // Helper: get social profiles for export.
+  // New schema (W.acceptedSections.social.profiles) is authoritative;
+  // fall back to the legacy import-side cache for older saves that
+  // never went through Phase 4's setup workflow.
   function _exportSocialProfiles() {
-    return (W.importedAssets.social_profiles || [])
-      .filter(function(sp) { return sp && sp.url; })
-      .map(function(sp) { return { platform: sp.platform || '', url: sp.url, handle: sp.handle || '' }; });
+    var primary = ((W.acceptedSections || {}).social || {}).profiles;
+    var src = Array.isArray(primary) && primary.length
+      ? primary
+      : (W.importedAssets.social_profiles || []);
+    return src
+      .filter(function(sp) { return sp && (sp.url || sp.handle); })
+      .map(function(sp) { return { platform: sp.platform || '', url: sp.url || '', handle: sp.handle || '' }; });
   }
 
   function buildV2ExportContext(type) {

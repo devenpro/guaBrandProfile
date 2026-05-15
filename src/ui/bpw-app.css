@@ -287,6 +287,59 @@ body.bpw-app-shell-active { overflow: hidden; }
 }
 .bpw-shell-detail-value-empty { color: var(--bpw-text-muted); font-style: italic; }
 
+/* ── Social section rows (variable-items editor) ─────────────────── */
+.bpw-social-rows { display: grid; gap: var(--bpw-sp-2); margin-bottom: var(--bpw-sp-3); }
+.bpw-social-row {
+  display: grid;
+  grid-template-columns: 140px 160px 1fr 36px;
+  gap: var(--bpw-sp-2);
+  align-items: center;
+  padding: var(--bpw-sp-2);
+  border: 1px solid var(--bpw-border);
+  border-radius: var(--bpw-radius-md);
+  background: var(--bpw-white);
+}
+.bpw-social-row.is-active {
+  border-color: var(--bpw-primary);
+  background: var(--bpw-primary-subtle);
+}
+.bpw-social-platform,
+.bpw-social-handle,
+.bpw-social-url {
+  padding: var(--bpw-sp-2) var(--bpw-sp-3);
+  border: 1px solid var(--bpw-border);
+  border-radius: var(--bpw-radius-sm);
+  font-family: var(--bpw-font-body);
+  font-size: var(--bpw-font-sm);
+  background: var(--bpw-white);
+  color: var(--bpw-text);
+}
+.bpw-social-platform:focus,
+.bpw-social-handle:focus,
+.bpw-social-url:focus {
+  outline: none;
+  border-color: var(--bpw-border-focus);
+  box-shadow: var(--bpw-shadow-glow);
+}
+.bpw-social-remove {
+  width: 36px; height: 36px;
+  border: 1px solid var(--bpw-border);
+  background: var(--bpw-white);
+  color: var(--bpw-text-sec);
+  border-radius: var(--bpw-radius-sm);
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background var(--bpw-tr-fast), color var(--bpw-tr-fast);
+}
+.bpw-social-remove:hover { background: var(--bpw-error-light); color: var(--bpw-error); }
+.bpw-social-actions { display: flex; gap: var(--bpw-sp-2); }
+
+@media (max-width: 768px) {
+  .bpw-social-row { grid-template-columns: 1fr 1fr; }
+  .bpw-social-url { grid-column: 1 / -1; }
+  .bpw-social-remove { grid-column: 2; justify-self: end; }
+}
+
 /* ── Activity drawer ────────────────────────────────────────────── */
 .bpw-shell-drawer {
   position: fixed; top: 0; right: 0; bottom: 0;

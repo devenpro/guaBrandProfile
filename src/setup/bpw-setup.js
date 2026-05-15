@@ -286,6 +286,11 @@
     // form so users can refine + re-run scrape if anything is off.
     var web = ((W.importedAssets || {}).website) || {};
     var ex = web.extracted || {};
+    // Socials read from the schema slot (orchestrator seeds it after
+    // scrape). Fall back to the raw extracted list for the brief
+    // window between scrape completion and the orchestrator's seed.
+    var socials = (((W.acceptedSections || {}).social) || {}).profiles;
+    if (!Array.isArray(socials) || !socials.length) socials = ex.social_profiles || [];
     var html = '<section class="bpw-setup-stage-pane">';
     html += '<header class="bpw-setup-pane-header">';
     html += '<h2 class="bpw-setup-pane-title">' + _icon('globe') + ' Website &amp; socials</h2>';
@@ -305,8 +310,8 @@
     html += _renderExtractRow('Content themes', (ex.content_themes || []).filter(Boolean).join(', '));
     html += '</div>';
 
-    // Social profiles editor.
-    html += _renderSocialsEditor(ex.social_profiles || []);
+    // Social profiles editor (reads from new schema slot).
+    html += _renderSocialsEditor(socials);
 
     // Review actions (Continue / Re-run / Skip).
     html += '<div class="bpw-setup-pane-actions">';
@@ -744,28 +749,32 @@
         _render();
       });
 
+    // Socials write to the schema slot (W.acceptedSections.social.profiles).
+    function _ensureSocialsSlot() {
+      W.acceptedSections = W.acceptedSections || {};
+      W.acceptedSections.social = W.acceptedSections.social || { profiles: [] };
+      if (!Array.isArray(W.acceptedSections.social.profiles)) W.acceptedSections.social.profiles = [];
+      return W.acceptedSections.social.profiles;
+    }
+
     $(document).off('input' + ns + ' change' + ns, '.bpw-setup [data-social-field]')
       .on('input' + ns + ' change' + ns, '.bpw-setup [data-social-field]', function() {
         var $row = $(this).closest('.bpw-setup-socials-row');
         var idx = parseInt($row.attr('data-social-idx'), 10);
         if (isNaN(idx)) return;
-        W.importedAssets = W.importedAssets || {};
-        W.importedAssets.website = W.importedAssets.website || {};
-        W.importedAssets.website.extracted = W.importedAssets.website.extracted || {};
-        var arr = W.importedAssets.website.extracted.social_profiles = W.importedAssets.website.extracted.social_profiles || [];
+        var arr = _ensureSocialsSlot();
         arr[idx] = arr[idx] || {};
         arr[idx][$(this).data('social-field')] = $(this).val();
+        if (window._bpwExportSync) window._bpwExportSync.syncAll();
         if (window._bpwAutoSave) window._bpwAutoSave();
       });
 
     $(document).off('click' + ns, '.bpw-setup [data-action="bpw-setup-social-add"]')
       .on('click' + ns, '.bpw-setup [data-action="bpw-setup-social-add"]', function(e) {
         e.preventDefault();
-        W.importedAssets = W.importedAssets || {};
-        W.importedAssets.website = W.importedAssets.website || {};
-        W.importedAssets.website.extracted = W.importedAssets.website.extracted || {};
-        var arr = W.importedAssets.website.extracted.social_profiles = W.importedAssets.website.extracted.social_profiles || [];
+        var arr = _ensureSocialsSlot();
         arr.push({ platform: 'other', handle: '', url: '' });
+        if (window._bpwExportSync) window._bpwExportSync.syncAll();
         if (window._bpwAutoSave) window._bpwAutoSave();
         _render();
       });
@@ -776,9 +785,9 @@
         var $row = $(this).closest('.bpw-setup-socials-row');
         var idx = parseInt($row.attr('data-social-idx'), 10);
         if (isNaN(idx)) return;
-        var ex = ((W.importedAssets || {}).website || {}).extracted || {};
-        if (!Array.isArray(ex.social_profiles)) return;
-        ex.social_profiles.splice(idx, 1);
+        var arr = _ensureSocialsSlot();
+        arr.splice(idx, 1);
+        if (window._bpwExportSync) window._bpwExportSync.syncAll();
         if (window._bpwAutoSave) window._bpwAutoSave();
         _render();
       });
