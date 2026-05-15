@@ -71,12 +71,21 @@
     if (!stagesMod) return;
     var oldLevel = W.brandLevel;
     var delta = stagesMod.diffStages(oldLevel, newLevel, W.brandTypes || []);
+    W.brandLevel = newLevel;
+
+    // No new stages to run — just persist the level change and re-render.
     if (!delta.length) {
-      W.brandLevel = newLevel;
-      if (window._bpwRender) window._bpwRender();
+      if (window._bpwSyncToTextarea) window._bpwSyncToTextarea();
+      if (window._bpwAutoSave) window._bpwAutoSave();
+      if (window._bpwAppShell && window._bpwAppShell.render) {
+        window._bpwAppShell.render();
+      } else if (window._bpwRender) {
+        window._bpwRender();
+      }
+      if (window._bpwToast) window._bpwToast('Growth phase set to ' + newLevel + ' — no new stages needed.', 'info');
       return;
     }
-    W.brandLevel = newLevel;
+
     _open({ mode: 'delta', queueIds: delta });
   }
 
@@ -158,6 +167,12 @@
       html += '<span class="bpw-setup-progress-count">' + done + ' of ' + total + '</span>';
       var paused = W.setup.paused;
       html += '<button class="bpw-setup-pause" data-action="bpw-setup-pause" type="button">' + _icon(paused ? 'play' : 'pause') + ' ' + (paused ? 'Resume' : 'Pause') + '</button>';
+      // Close button — only visible while paused, so users have a
+      // clean escape hatch. Confirm before exiting so partial AI
+      // output isn't lost accidentally.
+      if (paused) {
+        html += '<button class="bpw-setup-pause" data-action="bpw-setup-exit" type="button">' + _icon('xmark') + ' Exit</button>';
+      }
       html += '</div>';
     }
     html += '</header>';
@@ -374,6 +389,40 @@
         _render();
       });
 
+    $(document).off('click' + ns, '.bpw-setup [data-action="bpw-setup-exit"]')
+      .on('click' + ns, '.bpw-setup [data-action="bpw-setup-exit"]', function(e) {
+        e.preventDefault();
+        if (!confirm('Exit the autopilot? Stages already completed are kept. You can re-open it from Settings → Re-run setup.')) return;
+        // Auto-accept whatever is already generated so the user keeps
+        // partial progress, then bail out cleanly.
+        if (W.setup) {
+          // Mark setup finished so the shell renders on next mount.
+          W.setup.finishedAt = Date.now();
+          W.setup.open = false;
+        }
+        W.isAIProcessing = false;
+        // Auto-accept whatever flat keys are in W.generatedSections.
+        var accept = window._bpwAcceptSection;
+        var gen = W.generatedSections || {};
+        if (accept) {
+          for (var k in gen) {
+            if (!gen.hasOwnProperty(k)) continue;
+            var st = (W.sectionStates || {})[k];
+            if (st === 'accepted') continue;
+            try { accept(k, gen[k]); } catch (err) { console.warn(LOG, 'auto-accept on exit failed for', k, err); }
+          }
+        }
+        if (window._bpwSyncToTextarea) window._bpwSyncToTextarea();
+        if (window._bpwAutoSave) window._bpwAutoSave();
+        close();
+        if (window._bpwAppShell && window._bpwAppShell.render) {
+          window._bpwAppShell.render();
+        } else if (window._bpwRender) {
+          window._bpwRender();
+        }
+        if (window._bpwToast) window._bpwToast('Autopilot closed — partial progress saved.', 'info');
+      });
+
     $(document).off('click' + ns, '.bpw-setup [data-action="bpw-setup-recover"]')
       .on('click' + ns, '.bpw-setup [data-action="bpw-setup-recover"]', function(e) {
         e.preventDefault();
@@ -421,8 +470,19 @@
         _render();
         setTimeout(function() {
           close();
-          if (window._bpwRender) window._bpwRender();
-          if (window._bpwToast) window._bpwToast('Autopilot complete — review your brand profile.', 'success');
+          // Prefer the new three-pane app shell once it's loaded.
+          // Fall back to legacy render only if the shell isn't there.
+          if (window._bpwAppShell && window._bpwAppShell.render) {
+            window._bpwAppShell.render();
+          } else if (window._bpwRender) {
+            window._bpwRender();
+          }
+          if (window._bpwToast) {
+            var msg = (mode === 'delta')
+              ? 'New stages complete — back to the brand profile.'
+              : 'Autopilot complete — review your brand profile.';
+            window._bpwToast(msg, 'success');
+          }
         }, 800);
       }
     });
