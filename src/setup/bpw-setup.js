@@ -130,8 +130,11 @@
     var $existing = $('.bpw-setup');
     var html = _renderShell();
     if ($existing.length) {
-      // Preserve scroll & focus where possible — replace innerHTML only.
-      $existing.html($(html).html());
+      // _renderShell() returns multiple top-level elements (header + body).
+      // Pass the raw string to .html() so jQuery sets innerHTML directly;
+      // wrapping with $(html) and calling .html() would only return the
+      // first element's children and silently drop the rest.
+      $existing.html(html);
     } else {
       $('body').append('<div class="bpw-setup" role="application" aria-label="Brand profile autopilot setup">' + html + '</div>');
     }
@@ -322,14 +325,11 @@
         var field = $(this).data('field');
         W.seedContext = W.seedContext || {};
         if (field === 'url')  W.seedContext.url  = $(this).val();
-        if (field === 'name') {
-          W.seedContext.name = $(this).val();
-          // Mirror into acceptedSections.identity.name so downstream
-          // prompts see it via BrandService.getIdentity().
-          W.acceptedSections = W.acceptedSections || {};
-          W.acceptedSections.identity = W.acceptedSections.identity || {};
-          W.acceptedSections.identity.name = $(this).val();
-        }
+        if (field === 'name') W.seedContext.name = $(this).val();
+        // Don't mirror into W.acceptedSections — that would trip
+        // openIfFirstRun()'s "existing profile" guard on reload.
+        // BrandService.getIdentity() falls back to seedContext.name
+        // when acceptedSections.identity is empty.
       });
 
     $(document).off('change' + ns, '.bpw-setup [name="bpw-growth"]')
