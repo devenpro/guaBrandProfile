@@ -24,6 +24,14 @@ import './ai/providers/huggingface.js';
 // AI services — depend on providers being registered.
 import './ai/llm-service.js';
 import './ai/brand-service.js';
+import './ai/_helpers.js';
+
+// AI actions — each self-registers onto window._bpwAIActions.<group>.
+// Use _resolveHelpers() lazy-bind pattern so module-load timing is
+// not load-bearing.
+import './ai/actions/scrape.js';
+import './ai/actions/market.js';
+import './ai/actions/identity.js';
 
 // Legacy monolith — still defines its own LLMService closure and
 // `window._bpwLLMService` alias used by bpw-part2a/2b/2c.
