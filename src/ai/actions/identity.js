@@ -128,35 +128,16 @@
 
   /**
    * Runs identity + voice as a merged stage for New/Growing levels.
-   * Picks the right identity prompt based on W._identityPhase, then
-   * also runs the voice prompt; merges both responses into one
-   * `data` payload that the orchestrator writes into W.generatedSections.
+   * Generates the full identity block (including 3 mission options AND
+   * a recommended mission) plus the full voice block in one autopilot
+   * pass. The user can swap the recommended mission later from the
+   * Identity view via runMissionOnly + runIdentity.
    */
   function runMergedIdentityVoice(callback) {
     _resolveHelpers();
-    var phase = (W && W._identityPhase) || 'initial';
-    var idPrompt = (phase === 'initial' || phase === 'mission_options')
-      ? getMissionOnlyPrompt()
-      : getIdentityPrompt();
-
-    _callPrompt(idPrompt, 'ai-identity-voice', function(idRes) {
+    _callPrompt(getIdentityPrompt(), 'ai-identity-voice', function(idRes) {
       if (!idRes.success) { if (callback) callback(idRes); return; }
-
-      // Advance the phase machine.
-      if (W) {
-        if (phase === 'initial' || phase === 'mission_options') {
-          W._identityPhase = 'mission_options';
-        } else {
-          W._identityPhase = 'full_complete';
-        }
-      }
-
-      // If we only ran mission_options, return now — voice waits until
-      // the user picks a mission and we re-enter with phase = 'mission_selected'.
-      if (phase === 'initial' || phase === 'mission_options') {
-        if (callback) callback(idRes);
-        return;
-      }
+      if (W) W._identityPhase = 'full_complete';
 
       _callPrompt(getVoicePrompt(), 'ai-identity-voice', function(vRes) {
         if (!vRes.success) {

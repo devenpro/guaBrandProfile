@@ -131,14 +131,15 @@
     action('', function(res) {
       $btn.prop('disabled', false).html(_icon('sparkles') + ' Generate more personas');
       if (!res || !res.success) { if (window._bpwToast) window._bpwToast(res && res.error || 'Failed', 'error'); return; }
+      var personas = (res.data && res.data.personas) || [];
       W.acceptedSections = W.acceptedSections || {};
       W.acceptedSections.audience = W.acceptedSections.audience || {};
-      W.acceptedSections.audience.personas = (W.acceptedSections.audience.personas || []).concat(res.personas || []);
+      W.acceptedSections.audience.personas = (W.acceptedSections.audience.personas || []).concat(personas);
       if (window._bpwExportSync) window._bpwExportSync.syncAll();
       if (window._bpwSyncToTextarea) window._bpwSyncToTextarea();
       if (window._bpwAutoSave) window._bpwAutoSave();
       if (window._bpwAppShell) window._bpwAppShell.render();
-      if (window._bpwToast) window._bpwToast('Added ' + (res.personas || []).length + ' personas', 'success');
+      if (window._bpwToast) window._bpwToast('Added ' + personas.length + ' personas', 'success');
     });
   });
 

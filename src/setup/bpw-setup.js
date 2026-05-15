@@ -28,7 +28,9 @@
   var _bootPollCount = 0;
 
   // ── BOOT ────────────────────────────────────────────────────────────
-  // Poll for legacy Part 1 init so W is populated.
+  // Poll for legacy Part 1 init so W is populated. Legacy intentionally
+  // skips init on non-brand-profile pages (no textarea, wrong content
+  // type, etc.) — those are not failures, so we exit quietly.
   var _bootTimer = setInterval(function() {
     _bootPollCount++;
     if (window._bpwState && window._bpwState.initialized) {
@@ -38,7 +40,13 @@
     }
     if (_bootPollCount > 300) {
       clearInterval(_bootTimer);
-      console.warn(LOG, 'gave up waiting for Part 1');
+      // Only complain if this looks like it should have worked. On
+      // non-brand-profile pages legacy bails silently, which is correct.
+      var bodyClass = (document.body && document.body.className) || '';
+      var looksLikeBP = bodyClass.indexOf('brand-profile') !== -1 || bodyClass.indexOf('brand_profile') !== -1;
+      if (looksLikeBP) {
+        console.error(LOG, 'Wizard never initialised — check the JSON textarea and console for legacy errors.');
+      }
     }
   }, 100);
 
@@ -63,6 +71,22 @@
     var accepted = W.acceptedSections || {};
     if (Object.keys(accepted).length > 0) return;       // existing profile — let legacy handle
     _open();
+  }
+
+  // Forces the autopilot open even when an existing profile is present
+  // (openIfFirstRun bails on existing profiles). Used by Settings →
+  // Re-run setup. Computes the full stage queue for the current level.
+  function forceOpen() {
+    if (!W) return;
+    var stagesMod = window._bpwSetupStages;
+    if (!stagesMod) return;
+    var queue = stagesMod.stagesFor(W.brandLevel || 'new', W.brandTypes || []);
+    if (!queue.length) {
+      if (window._bpwToast) window._bpwToast('No stages match the current growth phase + brand types.', 'warning');
+      return;
+    }
+    if (W.setup) W.setup.finishedAt = null;
+    _open({ mode: 'initial', queueIds: queue });
   }
 
   function openDelta(newLevel) {
@@ -130,8 +154,11 @@
     var $existing = $('.bpw-setup');
     var html = _renderShell();
     if ($existing.length) {
-      // Preserve scroll & focus where possible — replace innerHTML only.
-      $existing.html($(html).html());
+      // _renderShell() returns multiple top-level elements (header + body).
+      // Pass the raw string to .html() so jQuery sets innerHTML directly;
+      // wrapping with $(html) and calling .html() would only return the
+      // first element's children and silently drop the rest.
+      $existing.html(html);
     } else {
       $('body').append('<div class="bpw-setup" role="application" aria-label="Brand profile autopilot setup">' + html + '</div>');
     }
@@ -322,14 +349,11 @@
         var field = $(this).data('field');
         W.seedContext = W.seedContext || {};
         if (field === 'url')  W.seedContext.url  = $(this).val();
-        if (field === 'name') {
-          W.seedContext.name = $(this).val();
-          // Mirror into acceptedSections.identity.name so downstream
-          // prompts see it via BrandService.getIdentity().
-          W.acceptedSections = W.acceptedSections || {};
-          W.acceptedSections.identity = W.acceptedSections.identity || {};
-          W.acceptedSections.identity.name = $(this).val();
-        }
+        if (field === 'name') W.seedContext.name = $(this).val();
+        // Don't mirror into W.acceptedSections — that would trip
+        // openIfFirstRun()'s "existing profile" guard on reload.
+        // BrandService.getIdentity() falls back to seedContext.name
+        // when acceptedSections.identity is empty.
       });
 
     $(document).off('change' + ns, '.bpw-setup [name="bpw-growth"]')
@@ -364,17 +388,22 @@
     $(document).off('click' + ns, '.bpw-setup [data-action="bpw-setup-start"]')
       .on('click' + ns, '.bpw-setup [data-action="bpw-setup-start"]', function(e) {
         e.preventDefault();
+        var toast = window._bpwToast || function(msg) { alert(msg); };
         if (!(W.brandTypes && W.brandTypes.length)) {
-          alert('Pick at least one brand type.');
+          toast('Pick at least one brand type.', 'warning');
           return;
         }
         if (!(W.seedContext && (W.seedContext.url || W.seedContext.name))) {
-          alert('Provide a website URL or a brand name.');
+          toast('Provide a website URL or a brand name.', 'warning');
+          return;
+        }
+        if (!window.LLMService || !window.LLMService.isConfigured()) {
+          toast('No AI provider configured. Add credentials in Drupal AI settings.', 'error');
           return;
         }
         var queue = window._bpwSetupStages.stagesFor(W.brandLevel || 'new', W.brandTypes || []);
         if (!queue.length) {
-          alert('No stages apply to the selected growth phase + types. Pick at least one type that matches.');
+          toast('No stages apply to this growth phase + types combination.', 'warning');
           return;
         }
         _startAutopilot(queue, 'initial');
@@ -392,7 +421,9 @@
     $(document).off('click' + ns, '.bpw-setup [data-action="bpw-setup-exit"]')
       .on('click' + ns, '.bpw-setup [data-action="bpw-setup-exit"]', function(e) {
         e.preventDefault();
-        if (!confirm('Exit the autopilot? Stages already completed are kept. You can re-open it from Settings → Re-run setup.')) return;
+        // Native confirm is intentional here: an irreversible exit
+        // deserves a hard stop. Stages already completed persist.
+        if (!window.confirm('Exit the autopilot? Stages already completed are kept. You can re-open from Settings.')) return;
         // Auto-accept whatever is already generated so the user keeps
         // partial progress, then bail out cleanly.
         if (W.setup) {
@@ -491,6 +522,7 @@
   window._bpwSetup = {
     openIfFirstRun: openIfFirstRun,
     openDelta: openDelta,
+    forceOpen: forceOpen,
     close: close,
     render: _render
   };

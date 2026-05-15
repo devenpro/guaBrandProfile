@@ -190,17 +190,15 @@
     }
   });
 
-  // Re-run autopilot from settings.
+  // Re-run autopilot from settings. openIfFirstRun bails on existing
+  // profiles, so we use forceOpen which queues the full stage list and
+  // mounts the takeover regardless of accepted data.
   $(document).off('click.bpw-rerun').on('click.bpw-rerun', '[data-action="re-run-autopilot"]', function(e) {
     e.preventDefault();
-    var W = window._bpwState;
-    if (!window._bpwSetup) return;
-    // Clear the finishedAt marker so the setup module's openIfFirstRun
-    // logic mounts the takeover. Existing accepted data stays in place.
-    if (W.setup) W.setup.finishedAt = null;
+    if (!window._bpwSetup || !window._bpwSetup.forceOpen) return;
     $('body').removeClass('bpw-app-shell-active');
     $('#bpwAppShell').remove();
-    window._bpwSetup.openIfFirstRun();
+    window._bpwSetup.forceOpen();
   });
 
   window._bpwUIViews = window._bpwUIViews || {};

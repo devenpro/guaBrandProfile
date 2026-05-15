@@ -16,7 +16,7 @@
  *                W.generatedSections and triggers the accept flow.
  *
  *              findMoreCompetitors(customGuidance, callback)
- *                callback({ success, competitors?, error? })
+ *                callback({ success, data?: { competitors }, error? })
  *                Returns ONLY new competitors (caller appends to
  *                W.acceptedSections.market.competitors).
  *
@@ -87,7 +87,7 @@
     };
     callAIWithRetry(prompt.user, function(rawText) {
       var parsed = parseJSON(rawText);
-      if (callback) callback({ success: true, competitors: parsed.competitors || [] });
+      if (callback) callback({ success: true, data: { competitors: parsed.competitors || [] } });
     }, function(err) {
       if (callback) callback({ success: false, error: err });
     }, 'ai-find-more-competitors', prompt.system);
