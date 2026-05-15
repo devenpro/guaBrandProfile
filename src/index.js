@@ -40,6 +40,9 @@ import './ai/actions/seo.js';
 // Inline-action aliases must follow their source actions.
 import './ai/actions/competitors.js';
 import './ai/actions/personas.js';
+// Per-field + per-section refine engine — depends on every section
+// action being loaded so refineSection() can route to them.
+import './ai/actions/refine.js';
 
 // Setup autopilot — depends on ai/* being registered.
 import './setup/bpw-setup-stages.js';
