@@ -201,20 +201,29 @@ The Continue/Back multi-step wizard is being replaced by a single autopilot form
 
 **Branch:** `claude/fix-profile-ai-execution-Wvobg` — all phases land here, single PR to `main` at the end.
 
-**Phase order** (each phase = 1–3 commits):
+### Status
 
-1. **Phase 1 — Fix AI execution bug.** Delete the three `W.isAIProcessing` assignments inside `LLMService.callAI` (bpw-app.js:2788, 2802, 2807). `_runPromptsSequential` (bpw-part2a.js:347–362) becomes the sole owner of the batch guard.
-2. **Phase 2 — Extract `src/ai/`** (mirrors Stage 3 above). Providers, `llm-service`, `brand-service`, `_helpers`, action modules per AI prompt. Every action uses the `_resolveHelpers()` lazy-bind pattern from the reference repo so dependencies bind at call time — permanently kills the timing class of bug Phase 1 patched. Includes porting `src/legacy/bpw-part2b.js` → `src/ai/assembly-controller.js` with `ASSEMBLY_MAP` and the `acceptSection` override preserved verbatim.
-3. **Phase 3 — Build `src/setup/`.** New autopilot UX: stage registry with growth-phase × brand-type gating, sequential orchestrator (pause/recover/skip, sole owner of `W.isAIProcessing` during setup), takeover shell + form + stage rail.
-4. **Phase 4 — Build `src/ui/`** (mirrors Stage 5 above). Three-pane app shell (sidebar 210px + section list 320px + detail/edit pane), per-section views with inline AI actions ("Find more competitors", "Generate more personas", "Run SEO audit"), topbar activity drawer. Growth-phase change in Settings re-opens the autopilot in delta mode for stages newly required by the upgraded phase; downgrade preserves all data and hides non-applicable sections.
-5. **Phase 5 — Cleanup.** Delete `src/legacy/`, update `src/index.js` import tree, mark this plan complete.
+- **Phase 1 ✅ shipped** (`fbfa4cd`, `9a22bd3`). REFACTOR-PLAN amended; AI execution bug fixed — three `W.isAIProcessing` writes deleted from `LLMService.callAI` (bpw-app.js:2788, 2802, 2807) so `_runPromptsSequential` (bpw-part2a.js:347-362) is sole owner of the batch guard.
+- **Phase 2 ✅ shipped** (`d52dbd3`, `b86528b`, `8619796`). `src/ai/`: provider registry, LLMService, BrandService, `_helpers`, and ten action modules (scrape, market, identity, voice, audience, offerings, content, seo, competitors, personas). Every action uses the `_resolveHelpers()` lazy-bind pattern so dependency timing is not load-bearing.
+- **Phase 3 ✅ shipped** (`d94f076`). `src/setup/`: nine-stage `STAGE_REGISTRY` with growth-phase × brand-type gating, sequential orchestrator (sole owner of `W.isAIProcessing` during setup, pause/recover/skip), takeover shell + form + stage rail. On finish auto-accepts every flat key via the legacy `_bpwAcceptSection` so the `ASSEMBLY_MAP` bridge fires and Drupal export fields populate.
+- **Phase 4 ✅ shipped** (`d7d600a`, `2b4af4c`, `245a19b`). `src/ui/`: three-pane app shell (sidebar 210px + section list 320px + detail pane), topbar activity drawer, eight section views (identity, voice, audience, offerings, market, content, seo, settings) with inline AI actions (`Find more competitors`, `Generate more personas`, `Run SEO audit`). Growth-phase upgrade in Settings triggers delta-mode autopilot; downgrade is non-destructive (data persists, UI hides per `view.minLevel`). Autopilot exit hatch with partial-progress save.
+- **Phase 5 ⏸ deferred** (legacy demolition). The new modules currently *coexist* with `src/legacy/` rather than replacing it. Several legacy globals are still load-bearing at runtime:
+  - `window._bpwAcceptSection` + the `_bpwAcceptSectionOverride` set by `bpw-part2b.js:199` (`ASSEMBLY_MAP` lives here — 150+ flat→nested mappings the Drupal export fields depend on)
+  - `window._bpwSyncAllExportFields` (the 7-field export pipeline)
+  - `window._bpwSyncToTextarea`, `_bpwAutoSave`, `_bpwSetSectionState`
+  - The Drupal form boot in `bpw-app.js` (`bpwAttach`, `initWizard`, `shouldActivateWizard`, `loadData`, `resumeFromSave`, textarea/submit-button wiring)
+  - Small utility globals: `_bpwIcon`, `_bpwEsc`, `_bpwGenerateId`, `_bpwToast`, `_bpwDeepClone`, `_bpwConstants`
+  
+  Deleting legacy in this PR would break Drupal saves and the boot path. A follow-up PR should port these into `src/core/` (boot, autosave, drupal-sync), `src/editing/assembly-controller.js` (ASSEMBLY_MAP + acceptSection override), and the existing `src/utils/` files, then delete `src/legacy/`. The `_category.md` files already document where each piece lands.
 
-**Detailed plan:** see the approved planning file at `/root/.claude/plans/sorted-stargazing-fox.md` (commit-level granularity, stage matrix, state shapes, verification checklist).
+### Invariants (verified at every shipped phase)
 
-**Invariants** (verified at every phase):
-
-1. `W.isAIProcessing` has exactly one owner at any time.
-2. `ASSEMBLY_MAP` + `acceptSection` override survive verbatim.
-3. `syncAllExportFields` fires on every accept (all 7 Drupal export fields populate).
+1. `W.isAIProcessing` has exactly one owner at any time. Currently: legacy `_runPromptsSequential` while legacy is loaded, and the new `_bpwSetupOrchestrator` while the autopilot is open. Inline post-setup AI actions use per-button `aiActionLoading`, never the global flag.
+2. `ASSEMBLY_MAP` + `acceptSection` override survive verbatim (live in legacy/bpw-part2b.js; Phase 5 will move them).
+3. `syncAllExportFields` fires on every accept — all 7 Drupal export fields populate.
 4. `_resolveHelpers()` at the top of every public AI action — never read globals at module load.
 5. Growth-phase downgrade is non-destructive (data persists; UI hides per `view.minLevel`).
+
+### Detailed plan
+
+See `/root/.claude/plans/sorted-stargazing-fox.md` for the full design (commit-level granularity, stage matrix, state shapes, verification checklist).
