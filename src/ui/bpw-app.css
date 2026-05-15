@@ -428,6 +428,22 @@ body.bpw-app-shell-active { overflow: hidden; }
 }
 .bpw-editor-list-add:hover { background: var(--bpw-primary-subtle); border-color: var(--bpw-primary); }
 
+/* ── Keyboard focus rings (a11y) ─────────────────────────────────── */
+.bpw-shell-action-btn:focus-visible,
+.bpw-shell-list-regenerate:focus-visible,
+.bpw-shell-topbar-btn:focus-visible,
+.bpw-editor-improve:focus-visible,
+.bpw-editor-list-add:focus-visible,
+.bpw-editor-chip-add:focus-visible,
+.bpw-editor-chip-remove:focus-visible,
+.bpw-editor-list-remove:focus-visible,
+.bpw-social-remove:focus-visible,
+.bpw-refine-btn:focus-visible,
+.bpw-refine-close:focus-visible {
+  outline: 2px solid var(--bpw-primary);
+  outline-offset: 2px;
+}
+
 /* ── Improve / Regenerate buttons ─────────────────────────────────── */
 .bpw-editor-label-row {
   display: flex; align-items: center; justify-content: space-between;
