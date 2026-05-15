@@ -29,5 +29,9 @@
     "esbuild": "^0.28.0"
   },
   "license": "MIT",
-  "author": "devenpro"
+  "author": "devenpro",
+  "dependencies": {
+    "@tiptap/core": "^3.23.4",
+    "@tiptap/starter-kit": "^3.23.4"
+  }
 }

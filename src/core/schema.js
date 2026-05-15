@@ -16,6 +16,7 @@ export function getDefaultData() {
       ai_provider_used: '', ai_model_used: ''
     },
     identity: {}, voice: {}, messaging: {}, audience: {}, offerings: {},
+    social: { profiles: [] },
     ai_preferences: { default_provider: '', default_model: '', custom_instructions: '' }
   };
 }

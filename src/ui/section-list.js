@@ -37,8 +37,16 @@
     var views = window._bpwUIViews || {};
     var view = views[sectionId];
 
+    var REFINEABLE_SECTIONS = { identity: 1, voice: 1, audience: 1, offerings: 1, market: 1, content: 1, seo: 1 };
+    var canRefine = !!REFINEABLE_SECTIONS[sectionId];
+
     var html = '<section class="bpw-shell-list" aria-label="Section items">';
-    html += '<header class="bpw-shell-list-header"><h2>' + _esc(view ? view.title : sectionId) + '</h2></header>';
+    html += '<header class="bpw-shell-list-header">';
+    html += '<h2>' + _esc(view ? view.title : sectionId) + '</h2>';
+    if (canRefine) {
+      html += '<button class="bpw-shell-list-regenerate" data-action="bpw-section-regenerate" data-section-id="' + _esc(sectionId) + '" data-section-label="' + _esc(view ? view.title : sectionId) + '" type="button" title="Regenerate this section with AI">' + _icon('arrows-rotate') + '</button>';
+    }
+    html += '</header>';
 
     if (!view) {
       html += '<div class="bpw-shell-list-empty">' + _icon('flask') + '<p>View module not loaded.</p></div>';
@@ -50,7 +58,14 @@
       html += '<div class="bpw-shell-list-actions">';
       for (var i = 0; i < view.inlineActions.length; i++) {
         var a = view.inlineActions[i];
-        html += '<button class="bpw-shell-action-btn" data-action="' + _esc(a.id) + '" type="button">' + _icon(a.icon || 'sparkles') + ' ' + _esc(a.label) + '</button>';
+        // "add-row" actions append an empty item to a list path and
+        // select the new row. Distinct from AI inline actions which
+        // own their own click handlers via [data-action="<id>"].
+        if (a.type === 'add-row') {
+          html += '<button class="bpw-shell-action-btn" data-action="bpw-section-add-row" data-list-path="' + _esc(a.listPath) + '" data-item-template=\'' + _esc(JSON.stringify(a.itemTemplate || {})) + '\' data-item-prefix="' + _esc(a.itemPrefix || '') + '" type="button">' + _icon(a.icon || 'plus') + ' ' + _esc(a.label) + '</button>';
+        } else {
+          html += '<button class="bpw-shell-action-btn" data-action="' + _esc(a.id) + '" type="button">' + _icon(a.icon || 'sparkles') + ' ' + _esc(a.label) + '</button>';
+        }
       }
       html += '</div>';
     }
@@ -63,6 +78,41 @@
     html += '<div class="bpw-shell-list-body">' + body + '</div>';
     html += '</section>';
     return html;
+  }
+
+  // ── Generic "Add row" handler ─────────────────────────────────────
+  // Triggered by inline actions of type "add-row". Appends a deep
+  // clone of itemTemplate to the list at listPath, then selects the
+  // new item so the detail pane focuses on it for editing.
+  if (window.jQuery) {
+    var $ = window.jQuery;
+    $(document).off('click.bpw-section-regen').on('click.bpw-section-regen', '[data-action="bpw-section-regenerate"]', function(e) {
+      e.preventDefault();
+      var sectionId = $(this).attr('data-section-id');
+      var label = $(this).attr('data-section-label') || sectionId;
+      if (window._bpwRefineModal) window._bpwRefineModal.openSection(sectionId, label);
+    });
+
+    $(document).off('click.bpw-section-add-row').on('click.bpw-section-add-row', '[data-action="bpw-section-add-row"]', function(e) {
+      e.preventDefault();
+      var path = $(this).attr('data-list-path');
+      var prefix = $(this).attr('data-item-prefix') || '';
+      if (!path) return;
+      var tmpl = {};
+      try { tmpl = JSON.parse($(this).attr('data-item-template') || '{}'); } catch (err) {}
+      var store = window._bpwPathStore;
+      if (!store) return;
+      var arr = store.get(path) || [];
+      var idx = arr.length;
+      store.push(path, JSON.parse(JSON.stringify(tmpl)));
+      store.persist();
+      // Select the new row, then re-render.
+      if (window._bpwAppShell && prefix) {
+        window._bpwAppShell.setActiveItem(prefix + ':' + idx);
+      } else if (window._bpwAppShell) {
+        window._bpwAppShell.render();
+      }
+    });
   }
 
   window._bpwSectionList = { render: render };

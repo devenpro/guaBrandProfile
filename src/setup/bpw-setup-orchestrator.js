@@ -276,6 +276,24 @@
         if (id === 'scrape' && res.extracted) {
           W.importedAssets = W.importedAssets || {};
           W.importedAssets.website = { url: res.url, status: 'success', extracted: res.extracted, analyzed_at: res.analyzed_at };
+          // Auto-populate the new standalone social schema slot so the
+          // user lands on the website-review stage with the AI's
+          // extracted socials already in place to confirm or edit.
+          // Only seed on first run; if the user already added rows,
+          // don't trample them.
+          var extracted = res.extracted || {};
+          if (Array.isArray(extracted.social_profiles) && extracted.social_profiles.length) {
+            W.acceptedSections = W.acceptedSections || {};
+            W.acceptedSections.social = W.acceptedSections.social || { profiles: [] };
+            if (!Array.isArray(W.acceptedSections.social.profiles)) W.acceptedSections.social.profiles = [];
+            if (!W.acceptedSections.social.profiles.length) {
+              W.acceptedSections.social.profiles = extracted.social_profiles
+                .filter(function(sp) { return sp && (sp.url || sp.handle); })
+                .map(function(sp) {
+                  return { platform: sp.platform || 'other', handle: sp.handle || '', url: sp.url || '' };
+                });
+            }
+          }
         }
         // Merged actions can return success with a `partial` flag when
         // one half (e.g. voice in identity_voice) failed but the other

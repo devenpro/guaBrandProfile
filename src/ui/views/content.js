@@ -67,42 +67,47 @@
     return html || '<div class="bpw-shell-list-empty">' + _icon('pen-nib') + '<p>No content strategy yet.</p></div>';
   }
 
-  function _row(label, value, isList) {
-    if (value == null || value === '' || (isList && Array.isArray(value) && !value.length)) {
-      return '<div class="bpw-shell-detail-row"><div class="bpw-shell-detail-label">' + _esc(label) + '</div><div class="bpw-shell-detail-value bpw-shell-detail-value-empty">—</div></div>';
-    }
-    if (isList && Array.isArray(value)) {
-      var lis = value.map(function(x) { return '<li>' + _esc(typeof x === 'object' ? JSON.stringify(x) : x) + '</li>'; }).join('');
-      return '<div class="bpw-shell-detail-row"><div class="bpw-shell-detail-label">' + _esc(label) + '</div><ul class="bpw-shell-detail-value">' + lis + '</ul></div>';
-    }
-    return '<div class="bpw-shell-detail-row"><div class="bpw-shell-detail-label">' + _esc(label) + '</div><div class="bpw-shell-detail-value">' + _esc(value) + '</div></div>';
-  }
-
   function renderDetail(W, selectedId) {
     if (!selectedId) return '';
     var c = _content(W);
-    if (selectedId === 'seo')      return '<div class="bpw-shell-detail-card"><h3>SEO keywords</h3>' + _row('Keywords', c.seo_keywords, true) + '</div>';
-    if (selectedId === 'hashtags') return '<div class="bpw-shell-detail-card"><h3>Hashtags</h3>' + _row('Tags', c.hashtags, true) + '</div>';
+    var E = window._bpwEditors;
+
+    if (selectedId === 'seo') {
+      return '<div class="bpw-shell-detail-card">'
+        + '<h3>SEO keywords</h3>'
+        + E.renderChips({ label: 'Keywords', path: 'content_strategy.seo_keywords', value: c.seo_keywords || [], addLabel: 'keyword' })
+        + '</div>';
+    }
+    if (selectedId === 'hashtags') {
+      return '<div class="bpw-shell-detail-card">'
+        + '<h3>Hashtags</h3>'
+        + E.renderChips({ label: 'Tags', path: 'content_strategy.hashtags', value: c.hashtags || [], addLabel: 'tag' })
+        + '</div>';
+    }
 
     var parts = selectedId.split(':');
     var type = parts[0], idx = parseInt(parts[1] || '0', 10);
     if (type === 'pillar') {
       var p = (c.pillars || [])[idx];
       if (!p) return '<div class="bpw-shell-detail-empty">Pillar not found.</div>';
+      var base = 'content_strategy.pillars[' + idx + '].';
       return '<div class="bpw-shell-detail-card">'
-        + '<h3>' + _esc(p.pillar || 'Pillar') + '</h3>'
-        + _row('Description', p.description)
-        + _row('Topics', p.topics, true)
+        + '<h3>' + _esc(p.pillar || 'Pillar ' + (idx + 1)) + '</h3>'
+        + E.renderText({ label: 'Pillar', path: base + 'pillar', value: p.pillar })
+        + E.renderTextarea({ label: 'Description', path: base + 'description', value: p.description })
+        + E.renderChips({ label: 'Topics', path: base + 'topics', value: p.topics, addLabel: 'topic' })
         + '</div>';
     }
     if (type === 'channel') {
       var ch = (c.channels || [])[idx];
       if (!ch) return '<div class="bpw-shell-detail-empty">Channel not found.</div>';
+      var cbase = 'content_strategy.channels[' + idx + '].';
       return '<div class="bpw-shell-detail-card">'
-        + '<h3>' + _esc(ch.channel || 'Channel') + '</h3>'
-        + _row('Purpose', ch.purpose)
-        + _row('Frequency', ch.frequency)
-        + _row('Format', ch.format)
+        + '<h3>' + _esc(ch.channel || 'Channel ' + (idx + 1)) + '</h3>'
+        + E.renderText({ label: 'Channel', path: cbase + 'channel', value: ch.channel })
+        + E.renderTextarea({ label: 'Purpose', path: cbase + 'purpose', value: ch.purpose })
+        + E.renderText({ label: 'Frequency', path: cbase + 'frequency', value: ch.frequency, placeholder: 'e.g. 3x/week' })
+        + E.renderText({ label: 'Format', path: cbase + 'format', value: ch.format, placeholder: 'e.g. short-form video' })
         + '</div>';
     }
     return '';
@@ -116,6 +121,13 @@
     listMode: 'variable-items',
     renderList: renderList,
     renderDetail: renderDetail,
-    inlineActions: []
+    inlineActions: [
+      { type: 'add-row', label: 'Add pillar', icon: 'plus',
+        listPath: 'content_strategy.pillars', itemPrefix: 'pillar',
+        itemTemplate: { pillar: '', description: '', topics: [] } },
+      { type: 'add-row', label: 'Add channel', icon: 'plus',
+        listPath: 'content_strategy.channels', itemPrefix: 'channel',
+        itemTemplate: { channel: '', purpose: '', frequency: '', format: '' } }
+    ]
   };
 })();

@@ -48,10 +48,14 @@
     var deepKeys = _isDeep()
       ? ',\n  "market_trends": ["string"],\n  "market_opportunities": ["string"]'
       : '';
+    var fieldReqs = '\n\nFIELD REQUIREMENTS:\n'
+      + '- Every competitor MUST include: name, url (full URL — no placeholders), strengths (>= 2), weaknesses (>= 2), comparison (1-2 sentences on how the brand differs)\n'
+      + '- Every differentiator MUST include: point (short claim) AND evidence (concrete proof)\n'
+      + '- 3-5 competitors total, 3-5 differentiators total';
     return {
       system: 'You are an expert market research analyst. Conduct ' + depth + ' market analysis for a ' + typeDesc + ' brand.' + lang,
       user:   'Based on this brand context, generate a market analysis.' + ctx +
-              '\n\nReturn ONLY valid JSON:\n{\n  "market_category": "string — the market/industry category",\n  "market_positioning": "string — 2-3 sentence positioning statement",\n  "market_competitors": [\n    {"name":"","description":"","url":"","strengths":[""],"weaknesses":[""],"comparison":""}\n  ],\n  "market_differentiators": [\n    {"point":"","evidence":""}\n  ]' + deepKeys + '\n}' + _jsonOnly()
+              '\n\nReturn ONLY valid JSON:\n{\n  "market_category": "string — the market/industry category",\n  "market_positioning": "string — 2-3 sentence positioning statement",\n  "market_competitors": [\n    {"name":"","description":"","url":"","strengths":[""],"weaknesses":[""],"comparison":""}\n  ],\n  "market_differentiators": [\n    {"point":"","evidence":""}\n  ]' + deepKeys + '\n}' + fieldReqs + _jsonOnly()
     };
   }
 

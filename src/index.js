@@ -40,6 +40,9 @@ import './ai/actions/seo.js';
 // Inline-action aliases must follow their source actions.
 import './ai/actions/competitors.js';
 import './ai/actions/personas.js';
+// Per-field + per-section refine engine — depends on every section
+// action being loaded so refineSection() can route to them.
+import './ai/actions/refine.js';
 
 // Setup autopilot — depends on ai/* being registered.
 import './setup/bpw-setup-stages.js';
@@ -50,6 +53,10 @@ import './setup/bpw-setup.js';
 // window._bpwUIViews and must load BEFORE app-shell.js so the shell
 // finds them on first render.
 import './ui/_export-sync.js';
+import './ui/editors/path-store.js';
+import './ui/editors/fields.js';
+import './ui/editors/prose.js';
+import './ui/refine-modal.js';
 import './ui/topbar.js';
 import './ui/sidebar.js';
 import './ui/section-list.js';
@@ -64,6 +71,7 @@ import './ui/views/offerings.js';
 import './ui/views/market.js';
 import './ui/views/content.js';
 import './ui/views/seo.js';
+import './ui/views/social.js';
 import './ui/views/settings.js';
 
 import './ui/app-shell.js';

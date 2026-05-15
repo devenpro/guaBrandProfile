@@ -31,6 +31,7 @@
     { id: 'market',    label: 'Market',    icon: 'chart-line',     minLevel: 'growing', brandTypes: ['commercial', 'local'] },
     { id: 'content',   label: 'Content',   icon: 'pen-nib',        minLevel: 'new',  brandTypes: ['creator', 'commercial'] },
     { id: 'seo',       label: 'SEO',       icon: 'magnifying-glass', minLevel: 'growing' },
+    { id: 'social',    label: 'Social',    icon: 'share-nodes',    minLevel: 'new' },
     { id: 'settings',  label: 'Settings',  icon: 'gear',           minLevel: 'new', isMeta: true }
   ];
 

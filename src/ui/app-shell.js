@@ -134,6 +134,46 @@
         W.ui.activityOpen = false;
         render();
       });
+
+    $(document).off('click' + ns, '#bpwAppShell [data-action="save"]')
+      .on('click' + ns, '#bpwAppShell [data-action="save"]', function(e) {
+        e.preventDefault();
+        if (W._saving) return;
+        if (typeof window._bpwSaveProgress !== 'function') {
+          console.warn(LOG, 'Save not available — _bpwSaveProgress missing.');
+          return;
+        }
+        W._saving = true;
+        render();
+        try {
+          window._bpwSaveProgress();
+        } finally {
+          // The Drupal submit reloads the page on success; if we're still
+          // here a moment later, just drop the saving flag and re-render.
+          setTimeout(function() {
+            if (!W) return;
+            W._saving = false;
+            render();
+          }, 1500);
+        }
+      });
+
+    // Re-render only the topbar when the dirty / last-saved state flips
+    // elsewhere (autosave, debounced syncToTextarea). A full shell
+    // re-render here would steal focus from any editor the user is
+    // typing in, so we surgically replace just the topbar.
+    if (!window._bpwAppShell_dirtyHook) {
+      window._bpwAppShell_dirtyHook = function() {
+        if (!W || !window._bpwTopbar) return;
+        var $topbar = $('#bpwAppShell .bpw-shell-topbar');
+        if (!$topbar.length) return;
+        var html = window._bpwTopbar.render(W);
+        // Replace just the topbar in place. The render() output is a
+        // <header>…</header> element; swap our existing one with it.
+        var $new = $($.parseHTML(html));
+        $topbar.replaceWith($new);
+      };
+    }
   }
 
   window._bpwAppShell = {
