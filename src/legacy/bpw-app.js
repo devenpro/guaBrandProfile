@@ -2785,7 +2785,10 @@ import { W } from '../core/state.js';
       }
 
       console.log(LOG_PREFIX, 'AI call:', prov + '/' + model);
-      W.isAIProcessing = true;
+      // W.isAIProcessing is owned by callers — _runPromptsSequential
+      // (bpw-part2a.js:347-362) sets/clears it for the entire batch.
+      // Touching it here would clear the batch guard after the first
+      // prompt and let duplicate submissions slip through.
 
       fetch(ep, { method: 'POST', headers: headers, body: JSON.stringify(body) })
         .then(function(res) {
@@ -2799,12 +2802,10 @@ import { W } from '../core/state.js';
         .then(function(data) {
           var txt = _extractText(prov, data);
           console.log(LOG_PREFIX, 'AI response:', txt.substring(0, 200));
-          W.isAIProcessing = false;
           if (onSuccess) onSuccess(txt);
         })
         .catch(function(err) {
           console.error(LOG_PREFIX, 'AI error:', err);
-          W.isAIProcessing = false;
           if (onError) onError(err.message || 'Request failed');
         });
     }
