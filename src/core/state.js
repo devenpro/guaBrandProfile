@@ -17,5 +17,9 @@ export const W = {
   _socialRows: 1,
   _identityPhase: 'initial',
   _audiencePhase: 'initial',
-  activityLog: []
+  activityLog: [],
+  // Autopilot setup state — populated by src/setup/. Shape:
+  //   { open, mode, currentStageId, stagesQueue[], stageStatus{},
+  //     totalElapsedMs, paused, startedAt, finishedAt? }
+  setup: null
 };

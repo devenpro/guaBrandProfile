@@ -2,7 +2,9 @@
 
 This document describes how the four monolithic legacy files in `src/legacy/` migrate into the feature-modular layout advertised in [`README.md`](../README.md) (`core/`, `ui/`, `editing/`, `ai/`, `settings/`, `activity/`, `utils/`, `styles/`). It is the plan referenced by `README.md`'s v0.1.0 note.
 
-The migration is intentionally incremental: each stage lands as its own commit, the bundle is re-built and smoke-tested, and `src/legacy/` is only deleted at the end. No feature work happens during the refactor.
+The migration is intentionally incremental: each stage lands as its own commit, the bundle is re-built and smoke-tested, and `src/legacy/` is only deleted at the end.
+
+> **Update (autopilot rebuild).** The original plan deferred all feature work until after the refactor. That constraint was lifted: the autopilot rebuild (see [§ 10](#10-autopilot-rebuild)) needs `src/ai/`, `src/setup/`, and `src/ui/` extracted anyway, so the rebuild now lands inside the remaining refactor stages instead of after them. The non-goals in § 1 are amended accordingly.
 
 ---
 
@@ -16,10 +18,10 @@ The migration is intentionally incremental: each stage lands as its own commit, 
 
 **Non-goals**
 
-- Feature additions, behavior changes, or UX polish.
+- ~~Feature additions, behavior changes, or UX polish.~~ Superseded by [§ 10](#10-autopilot-rebuild) — the autopilot rebuild lands inside the remaining refactor stages.
 - Dependency upgrades or build-tool swaps (esbuild stays).
-- CSS class rename or design-system overhaul.
-- API redesign of the LLM service or activity log.
+- CSS class rename or design-system overhaul (the `bpw-` prefix and `--bpw-*` tokens stay; rebuild reuses them).
+- API redesign of the LLM service or activity log (the LLM service moves to `src/ai/llm-service.js` with the same public surface; activity log keeps writing to `field_activity_log`).
 
 ---
 
@@ -190,3 +192,38 @@ These should be resolved before Stage 1 begins.
 - [`BPW-DEVELOPMENT-GUIDE.md`](BPW-DEVELOPMENT-GUIDE.md) — workflow.
 - [`BPW-QUICK-REFERENCE.md`](BPW-QUICK-REFERENCE.md) — smoke-test checklist source.
 - [`scripts/build.mjs`](../scripts/build.mjs) — esbuild config; unchanged by this plan.
+
+---
+
+## 10. Autopilot rebuild
+
+The Continue/Back multi-step wizard is being replaced by a single autopilot form (Website URL + Brand name + Growth phase + Brand types + AI provider/model → "▶ Start autopilot" → AI stages run sequentially with per-row recover/skip), followed by a three-pane app shell (sidebar + section list + detail/edit pane) for post-setup editing and advanced research.
+
+**Branch:** `claude/fix-profile-ai-execution-Wvobg` — all phases land here, single PR to `main` at the end.
+
+### Status
+
+- **Phase 1 ✅ shipped** (`fbfa4cd`, `9a22bd3`). REFACTOR-PLAN amended; AI execution bug fixed — three `W.isAIProcessing` writes deleted from `LLMService.callAI` (bpw-app.js:2788, 2802, 2807) so `_runPromptsSequential` (bpw-part2a.js:347-362) is sole owner of the batch guard.
+- **Phase 2 ✅ shipped** (`d52dbd3`, `b86528b`, `8619796`). `src/ai/`: provider registry, LLMService, BrandService, `_helpers`, and ten action modules (scrape, market, identity, voice, audience, offerings, content, seo, competitors, personas). Every action uses the `_resolveHelpers()` lazy-bind pattern so dependency timing is not load-bearing.
+- **Phase 3 ✅ shipped** (`d94f076`). `src/setup/`: nine-stage `STAGE_REGISTRY` with growth-phase × brand-type gating, sequential orchestrator (sole owner of `W.isAIProcessing` during setup, pause/recover/skip), takeover shell + form + stage rail. On finish auto-accepts every flat key via the legacy `_bpwAcceptSection` so the `ASSEMBLY_MAP` bridge fires and Drupal export fields populate.
+- **Phase 4 ✅ shipped** (`d7d600a`, `2b4af4c`, `245a19b`). `src/ui/`: three-pane app shell (sidebar 210px + section list 320px + detail pane), topbar activity drawer, eight section views (identity, voice, audience, offerings, market, content, seo, settings) with inline AI actions (`Find more competitors`, `Generate more personas`, `Run SEO audit`). Growth-phase upgrade in Settings triggers delta-mode autopilot; downgrade is non-destructive (data persists, UI hides per `view.minLevel`). Autopilot exit hatch with partial-progress save.
+- **Phase 5 ⏸ deferred** (legacy demolition). The new modules currently *coexist* with `src/legacy/` rather than replacing it. Several legacy globals are still load-bearing at runtime:
+  - `window._bpwAcceptSection` + the `_bpwAcceptSectionOverride` set by `bpw-part2b.js:199` (`ASSEMBLY_MAP` lives here — 150+ flat→nested mappings the Drupal export fields depend on)
+  - `window._bpwSyncAllExportFields` (the 7-field export pipeline)
+  - `window._bpwSyncToTextarea`, `_bpwAutoSave`, `_bpwSetSectionState`
+  - The Drupal form boot in `bpw-app.js` (`bpwAttach`, `initWizard`, `shouldActivateWizard`, `loadData`, `resumeFromSave`, textarea/submit-button wiring)
+  - Small utility globals: `_bpwIcon`, `_bpwEsc`, `_bpwGenerateId`, `_bpwToast`, `_bpwDeepClone`, `_bpwConstants`
+  
+  Deleting legacy in this PR would break Drupal saves and the boot path. A follow-up PR should port these into `src/core/` (boot, autosave, drupal-sync), `src/editing/assembly-controller.js` (ASSEMBLY_MAP + acceptSection override), and the existing `src/utils/` files, then delete `src/legacy/`. The `_category.md` files already document where each piece lands.
+
+### Invariants (verified at every shipped phase)
+
+1. `W.isAIProcessing` has exactly one owner at any time. Currently: legacy `_runPromptsSequential` while legacy is loaded, and the new `_bpwSetupOrchestrator` while the autopilot is open. Inline post-setup AI actions use per-button `aiActionLoading`, never the global flag.
+2. `ASSEMBLY_MAP` + `acceptSection` override survive verbatim (live in legacy/bpw-part2b.js; Phase 5 will move them).
+3. `syncAllExportFields` fires on every accept — all 7 Drupal export fields populate.
+4. `_resolveHelpers()` at the top of every public AI action — never read globals at module load.
+5. Growth-phase downgrade is non-destructive (data persists; UI hides per `view.minLevel`).
+
+### Detailed plan
+
+See `/root/.claude/plans/sorted-stargazing-fox.md` for the full design (commit-level granularity, stage matrix, state shapes, verification checklist).

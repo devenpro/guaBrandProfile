@@ -1,0 +1,325 @@
+/* ═══════════════════════════════════════════════════════════════════
+   BPW APP SHELL — three-pane post-setup view.
+
+   Layout: topbar (56px) + body (sidebar 210px + list 320px + detail flex).
+   While body.bpw-app-shell-active is set, the legacy #bpwApp is hidden
+   via the rule below so the new shell owns the screen.
+   ═══════════════════════════════════════════════════════════════════ */
+
+body.bpw-app-shell-active #bpwApp { display: none !important; }
+body.bpw-app-shell-active { overflow: hidden; }
+
+.bpw-shell {
+  position: fixed; inset: 0; z-index: 900;
+  display: grid; grid-template-rows: 56px 1fr;
+  background: var(--bpw-bg, #f5f6f8);
+  font-family: var(--bpw-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  color: var(--bpw-text, #111);
+}
+
+/* ── Topbar ─────────────────────────────────────────────────────── */
+.bpw-shell-topbar {
+  height: 56px; padding: 0 20px;
+  background: #fff;
+  border-bottom: 1px solid var(--bpw-border, #e6e8eb);
+  display: flex; align-items: center; gap: 20px;
+  flex-shrink: 0;
+}
+.bpw-shell-topbar-brand {
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 700;
+  color: var(--bpw-primary, #2563eb);
+}
+.bpw-shell-topbar-name { color: var(--bpw-text, #111); }
+.bpw-shell-topbar-crumbs {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px;
+  color: var(--bpw-muted, #6b7280);
+  flex: 1;
+  margin-left: 16px;
+  padding-left: 16px;
+  border-left: 1px solid var(--bpw-border, #e6e8eb);
+}
+.bpw-shell-topbar-crumb-active { color: var(--bpw-text, #111); font-weight: 600; }
+.bpw-shell-topbar-crumb-sep { opacity: 0.6; }
+.bpw-shell-topbar-actions { display: flex; gap: 8px; }
+.bpw-shell-topbar-btn {
+  width: 36px; height: 36px;
+  border: 1px solid var(--bpw-border, #e6e8eb);
+  background: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--bpw-text, #111);
+}
+.bpw-shell-topbar-btn:hover { background: var(--bpw-bg, #f5f6f8); }
+
+/* ── Body (three-pane) ──────────────────────────────────────────── */
+.bpw-shell-body {
+  display: grid;
+  grid-template-columns: 210px 320px 1fr;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── Sidebar ────────────────────────────────────────────────────── */
+.bpw-shell-sidebar {
+  width: 210px;
+  background: #fff;
+  border-right: 1px solid var(--bpw-border, #e6e8eb);
+  padding: 16px 12px;
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+}
+.bpw-shell-sidebar-group { display: flex; flex-direction: column; gap: 2px; }
+.bpw-shell-sidebar-meta { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--bpw-border, #e6e8eb); }
+.bpw-shell-nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--bpw-text, #111);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+}
+.bpw-shell-nav-item:hover { background: var(--bpw-bg, #f5f6f8); }
+.bpw-shell-nav-active {
+  background: color-mix(in srgb, var(--bpw-primary, #2563eb) 10%, #fff);
+  color: var(--bpw-primary, #2563eb);
+  font-weight: 600;
+}
+.bpw-shell-nav-icon {
+  width: 20px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: inherit;
+}
+
+/* ── Section list (middle pane) ─────────────────────────────────── */
+.bpw-shell-list {
+  width: 320px;
+  background: #fff;
+  border-right: 1px solid var(--bpw-border, #e6e8eb);
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+}
+.bpw-shell-list-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--bpw-border, #e6e8eb);
+  flex-shrink: 0;
+}
+.bpw-shell-list-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+.bpw-shell-list-actions {
+  padding: 12px 20px;
+  display: flex; flex-wrap: wrap; gap: 8px;
+  border-bottom: 1px solid var(--bpw-border, #e6e8eb);
+  flex-shrink: 0;
+}
+.bpw-shell-action-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--bpw-border, #e6e8eb);
+  background: #fff;
+  cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--bpw-primary, #2563eb);
+  font-weight: 500;
+}
+.bpw-shell-action-btn:hover { background: color-mix(in srgb, var(--bpw-primary, #2563eb) 6%, #fff); }
+.bpw-shell-list-body {
+  padding: 12px 16px 24px;
+  display: flex; flex-direction: column;
+  gap: 8px;
+}
+.bpw-shell-list-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--bpw-muted, #6b7280);
+}
+.bpw-shell-list-empty .fa-solid { font-size: 28px; margin-bottom: 12px; display: block; }
+
+/* Card group divider — used by variable-items views to separate
+   sub-collections like segments/personas, competitors/differentiators. */
+.bpw-shell-card-divider {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--bpw-muted, #6b7280);
+  margin: 12px 4px 4px;
+}
+.bpw-shell-card-divider:first-child { margin-top: 0; }
+
+/* List item cards */
+.bpw-shell-card {
+  border: 1px solid var(--bpw-border, #e6e8eb);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.1s, background 0.1s;
+}
+.bpw-shell-card:hover { background: var(--bpw-bg, #f5f6f8); }
+.bpw-shell-card-active {
+  border-color: var(--bpw-primary, #2563eb);
+  background: color-mix(in srgb, var(--bpw-primary, #2563eb) 6%, #fff);
+}
+.bpw-shell-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bpw-text, #111);
+  margin-bottom: 4px;
+}
+.bpw-shell-card-snippet {
+  font-size: 12px;
+  color: var(--bpw-muted, #6b7280);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Detail pane (right) ────────────────────────────────────────── */
+.bpw-shell-detail {
+  flex: 1;
+  background: var(--bpw-bg, #f5f6f8);
+  padding: 24px 32px;
+  overflow-y: auto;
+}
+.bpw-shell-detail-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 100%;
+  text-align: center;
+  color: var(--bpw-muted, #6b7280);
+  padding: 40px;
+}
+.bpw-shell-detail-empty .fa-solid { font-size: 32px; margin-bottom: 16px; }
+.bpw-shell-detail-empty h3 { margin: 0 0 8px; font-size: 18px; color: var(--bpw-text, #111); }
+.bpw-shell-detail-empty p { margin: 0; }
+
+.bpw-shell-detail-card {
+  background: #fff;
+  border: 1px solid var(--bpw-border, #e6e8eb);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+.bpw-shell-detail-card h3 {
+  margin: 0 0 16px;
+  font-size: 20px;
+  font-weight: 700;
+}
+.bpw-shell-detail-row { margin-bottom: 16px; }
+.bpw-shell-detail-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--bpw-muted, #6b7280);
+  margin-bottom: 4px;
+}
+.bpw-shell-detail-value {
+  font-size: 14px;
+  color: var(--bpw-text, #111);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.bpw-shell-detail-value-empty { color: var(--bpw-muted, #6b7280); font-style: italic; }
+
+/* ── Activity drawer ────────────────────────────────────────────── */
+.bpw-shell-drawer {
+  position: fixed; top: 0; right: 0; bottom: 0;
+  width: 360px;
+  background: #fff;
+  border-left: 1px solid var(--bpw-border, #e6e8eb);
+  box-shadow: -8px 0 24px rgba(0,0,0,0.06);
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
+  z-index: 1100;
+  display: flex; flex-direction: column;
+}
+.bpw-shell-drawer-open { transform: translateX(0); }
+.bpw-shell-drawer-scrim {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.18);
+  z-index: 1050;
+}
+.bpw-shell-drawer-header {
+  height: 56px;
+  padding: 0 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--bpw-border, #e6e8eb);
+}
+.bpw-shell-drawer-header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex; align-items: center; gap: 8px;
+}
+.bpw-shell-drawer-close {
+  width: 32px; height: 32px;
+  border: none; background: transparent;
+  border-radius: 6px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.bpw-shell-drawer-close:hover { background: var(--bpw-bg, #f5f6f8); }
+.bpw-shell-drawer-body {
+  flex: 1; overflow-y: auto;
+  padding: 12px 16px 24px;
+}
+.bpw-shell-drawer-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--bpw-muted, #6b7280);
+}
+.bpw-shell-drawer-empty .fa-solid { font-size: 24px; margin-bottom: 8px; display: block; }
+.bpw-shell-drawer-list {
+  list-style: none;
+  padding: 0; margin: 0;
+}
+.bpw-shell-drawer-item {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--bpw-border, #e6e8eb);
+  font-size: 13px;
+}
+.bpw-shell-drawer-item:last-child { border-bottom: none; }
+.bpw-shell-drawer-item-head {
+  display: flex; justify-content: space-between; gap: 8px;
+  margin-bottom: 4px;
+}
+.bpw-shell-drawer-verb {
+  text-transform: capitalize;
+  font-weight: 600;
+}
+.bpw-shell-drawer-time {
+  font-size: 11px;
+  color: var(--bpw-muted, #6b7280);
+}
+.bpw-shell-drawer-subject {
+  color: var(--bpw-muted, #6b7280);
+  font-size: 12px;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .bpw-shell-body { grid-template-columns: 180px 280px 1fr; }
+  .bpw-shell-sidebar { width: 180px; }
+  .bpw-shell-list { width: 280px; }
+}
+@media (max-width: 768px) {
+  .bpw-shell-body { grid-template-columns: 1fr; }
+  .bpw-shell-sidebar,
+  .bpw-shell-list { display: none; }
+  /* Mobile UX is a follow-up — for now show the detail pane only. */
+}

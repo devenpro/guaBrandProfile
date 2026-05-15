@@ -1,4 +1,6 @@
 @import './styles/tokens.css';
 @import './styles/reset.css';
 @import './legacy/bpw-app.css';
+@import './setup/bpw-setup.css';
+@import './ui/bpw-app.css';
 @import './styles/responsive.css';
