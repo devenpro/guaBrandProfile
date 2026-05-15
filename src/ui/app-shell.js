@@ -158,10 +158,21 @@
         }
       });
 
-    // Re-render the topbar when the dirty / last-saved state flips elsewhere
-    // (autosave, debounced syncToTextarea). Cheap full re-render is fine.
+    // Re-render only the topbar when the dirty / last-saved state flips
+    // elsewhere (autosave, debounced syncToTextarea). A full shell
+    // re-render here would steal focus from any editor the user is
+    // typing in, so we surgically replace just the topbar.
     if (!window._bpwAppShell_dirtyHook) {
-      window._bpwAppShell_dirtyHook = function() { if (W) render(); };
+      window._bpwAppShell_dirtyHook = function() {
+        if (!W || !window._bpwTopbar) return;
+        var $topbar = $('#bpwAppShell .bpw-shell-topbar');
+        if (!$topbar.length) return;
+        var html = window._bpwTopbar.render(W);
+        // Replace just the topbar in place. The render() output is a
+        // <header>…</header> element; swap our existing one with it.
+        var $new = $($.parseHTML(html));
+        $topbar.replaceWith($new);
+      };
     }
   }
 

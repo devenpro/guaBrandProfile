@@ -66,49 +66,45 @@
     return html || '<div class="bpw-shell-list-empty">' + _icon('magnifying-glass') + '<p>No SEO audit yet. Click <strong>Run SEO audit</strong> above.</p></div>';
   }
 
-  function _row(label, value, isList) {
-    if (value == null || value === '' || (isList && Array.isArray(value) && !value.length)) {
-      return '<div class="bpw-shell-detail-row"><div class="bpw-shell-detail-label">' + _esc(label) + '</div><div class="bpw-shell-detail-value bpw-shell-detail-value-empty">—</div></div>';
-    }
-    if (isList && Array.isArray(value)) {
-      var lis = value.map(function(x) { return '<li>' + _esc(typeof x === 'object' ? JSON.stringify(x) : x) + '</li>'; }).join('');
-      return '<div class="bpw-shell-detail-row"><div class="bpw-shell-detail-label">' + _esc(label) + '</div><ul class="bpw-shell-detail-value">' + lis + '</ul></div>';
-    }
-    return '<div class="bpw-shell-detail-row"><div class="bpw-shell-detail-label">' + _esc(label) + '</div><div class="bpw-shell-detail-value">' + _esc(value) + '</div></div>';
-  }
-
   function renderDetail(W, selectedId) {
     if (!selectedId) return '';
     var s = _seo(W);
+    var E = window._bpwEditors;
     var parts = selectedId.split(':');
     var type = parts[0], idx = parseInt(parts[1] || '0', 10);
     if (type === 'cluster') {
       var kc = (s.keyword_clusters || [])[idx];
       if (!kc) return '<div class="bpw-shell-detail-empty">Cluster not found.</div>';
+      var base = 'seo.keyword_clusters[' + idx + '].';
       return '<div class="bpw-shell-detail-card">'
-        + '<h3>' + _esc(kc.cluster || 'Keyword cluster') + '</h3>'
-        + _row('Seed keyword', kc.seed_keyword)
-        + _row('Intent', kc.intent)
-        + _row('Difficulty', kc.difficulty)
-        + _row('Keywords', kc.keywords, true)
+        + '<h3>' + _esc(kc.cluster || 'Keyword cluster ' + (idx + 1)) + '</h3>'
+        + E.renderText({ label: 'Cluster', path: base + 'cluster', value: kc.cluster })
+        + E.renderText({ label: 'Seed keyword', path: base + 'seed_keyword', value: kc.seed_keyword })
+        + E.renderText({ label: 'Intent', path: base + 'intent', value: kc.intent, placeholder: 'informational / commercial / navigational' })
+        + E.renderText({ label: 'Difficulty', path: base + 'difficulty', value: kc.difficulty, placeholder: 'low / medium / high' })
+        + E.renderChips({ label: 'Keywords', path: base + 'keywords', value: kc.keywords, addLabel: 'keyword' })
         + '</div>';
     }
     if (type === 'gap') {
       var g = (s.content_gaps || [])[idx];
       if (!g) return '<div class="bpw-shell-detail-empty">Gap not found.</div>';
+      var gbase = 'seo.content_gaps[' + idx + '].';
       return '<div class="bpw-shell-detail-card">'
-        + '<h3>' + _esc(g.topic || 'Content gap') + '</h3>'
-        + _row('Why it matters', g.why_it_matters)
-        + _row('Suggested angle', g.suggested_angle)
+        + '<h3>' + _esc(g.topic || 'Content gap ' + (idx + 1)) + '</h3>'
+        + E.renderText({ label: 'Topic', path: gbase + 'topic', value: g.topic })
+        + E.renderTextarea({ label: 'Why it matters', path: gbase + 'why_it_matters', value: g.why_it_matters })
+        + E.renderTextarea({ label: 'Suggested angle', path: gbase + 'suggested_angle', value: g.suggested_angle, tall: true })
         + '</div>';
     }
     if (type === 'quickwin') {
       var qw = (s.quick_wins || [])[idx];
       if (!qw) return '<div class="bpw-shell-detail-empty">Quick win not found.</div>';
+      var qbase = 'seo.quick_wins[' + idx + '].';
       return '<div class="bpw-shell-detail-card">'
-        + '<h3>' + _esc(qw.action || 'Quick win') + '</h3>'
-        + _row('Impact', qw.impact)
-        + _row('Effort', qw.effort)
+        + '<h3>' + _esc(qw.action || 'Quick win ' + (idx + 1)) + '</h3>'
+        + E.renderText({ label: 'Action', path: qbase + 'action', value: qw.action })
+        + E.renderText({ label: 'Impact', path: qbase + 'impact', value: qw.impact, placeholder: 'low / medium / high' })
+        + E.renderText({ label: 'Effort', path: qbase + 'effort', value: qw.effort, placeholder: 'low / medium / high' })
         + '</div>';
     }
     return '';

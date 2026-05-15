@@ -73,48 +73,66 @@
     return html || '<div class="bpw-shell-list-empty">' + _icon('box-open') + '<p>No offerings yet — run the autopilot or add manually.</p></div>';
   }
 
-  function _row(label, value, isList) {
-    if (value == null || value === '' || (isList && Array.isArray(value) && !value.length)) {
-      return '<div class="bpw-shell-detail-row"><div class="bpw-shell-detail-label">' + _esc(label) + '</div><div class="bpw-shell-detail-value bpw-shell-detail-value-empty">—</div></div>';
-    }
-    if (isList && Array.isArray(value)) {
-      var lis = value.map(function(x) { return '<li>' + _esc(typeof x === 'object' ? JSON.stringify(x) : x) + '</li>'; }).join('');
-      return '<div class="bpw-shell-detail-row"><div class="bpw-shell-detail-label">' + _esc(label) + '</div><ul class="bpw-shell-detail-value">' + lis + '</ul></div>';
-    }
-    return '<div class="bpw-shell-detail-row"><div class="bpw-shell-detail-label">' + _esc(label) + '</div><div class="bpw-shell-detail-value">' + _esc(value) + '</div></div>';
-  }
-
   function renderDetail(W, selectedId) {
     if (!selectedId) return '';
     var o = _off(W);
-    if (selectedId === 'revenue')      return '<div class="bpw-shell-detail-card"><h3>Revenue streams</h3>' + _row('Streams', o.revenue_streams, true) + '</div>';
-    if (selectedId === 'pricing')      return '<div class="bpw-shell-detail-card"><h3>Pricing model</h3>' + _row('Description', o.pricing_model) + '</div>';
-    if (selectedId === 'content_desc') return '<div class="bpw-shell-detail-card"><h3>Content approach</h3>' + _row('Description', o.content_description) + '</div>';
+    var E = window._bpwEditors;
+
+    if (selectedId === 'revenue') {
+      return '<div class="bpw-shell-detail-card">'
+        + '<h3>Revenue streams</h3>'
+        + E.renderList({
+            path: 'offerings.revenue_streams', value: o.revenue_streams || [],
+            addLabel: 'stream',
+            itemTemplate: { stream: '', description: '' },
+            fields: [
+              { key: 'stream', label: 'Stream', type: 'text' },
+              { key: 'description', label: 'Description', type: 'textarea' }
+            ]
+          })
+        + '</div>';
+    }
+    if (selectedId === 'pricing') {
+      return '<div class="bpw-shell-detail-card">'
+        + '<h3>Pricing model</h3>'
+        + E.renderTextarea({ label: 'Description', path: 'offerings.pricing_model', value: o.pricing_model, tall: true })
+        + '</div>';
+    }
+    if (selectedId === 'content_desc') {
+      return '<div class="bpw-shell-detail-card">'
+        + '<h3>Content approach</h3>'
+        + E.renderTextarea({ label: 'Description', path: 'offerings.content_description', value: o.content_description, tall: true })
+        + '</div>';
+    }
 
     var parts = selectedId.split(':');
     var type = parts[0], idx = parseInt(parts[1] || '0', 10);
     if (type === 'item') {
       var it = (o.items || [])[idx];
       if (!it) return '<div class="bpw-shell-detail-empty">Item not found.</div>';
+      var base = 'offerings.items[' + idx + '].';
       return '<div class="bpw-shell-detail-card">'
-        + '<h3>' + _esc(it.name || 'Offering') + '</h3>'
-        + _row('Category', it.category)
-        + _row('Description', it.description)
-        + _row('Features', it.features, true)
-        + _row('Benefits', it.benefits, true)
-        + _row('Target audience', it.target_audience)
-        + _row('Status', it.status)
+        + '<h3>' + _esc(it.name || 'Offering ' + (idx + 1)) + '</h3>'
+        + E.renderText({ label: 'Name', path: base + 'name', value: it.name })
+        + E.renderText({ label: 'Category', path: base + 'category', value: it.category })
+        + E.renderTextarea({ label: 'Description', path: base + 'description', value: it.description })
+        + E.renderChips({ label: 'Features', path: base + 'features', value: it.features, addLabel: 'feature' })
+        + E.renderChips({ label: 'Benefits', path: base + 'benefits', value: it.benefits, addLabel: 'benefit' })
+        + E.renderText({ label: 'Target audience', path: base + 'target_audience', value: it.target_audience })
+        + E.renderText({ label: 'Status', path: base + 'status', value: it.status, placeholder: 'active / coming soon / sunset' })
         + '</div>';
     }
     if (type === 'program') {
       var p = (o.programs || [])[idx];
       if (!p) return '<div class="bpw-shell-detail-empty">Program not found.</div>';
+      var pbase = 'offerings.programs[' + idx + '].';
       return '<div class="bpw-shell-detail-card">'
-        + '<h3>' + _esc(p.name || 'Program') + '</h3>'
-        + _row('Category', p.category)
-        + _row('Description', p.description)
-        + _row('Features', p.features, true)
-        + _row('Target audience', p.target_audience)
+        + '<h3>' + _esc(p.name || 'Program ' + (idx + 1)) + '</h3>'
+        + E.renderText({ label: 'Name', path: pbase + 'name', value: p.name })
+        + E.renderText({ label: 'Category', path: pbase + 'category', value: p.category })
+        + E.renderTextarea({ label: 'Description', path: pbase + 'description', value: p.description })
+        + E.renderChips({ label: 'Features', path: pbase + 'features', value: p.features })
+        + E.renderText({ label: 'Target audience', path: pbase + 'target_audience', value: p.target_audience })
         + '</div>';
     }
     return '';

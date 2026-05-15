@@ -50,6 +50,8 @@ import './setup/bpw-setup.js';
 // window._bpwUIViews and must load BEFORE app-shell.js so the shell
 // finds them on first render.
 import './ui/_export-sync.js';
+import './ui/editors/path-store.js';
+import './ui/editors/fields.js';
 import './ui/topbar.js';
 import './ui/sidebar.js';
 import './ui/section-list.js';

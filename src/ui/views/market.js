@@ -77,51 +77,55 @@
     return html;
   }
 
-  function _row(label, value, isList) {
-    if (value == null || value === '' || (isList && Array.isArray(value) && !value.length)) {
-      return '<div class="bpw-shell-detail-row"><div class="bpw-shell-detail-label">' + _esc(label) + '</div><div class="bpw-shell-detail-value bpw-shell-detail-value-empty">—</div></div>';
-    }
-    if (isList && Array.isArray(value)) {
-      var lis = value.map(function(x) { return '<li>' + _esc(typeof x === 'object' ? JSON.stringify(x) : x) + '</li>'; }).join('');
-      return '<div class="bpw-shell-detail-row"><div class="bpw-shell-detail-label">' + _esc(label) + '</div><ul class="bpw-shell-detail-value">' + lis + '</ul></div>';
-    }
-    return '<div class="bpw-shell-detail-row"><div class="bpw-shell-detail-label">' + _esc(label) + '</div><div class="bpw-shell-detail-value">' + _esc(value) + '</div></div>';
-  }
-
   function renderDetail(W, selectedId) {
     if (!selectedId) return '';
     var m = _mkt(W);
+    var E = window._bpwEditors;
 
     if (selectedId === 'category') {
       return '<div class="bpw-shell-detail-card">'
         + '<h3>Category & positioning</h3>'
-        + _row('Market category', m.category)
-        + _row('Positioning', m.positioning)
+        + E.renderText({ label: 'Market category', path: 'market.category', value: m.category })
+        + E.renderTextarea({ label: 'Positioning', path: 'market.positioning', value: m.positioning, tall: true })
         + '</div>';
     }
-    if (selectedId === 'trends')        return '<div class="bpw-shell-detail-card"><h3>Trends</h3>' + _row('Trends', m.trends, true) + '</div>';
-    if (selectedId === 'opportunities') return '<div class="bpw-shell-detail-card"><h3>Opportunities</h3>' + _row('Opportunities', m.opportunities, true) + '</div>';
+    if (selectedId === 'trends') {
+      return '<div class="bpw-shell-detail-card">'
+        + '<h3>Trends</h3>'
+        + E.renderChips({ label: 'Trends', path: 'market.trends', value: m.trends || [], addLabel: 'trend' })
+        + '</div>';
+    }
+    if (selectedId === 'opportunities') {
+      return '<div class="bpw-shell-detail-card">'
+        + '<h3>Opportunities</h3>'
+        + E.renderChips({ label: 'Opportunities', path: 'market.opportunities', value: m.opportunities || [], addLabel: 'opportunity' })
+        + '</div>';
+    }
 
     var parts = selectedId.split(':');
     var type = parts[0], idx = parseInt(parts[1] || '0', 10);
     if (type === 'competitor') {
       var c = (m.competitors || [])[idx];
       if (!c) return '<div class="bpw-shell-detail-empty">Competitor not found.</div>';
+      var base = 'market.competitors[' + idx + '].';
       return '<div class="bpw-shell-detail-card">'
-        + '<h3>' + _esc(c.name || 'Competitor') + '</h3>'
-        + _row('Description', c.description)
-        + _row('URL', c.url)
-        + _row('Strengths', c.strengths, true)
-        + _row('Weaknesses', c.weaknesses, true)
-        + _row('Comparison', c.comparison)
+        + '<h3>' + _esc(c.name || 'Competitor ' + (idx + 1)) + '</h3>'
+        + E.renderText({ label: 'Name', path: base + 'name', value: c.name })
+        + E.renderText({ label: 'URL', path: base + 'url', value: c.url, placeholder: 'https://…' })
+        + E.renderTextarea({ label: 'Description', path: base + 'description', value: c.description })
+        + E.renderChips({ label: 'Strengths', path: base + 'strengths', value: c.strengths })
+        + E.renderChips({ label: 'Weaknesses', path: base + 'weaknesses', value: c.weaknesses })
+        + E.renderTextarea({ label: 'How we compare', path: base + 'comparison', value: c.comparison })
         + '</div>';
     }
     if (type === 'differentiator') {
       var d = (m.differentiators || [])[idx];
       if (!d) return '<div class="bpw-shell-detail-empty">Differentiator not found.</div>';
+      var dbase = 'market.differentiators[' + idx + '].';
       return '<div class="bpw-shell-detail-card">'
-        + '<h3>' + _esc(d.point || 'Differentiator') + '</h3>'
-        + _row('Evidence', d.evidence)
+        + '<h3>' + _esc(d.point || 'Differentiator ' + (idx + 1)) + '</h3>'
+        + E.renderText({ label: 'Point', path: dbase + 'point', value: d.point })
+        + E.renderTextarea({ label: 'Evidence', path: dbase + 'evidence', value: d.evidence })
         + '</div>';
     }
     return '';

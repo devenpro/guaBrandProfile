@@ -3,24 +3,33 @@
  * @purpose     Voice + Messaging section view. fixed-cards mode.
  *              Sub-fields: tone, personality, dos, donts, preferred,
  *              avoided, sample, primary message, supporting messages.
+ *              Editable detail pane (Phase 5).
  * @exports     window._bpwUIViews.voice
  */
 (function() {
   'use strict';
 
   function _esc(s) { return (window._bpwEsc || function(x) { return x == null ? '' : String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); })(s); }
+  function _E() { return window._bpwEditors; }
 
   var FIELDS = [
-    { id: 'primary_tone',          label: 'Primary tone',          path: 'voice.primary_tone' },
-    { id: 'personality_traits',    label: 'Personality',           path: 'voice.personality_traits',     isList: true },
-    { id: 'dos',                   label: 'DOs',                   path: 'voice.dos',                    isList: true },
-    { id: 'donts',                 label: "DON'Ts",                path: 'voice.donts',                  isList: true },
-    { id: 'preferred_terms',       label: 'Preferred terms',       path: 'voice.vocabulary.preferred_terms', isList: true },
-    { id: 'avoided_terms',         label: 'Avoided terms',         path: 'voice.vocabulary.avoided_terms',   isList: true },
-    { id: 'sample_texts',          label: 'Voice sample',          path: 'voice.sample_texts' },
-    { id: 'primary_message',       label: 'Primary message',       path: 'messaging.primary_message' },
-    { id: 'supporting_messages',   label: 'Supporting messages',   path: 'messaging.supporting_messages', isList: true },
-    { id: 'headlines',             label: 'Headlines',             path: 'messaging.headlines',           isList: true }
+    { id: 'primary_tone',          label: 'Primary tone',          path: 'voice.primary_tone',                type: 'text' },
+    { id: 'personality_traits',    label: 'Personality',           path: 'voice.personality_traits',          type: 'chips' },
+    { id: 'dos',                   label: 'DOs',                   path: 'voice.dos',                         type: 'chips' },
+    { id: 'donts',                 label: "DON'Ts",                path: 'voice.donts',                       type: 'chips' },
+    { id: 'preferred_terms',       label: 'Preferred terms',       path: 'voice.vocabulary.preferred_terms',  type: 'chips' },
+    { id: 'avoided_terms',         label: 'Avoided terms',         path: 'voice.vocabulary.avoided_terms',    type: 'chips' },
+    { id: 'sample_texts',          label: 'Voice sample',          path: 'voice.sample_texts',                type: 'textarea', tall: true },
+    { id: 'primary_message',       label: 'Primary message',       path: 'messaging.primary_message',         type: 'textarea' },
+    { id: 'supporting_messages',   label: 'Supporting messages',   path: 'messaging.supporting_messages',     type: 'chips' },
+    { id: 'headlines',             label: 'Headlines',             path: 'messaging.headlines',               type: 'list',
+      listFields: [
+        { key: 'context', label: 'Context', type: 'text', placeholder: 'e.g. Homepage hero' },
+        { key: 'headline', label: 'Headline', type: 'textarea' }
+      ],
+      itemTemplate: { context: '', headline: '' }
+    },
+    { id: 'cta_phrases',           label: 'CTA phrases',           path: 'messaging.cta_phrases',             type: 'chips' }
   ];
 
   function _readPath(W, path) {
@@ -33,10 +42,10 @@
     return cur;
   }
 
-  function _snippet(v, isList) {
+  function _snippet(v, type) {
     if (v == null || v === '') return '';
-    if (isList && Array.isArray(v)) {
-      return v.map(function(x) { return x.headline || x.context || x.value || x.name || x; }).slice(0, 5).join(' · ');
+    if (Array.isArray(v)) {
+      return v.map(function(x) { return x && (x.headline || x.context || x.value || x.name) || x; }).filter(Boolean).slice(0, 5).join(' · ');
     }
     if (typeof v === 'object') { try { return JSON.stringify(v); } catch (e) { return ''; } }
     return String(v);
@@ -48,7 +57,7 @@
     for (var i = 0; i < FIELDS.length; i++) {
       var f = FIELDS[i];
       var v = _readPath(W, f.path);
-      var snippet = _snippet(v, f.isList);
+      var snippet = _snippet(v, f.type);
       var cls = activeItem === f.id ? 'bpw-shell-card bpw-shell-card-active' : 'bpw-shell-card';
       html += '<article class="' + cls + '" data-item-id="' + _esc(f.id) + '" role="button" tabindex="0">';
       html += '<div class="bpw-shell-card-title">' + _esc(f.label) + '</div>';
@@ -64,28 +73,17 @@
     for (var i = 0; i < FIELDS.length; i++) if (FIELDS[i].id === selectedId) { field = FIELDS[i]; break; }
     if (!field) return '';
     var value = _readPath(W, field.path);
-    var html = '<div class="bpw-shell-detail-card">';
-    html += '<h3>' + _esc(field.label) + '</h3>';
-    html += '<div class="bpw-shell-detail-row">';
-    html += '<div class="bpw-shell-detail-label">Current value</div>';
-    if (value == null || value === '' || (Array.isArray(value) && !value.length)) {
-      html += '<div class="bpw-shell-detail-value bpw-shell-detail-value-empty">Not generated yet.</div>';
-    } else if (field.isList && Array.isArray(value)) {
-      html += '<ul class="bpw-shell-detail-value">';
-      for (var j = 0; j < value.length; j++) {
-        var v = value[j];
-        if (v && (v.headline || v.context)) {
-          html += '<li><strong>' + _esc(v.context || 'Headline') + ':</strong> ' + _esc(v.headline || '') + '</li>';
-        } else {
-          html += '<li>' + _esc(typeof v === 'object' ? JSON.stringify(v) : v) + '</li>';
-        }
-      }
-      html += '</ul>';
+    var E = _E();
+    var editor;
+    if (field.type === 'list') {
+      editor = E.renderList({ path: field.path, value: value || [], fields: field.listFields, itemTemplate: field.itemTemplate, addLabel: 'item' });
     } else {
-      html += '<div class="bpw-shell-detail-value">' + _esc(typeof value === 'object' ? JSON.stringify(value, null, 2) : value) + '</div>';
+      editor = E.renderField({ type: field.type, path: field.path, value: value, tall: field.tall, placeholder: field.placeholder });
     }
-    html += '</div></div>';
-    return html;
+    return '<div class="bpw-shell-detail-card">'
+      +    '<h3>' + _esc(field.label) + '</h3>'
+      +    editor
+      +    '</div>';
   }
 
   window._bpwUIViews = window._bpwUIViews || {};

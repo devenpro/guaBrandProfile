@@ -71,15 +71,13 @@
   function renderDetail(W, selectedId) {
     if (!selectedId) return '';
     var a = _aud(W);
+    var E = window._bpwEditors;
 
     if (selectedId === 'primary') {
-      var v = a.primary_description;
       return '<div class="bpw-shell-detail-card">'
         + '<h3>Primary audience</h3>'
-        + '<div class="bpw-shell-detail-row">'
-        + '<div class="bpw-shell-detail-label">Description</div>'
-        + (v ? '<div class="bpw-shell-detail-value">' + _esc(v) + '</div>' : '<div class="bpw-shell-detail-value bpw-shell-detail-value-empty">Not generated yet.</div>')
-        + '</div></div>';
+        + E.renderTextarea({ label: 'Description', path: 'audience.primary_description', value: a.primary_description, tall: true })
+        + '</div>';
     }
 
     var parts = selectedId.split(':');
@@ -87,38 +85,33 @@
     if (type === 'segment') {
       var s = (a.segments || [])[idx];
       if (!s) return '<div class="bpw-shell-detail-empty">Segment not found.</div>';
+      var base = 'audience.segments[' + idx + '].';
       return '<div class="bpw-shell-detail-card">'
-        + '<h3>' + _esc(s.name || 'Segment') + '</h3>'
-        + _detailRow('Description', s.description)
-        + _detailRow('Pain points', s.pain_points, true)
-        + _detailRow('Goals', s.goals, true)
-        + _detailRow('Channels', s.channels, true)
+        + '<h3>' + _esc(s.name || 'Segment ' + (idx + 1)) + '</h3>'
+        + E.renderText({ label: 'Name', path: base + 'name', value: s.name })
+        + E.renderTextarea({ label: 'Description', path: base + 'description', value: s.description })
+        + E.renderChips({ label: 'Pain points', path: base + 'pain_points', value: s.pain_points, addLabel: 'pain' })
+        + E.renderChips({ label: 'Goals', path: base + 'goals', value: s.goals, addLabel: 'goal' })
+        + E.renderChips({ label: 'Channels', path: base + 'channels', value: s.channels, addLabel: 'channel' })
         + '</div>';
     }
     if (type === 'persona') {
       var p = (a.personas || [])[idx];
       if (!p) return '<div class="bpw-shell-detail-empty">Persona not found.</div>';
+      var pbase = 'audience.personas[' + idx + '].';
       return '<div class="bpw-shell-detail-card">'
-        + '<h3>' + _esc(p.name || 'Persona') + (p.role ? ' · ' + _esc(p.role) : '') + '</h3>'
-        + _detailRow('Story', p.story)
-        + _detailRow('Pain points', p.pain_points, true)
-        + _detailRow('Goals', p.goals, true)
-        + _detailRow('Decision criteria', p.decision_criteria, true)
-        + _detailRow('Journey', p.journey)
+        + '<h3>' + _esc(p.name || 'Persona ' + (idx + 1)) + '</h3>'
+        + E.renderText({ label: 'Name', path: pbase + 'name', value: p.name })
+        + E.renderText({ label: 'Role', path: pbase + 'role', value: p.role })
+        + E.renderText({ label: 'Age', path: pbase + 'age', value: p.age })
+        + E.renderTextarea({ label: 'Story', path: pbase + 'story', value: p.story, tall: true })
+        + E.renderTextarea({ label: 'Journey', path: pbase + 'journey', value: p.journey })
+        + E.renderChips({ label: 'Pain points', path: pbase + 'pain_points', value: p.pain_points })
+        + E.renderChips({ label: 'Goals', path: pbase + 'goals', value: p.goals })
+        + E.renderChips({ label: 'Decision criteria', path: pbase + 'decision_criteria', value: p.decision_criteria })
         + '</div>';
     }
     return '';
-  }
-
-  function _detailRow(label, v, isList) {
-    if (v == null || v === '' || (isList && Array.isArray(v) && !v.length)) {
-      return '<div class="bpw-shell-detail-row"><div class="bpw-shell-detail-label">' + _esc(label) + '</div><div class="bpw-shell-detail-value bpw-shell-detail-value-empty">—</div></div>';
-    }
-    if (isList && Array.isArray(v)) {
-      var lis = v.map(function(x) { return '<li>' + _esc(typeof x === 'object' ? JSON.stringify(x) : x) + '</li>'; }).join('');
-      return '<div class="bpw-shell-detail-row"><div class="bpw-shell-detail-label">' + _esc(label) + '</div><ul class="bpw-shell-detail-value">' + lis + '</ul></div>';
-    }
-    return '<div class="bpw-shell-detail-row"><div class="bpw-shell-detail-label">' + _esc(label) + '</div><div class="bpw-shell-detail-value">' + _esc(typeof v === 'object' ? JSON.stringify(v, null, 2) : v) + '</div></div>';
   }
 
   // ── Inline action: Generate more personas ──────────────────────────
