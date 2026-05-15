@@ -41,8 +41,16 @@ import './ai/actions/seo.js';
 import './ai/actions/competitors.js';
 import './ai/actions/personas.js';
 
+// Setup autopilot — depends on ai/* being registered.
+import './setup/bpw-setup-stages.js';
+import './setup/bpw-setup-orchestrator.js';
+import './setup/bpw-setup.js';
+
 // Legacy monolith — still defines its own LLMService closure and
-// `window._bpwLLMService` alias used by bpw-part2a/2b/2c.
+// `window._bpwLLMService` alias used by bpw-part2a/2b/2c. Loaded last
+// so legacy globals (_bpwAcceptSection, _bpwSetSectionState, _bpwIcon,
+// _bpwToast, etc.) are available when the new modules' lazy resolvers
+// run on first user interaction.
 import './legacy/bpw-app.js';
 import './legacy/bpw-part2a.js';
 import './legacy/bpw-part2b.js';
