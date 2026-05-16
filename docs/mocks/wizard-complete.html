@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BPW Mock — Wizard Complete</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="_wizard.css">
+</head>
+<body>
+
+<div class="mock-nav">
+  <a href="index.html">Index</a>
+  <a href="step1-basics.html">1 · Basics</a>
+  <a href="step2-discovery.html">2 · Discovery</a>
+  <a href="step2b-followups.html">2b · Follow-ups</a>
+  <a href="stage-loading.html">3 · Loading</a>
+  <a href="stage-review.html">3 · Identity</a>
+  <a href="stage-review-competitors.html">8 · Competitors</a>
+  <a href="wizard-complete.html" class="active">9 · Done</a>
+  <a href="dashboard.html">Dashboard</a>
+</div>
+
+<div class="wiz-top">
+  <div class="logo">Brand Profile Wizard</div>
+  <div class="spacer"></div>
+  <div class="save-state"><span class="dot"></span> All sections saved</div>
+</div>
+
+<div class="wiz-rail">
+  <div class="wiz-rail-inner">
+    <div class="wiz-rail-progress"><div style="width: 100%"></div></div>
+    <div class="wiz-rail-steps" data-current="done"></div>
+  </div>
+</div>
+
+<div class="complete-stage">
+  <div class="confetti">🎉</div>
+  <h1>Your brand profile is ready</h1>
+  <p>
+    Eight stages, 47 fields, all drafted &amp; reviewed.<br>
+    Everything is editable later — but the heavy lifting is done.
+  </p>
+
+  <div class="complete-stats">
+    <div class="stat">
+      <div class="num">8</div>
+      <div class="lbl">Sections</div>
+    </div>
+    <div class="stat">
+      <div class="num">47</div>
+      <div class="lbl">Fields filled</div>
+    </div>
+    <div class="stat">
+      <div class="num">~$0.21</div>
+      <div class="lbl">AI cost</div>
+    </div>
+  </div>
+
+  <a href="dashboard.html" class="btn btn-primary" style="height: 44px; padding: 0 24px; font-size: 15px;">Open your dashboard →</a>
+  <div style="margin-top: 16px;">
+    <a href="identity-page.html" style="font-size: 13px;">Or jump straight to Identity</a>
+  </div>
+
+  <div class="next-note" style="margin-top: 40px; text-align: left;">
+    <span class="icon-sparkle"></span>
+    <span>
+      <strong>What's next?</strong> Your dashboard shows completion across all sections plus a "Resume editing" pill so you can pick up exactly where you left off. You can also upgrade growth phase any time from Settings — we'll re-run the relevant stages and walk you through the same review screens.
+    </span>
+  </div>
+</div>
+
+<script src="_wizard.js"></script>
+<script>
+  /* mark all rail steps as done */
+  const rail = document.querySelector('.wiz-rail-steps');
+  if (rail) {
+    rail.querySelectorAll('.step').forEach(s => {
+      s.classList.remove('current');
+      s.classList.add('done');
+    });
+  }
+</script>
+</body>
+</html>

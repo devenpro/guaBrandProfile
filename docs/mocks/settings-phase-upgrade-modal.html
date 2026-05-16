@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BPW Mock — Phase Upgrade Confirmation</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="_shared.css">
+<style>
+  /* Faded background = settings page underneath */
+  body { background: var(--bpw-bg); }
+  .underlay {
+    filter: blur(3px) brightness(0.95);
+    opacity: 0.5;
+    pointer-events: none;
+    user-select: none;
+  }
+  .underlay .strip {
+    height: 56px; background: var(--bpw-white); border-bottom: 1px solid var(--bpw-border);
+  }
+  .underlay .body {
+    max-width: 1000px;
+    margin: 32px auto;
+    padding: 24px;
+    background: var(--bpw-white);
+    border-radius: 16px;
+    border: 1px solid var(--bpw-border);
+    height: 400px;
+  }
+  /* Backdrop */
+  .backdrop {
+    position: fixed; inset: 0;
+    background: rgba(32, 33, 36, 0.5);
+    backdrop-filter: blur(1.5px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000;
+  }
+  .modal {
+    width: min(580px, calc(100vw - 32px));
+    background: var(--bpw-white);
+    border-radius: var(--bpw-radius-lg);
+    box-shadow: var(--bpw-shadow-lg);
+    overflow: hidden;
+    animation: pop 0.2s ease-out;
+  }
+  @keyframes pop {
+    from { transform: scale(0.96) translateY(6px); opacity: 0; }
+    to   { transform: scale(1) translateY(0); opacity: 1; }
+  }
+  .modal-head {
+    padding: 22px 26px 8px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .modal-head .ic {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--bpw-primary-light), var(--bpw-accent-light));
+    color: var(--bpw-accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .modal-head h2 {
+    font-family: var(--bpw-font-heading);
+    font-size: 19px;
+    letter-spacing: -0.005em;
+  }
+  .modal-head .sub {
+    color: var(--bpw-text-sec);
+    font-size: 13px;
+    margin-top: 2px;
+  }
+  .modal-body { padding: 8px 26px 14px; }
+  .modal-body p {
+    font-size: 14px;
+    color: var(--bpw-text);
+    margin-bottom: 14px;
+    line-height: 1.55;
+  }
+
+  .change-table {
+    border: 1px solid var(--bpw-border);
+    border-radius: var(--bpw-radius-md);
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+  .change-table .row {
+    display: grid;
+    grid-template-columns: 130px 1fr 1fr;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--bpw-border);
+    font-size: 13px;
+    align-items: center;
+  }
+  .change-table .row:last-child { border-bottom: none; }
+  .change-table .row.header {
+    background: var(--bpw-gray-50);
+    font-weight: 600;
+    color: var(--bpw-text-sec);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .change-table .k {
+    font-weight: 500;
+  }
+  .change-table .from { color: var(--bpw-text-muted); }
+  .change-table .from::after { content: " →"; color: var(--bpw-text-muted); }
+  .change-table .to { color: var(--bpw-success); font-weight: 500; }
+
+  .what-happens {
+    background: var(--bpw-primary-subtle);
+    border: 1px solid var(--bpw-primary-light);
+    border-radius: var(--bpw-radius-md);
+    padding: 14px 16px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--bpw-primary-dark);
+  }
+  .what-happens b { color: var(--bpw-primary-dark); }
+  .what-happens ul { margin-top: 6px; padding-left: 22px; }
+  .what-happens li { margin-bottom: 3px; }
+
+  .modal-foot {
+    padding: 16px 26px;
+    background: var(--bpw-gray-50);
+    border-top: 1px solid var(--bpw-border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .modal-foot .cost {
+    font-size: 12px;
+    color: var(--bpw-text-muted);
+  }
+  .modal-foot .right { margin-left: auto; display: flex; gap: 8px; }
+</style>
+</head>
+<body>
+
+<div class="mock-nav">
+  <a href="index.html">Index</a>
+  <a href="settings-page.html">Settings</a>
+  <a href="settings-phase-upgrade-modal.html" class="active">Phase upgrade</a>
+  <a href="stage-loading.html">Stage loading</a>
+</div>
+
+<!-- Faded settings page underneath, just for context -->
+<div class="underlay">
+  <div class="strip"></div>
+  <div class="body"></div>
+</div>
+
+<div class="backdrop">
+  <div class="modal">
+
+    <div class="modal-head">
+      <div class="ic">🏛</div>
+      <div>
+        <h2>Upgrade to Established phase?</h2>
+        <div class="sub">Re-runs the relevant stages with deeper prompts. You'll review each new draft.</div>
+      </div>
+    </div>
+
+    <div class="modal-body">
+      <p>Switching from <strong>🚀 Growing</strong> to <strong>🏛 Established</strong> means the AI digs deeper across these sections:</p>
+
+      <div class="change-table">
+        <div class="row header">
+          <div>Section</div>
+          <div>Growing</div>
+          <div>Established</div>
+        </div>
+        <div class="row">
+          <div class="k">Identity</div>
+          <div class="from">1 mission, 1 vision</div>
+          <div class="to">3 mission alternatives, nuanced positioning</div>
+        </div>
+        <div class="row">
+          <div class="k">Audience</div>
+          <div class="from">2 segments, 1 persona</div>
+          <div class="to">3 segments, 2–3 personas</div>
+        </div>
+        <div class="row">
+          <div class="k">Competitors</div>
+          <div class="from">3 cards · strengths only</div>
+          <div class="to">4–5 cards · strengths + weaknesses + vs-you</div>
+        </div>
+        <div class="row">
+          <div class="k">Market</div>
+          <div class="from">Category + positioning</div>
+          <div class="to">+ trends, opportunities, segment maps</div>
+        </div>
+      </div>
+
+      <div class="what-happens">
+        <b>What happens next:</b>
+        <ul>
+          <li>We'll run Identity, Audience, Competitors and Market — same review screens you used during setup.</li>
+          <li>Your existing approved content stays; the AI <em>adds</em> depth, it doesn't overwrite unless you approve.</li>
+          <li>Voice, Offerings, Content, SEO and Social are untouched.</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="modal-foot">
+      <span class="cost">~$0.12 in AI cost · ~60s total</span>
+      <div class="right">
+        <a href="settings-page.html" class="btn btn-ghost">Cancel</a>
+        <a href="stage-loading.html" class="btn btn-primary">Upgrade &amp; start drafting →</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BPW Mock — Settings</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="_shared.css">
+<style>
+  /* Reuse the dashboard shell pattern for app-chrome consistency */
+  .top {
+    height: 56px;
+    background: var(--bpw-white);
+    border-bottom: 1px solid var(--bpw-border);
+    display: flex;
+    align-items: center;
+    padding: 0 22px;
+    gap: 12px;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .top .logo {
+    font-family: var(--bpw-font-heading);
+    font-weight: 700;
+    color: var(--bpw-primary-dark);
+  }
+  .top .crumb { color: var(--bpw-text-muted); font-size: 13px; }
+  .top .crumb b { color: var(--bpw-text); font-weight: 600; }
+  .top .spacer { flex: 1; }
+
+  .shell { display: grid; grid-template-columns: 232px 1fr; min-height: calc(100vh - 56px); }
+  .nav {
+    background: var(--bpw-white);
+    border-right: 1px solid var(--bpw-border);
+    padding: 16px 12px;
+    position: sticky; top: 56px; height: calc(100vh - 56px);
+    overflow-y: auto;
+  }
+  .nav-section {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--bpw-text-muted);
+    padding: 12px 12px 6px;
+    font-weight: 600;
+  }
+  .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    color: var(--bpw-text-sec);
+    cursor: pointer;
+  }
+  .nav-link:hover { background: var(--bpw-gray-50); color: var(--bpw-text); }
+  .nav-link.active { background: var(--bpw-primary-light); color: var(--bpw-primary-dark); font-weight: 500; }
+  .nav-link .ico {
+    width: 22px; height: 22px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--bpw-gray-100); color: var(--bpw-text-sec);
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .nav-link.active .ico { background: var(--bpw-primary); color: var(--bpw-white); }
+
+  /* Main */
+  .main { padding: 32px 36px 60px; max-width: 840px; }
+  .main h1 {
+    font-family: var(--bpw-font-heading);
+    font-size: 28px;
+    letter-spacing: -0.01em;
+    margin-bottom: 6px;
+  }
+  .main .lede {
+    color: var(--bpw-text-sec);
+    font-size: 14.5px;
+    margin-bottom: 28px;
+  }
+
+  .settings-section {
+    background: var(--bpw-white);
+    border: 1px solid var(--bpw-border);
+    border-radius: var(--bpw-radius-lg);
+    margin-bottom: 18px;
+    overflow: hidden;
+  }
+  .settings-section .head {
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--bpw-border);
+    display: flex; align-items: center; gap: 10px;
+    background: var(--bpw-gray-50);
+  }
+  .settings-section .head h2 {
+    font-family: var(--bpw-font-heading);
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .settings-section .head .sub {
+    font-size: 12px;
+    color: var(--bpw-text-muted);
+    margin-left: auto;
+  }
+  .settings-section .body { padding: 18px 22px; }
+
+  .set-row {
+    display: grid;
+    grid-template-columns: 200px 1fr auto;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--bpw-gray-100);
+    align-items: center;
+  }
+  .set-row:last-child { border-bottom: none; }
+  .set-row .label { font-size: 13px; font-weight: 500; }
+  .set-row .label .desc {
+    display: block;
+    font-weight: 400;
+    color: var(--bpw-text-muted);
+    font-size: 12px;
+    margin-top: 2px;
+    line-height: 1.4;
+  }
+  .set-row .value { font-size: 14px; color: var(--bpw-text); }
+  .set-row .value.muted { color: var(--bpw-text-muted); font-style: italic; }
+  .set-row input, .set-row select { max-width: 320px; }
+
+  /* Phase switcher */
+  .phase-current {
+    display: inline-flex; gap: 8px; align-items: center;
+    padding: 6px 14px;
+    border-radius: 99px;
+    background: var(--bpw-primary-light);
+    color: var(--bpw-primary-dark);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .phase-switcher {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+    margin-top: 12px;
+  }
+  .phase-opt {
+    border: 1.5px solid var(--bpw-border);
+    border-radius: var(--bpw-radius-md);
+    padding: 12px 14px;
+    background: var(--bpw-white);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .phase-opt:hover { border-color: var(--bpw-primary); background: var(--bpw-primary-subtle); }
+  .phase-opt.current { border-color: var(--bpw-success); background: var(--bpw-success-light); cursor: default; }
+  .phase-opt .top-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .phase-opt .name { font-weight: 600; font-size: 14px; }
+  .phase-opt .pill {
+    font-size: 10px; padding: 2px 8px; border-radius: 99px;
+    background: var(--bpw-gray-100);
+    color: var(--bpw-text-sec);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .phase-opt.current .pill {
+    background: var(--bpw-success);
+    color: white;
+  }
+  .phase-opt .desc {
+    font-size: 11.5px;
+    color: var(--bpw-text-sec);
+    line-height: 1.4;
+  }
+
+  /* Danger zone */
+  .danger {
+    border-color: rgba(217, 48, 37, 0.3);
+  }
+  .danger .head { background: var(--bpw-error-light); }
+  .danger .head h2 { color: var(--bpw-error); }
+  .btn-danger {
+    background: var(--bpw-error);
+    color: white;
+  }
+  .btn-danger:hover { background: #b71c1c; }
+
+  /* Brand dump textarea */
+  .dump-row textarea {
+    min-height: 200px;
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+</style>
+</head>
+<body>
+
+<div class="mock-nav">
+  <a href="index.html">Index</a>
+  <a href="dashboard.html">Dashboard</a>
+  <a href="identity-page.html">Identity</a>
+  <a href="settings-page.html" class="active">Settings</a>
+  <a href="settings-phase-upgrade-modal.html">Phase upgrade</a>
+</div>
+
+<div class="top">
+  <div class="logo">Brand Profile Wizard</div>
+  <div class="crumb">/ <b>Northwind Coffee Co.</b> / Settings</div>
+  <div class="spacer"></div>
+  <button class="btn btn-ghost btn-sm">View profile</button>
+</div>
+
+<div class="shell">
+  <aside class="nav">
+    <div class="nav-section">Brand</div>
+    <div class="nav-link"><span class="ico">⌂</span>Dashboard</div>
+    <div class="nav-link"><span class="ico">⚑</span>Identity</div>
+    <div class="nav-link"><span class="ico">♪</span>Voice</div>
+    <div class="nav-link"><span class="ico">◉</span>Audience</div>
+    <div class="nav-section">Market</div>
+    <div class="nav-link"><span class="ico">$</span>Offerings</div>
+    <div class="nav-link"><span class="ico">⊞</span>Market</div>
+    <div class="nav-link"><span class="ico">⚔</span>Competitors</div>
+    <div class="nav-section">Channels</div>
+    <div class="nav-link"><span class="ico">✎</span>Content</div>
+    <div class="nav-link"><span class="ico">🔎</span>SEO</div>
+    <div class="nav-link"><span class="ico">⌖</span>Social</div>
+    <div class="nav-section">App</div>
+    <div class="nav-link active"><span class="ico">⚙</span>Settings</div>
+    <div class="nav-link"><span class="ico">↻</span>Activity</div>
+  </aside>
+
+  <main class="main">
+    <h1>Settings</h1>
+    <p class="lede">Brand basics, AI configuration, and growth-phase. Changes here ripple into every future AI run.</p>
+
+    <!-- Brand basics -->
+    <section class="settings-section">
+      <div class="head"><h2>Brand basics</h2><span class="sub">edit any field inline</span></div>
+      <div class="body">
+        <div class="set-row">
+          <div class="label">Brand name</div>
+          <div class="value">Northwind Coffee Co.</div>
+          <button class="btn btn-ghost btn-sm">Edit</button>
+        </div>
+        <div class="set-row">
+          <div class="label">Website</div>
+          <div class="value"><a href="#">northwindcoffee.com</a> <span class="chip chip-success" style="margin-left:6px">scraped 5d ago</span></div>
+          <button class="btn btn-ghost btn-sm">Edit / re-scrape</button>
+        </div>
+        <div class="set-row">
+          <div class="label">Brand type</div>
+          <div class="value">Commercial</div>
+          <button class="btn btn-ghost btn-sm">Change</button>
+        </div>
+        <div class="set-row">
+          <div class="label">Primary language</div>
+          <div class="value">English (US)</div>
+          <button class="btn btn-ghost btn-sm">Change</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Growth phase -->
+    <section class="settings-section">
+      <div class="head"><h2>Growth phase</h2><span class="sub">decides prompt depth, not which sections you see</span></div>
+      <div class="body">
+        <div class="set-row" style="grid-template-columns: 200px 1fr; padding-top: 0;">
+          <div class="label">
+            Current phase
+            <span class="desc">All sections are always available. Changing phase re-runs the relevant stages with deeper/lighter prompts.</span>
+          </div>
+          <div class="value">
+            <span class="phase-current">🚀 Growing</span>
+          </div>
+        </div>
+
+        <div class="set-row" style="grid-template-columns: 1fr; padding-bottom: 6px;">
+          <div class="label">Switch phase</div>
+        </div>
+        <div class="phase-switcher">
+          <div class="phase-opt">
+            <div class="top-row">
+              <span style="font-size:18px;">🌱</span>
+              <span class="name">New</span>
+              <span class="pill">downgrade</span>
+            </div>
+            <div class="desc">Tight, foundational output. Confirms before hiding extra detail.</div>
+          </div>
+          <div class="phase-opt current">
+            <div class="top-row">
+              <span style="font-size:18px;">🚀</span>
+              <span class="name">Growing</span>
+              <span class="pill">current</span>
+            </div>
+            <div class="desc">Standard depth. 2 audience segments, 3–4 competitors, basic trends.</div>
+          </div>
+          <a href="settings-phase-upgrade-modal.html" class="phase-opt" style="text-decoration:none; color:inherit;">
+            <div class="top-row">
+              <span style="font-size:18px;">🏛</span>
+              <span class="name">Established</span>
+              <span class="pill" style="background:var(--bpw-accent); color:white;">upgrade</span>
+            </div>
+            <div class="desc">Rich, multi-variant. 3 audience segments, 4–5 competitors, trends &amp; opportunities, mission alternatives.</div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- AI config -->
+    <section class="settings-section">
+      <div class="head"><h2>AI configuration</h2><span class="sub">applied to every generation</span></div>
+      <div class="body">
+        <div class="set-row">
+          <div class="label">Provider</div>
+          <div class="value">Anthropic</div>
+          <button class="btn btn-ghost btn-sm">Change</button>
+        </div>
+        <div class="set-row">
+          <div class="label">Model</div>
+          <div class="value">Claude Sonnet 4.6 <span class="chip chip-primary" style="margin-left:6px">recommended</span></div>
+          <button class="btn btn-ghost btn-sm">Change</button>
+        </div>
+        <div class="set-row">
+          <div class="label">
+            API key
+            <span class="desc">Stored locally only.</span>
+          </div>
+          <div class="value muted">sk-ant-•••••••••••••••••••</div>
+          <button class="btn btn-ghost btn-sm">Replace</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Brand dump -->
+    <section class="settings-section">
+      <div class="head">
+        <h2>Brand details</h2>
+        <span class="sub">used as anchor context for every AI run</span>
+      </div>
+      <div class="body">
+        <div class="set-row dump-row" style="grid-template-columns: 1fr; padding-top: 0; border-bottom: none;">
+          <div class="label">
+            Anything we should know
+            <span class="desc">This single field replaced the old "description" + "custom instructions" pair. Updating here improves every future regeneration.</span>
+          </div>
+          <textarea rows="8">We roast small batches of single-origin coffee in Portland and ship within 14 days of roasting. Started as a Saturday-only café, now ship to subscribers in 32 states.
+
+Customers are knowledge workers 28–45, urban, who care about craft AND convenience. Avg order $42. Subscriptions are 70% of revenue.
+
+We compete with Trade Coffee (mass) and Onyx (premium). Our edge: named roasters, 14-day freshness guarantee, recyclable packaging.
+
+Voice notes: warm, direct, never precious. Avoid "artisanal" and "premium". Always reference our 14-day promise in tagline candidates.</textarea>
+          <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px;">
+            <button class="btn btn-ghost btn-sm">Cancel</button>
+            <button class="btn btn-primary btn-sm">Save</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Danger zone -->
+    <section class="settings-section danger">
+      <div class="head"><h2>Danger zone</h2></div>
+      <div class="body">
+        <div class="set-row">
+          <div class="label">
+            Reset brand profile
+            <span class="desc">Wipes all sections. Brand basics &amp; dump are kept. You'll go back through the wizard.</span>
+          </div>
+          <div></div>
+          <button class="btn btn-ghost btn-sm">Reset…</button>
+        </div>
+        <div class="set-row">
+          <div class="label">
+            Delete brand
+            <span class="desc">Removes everything for this brand. Cannot be undone.</span>
+          </div>
+          <div></div>
+          <button class="btn btn-danger btn-sm">Delete</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BPW Mock — Step 2b · Follow-up Review</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="_wizard.css">
+</head>
+<body>
+
+<div class="mock-nav">
+  <a href="index.html">Index</a>
+  <a href="step1-basics.html">1 · Basics</a>
+  <a href="step2-discovery.html">2 · Discovery</a>
+  <a href="step2b-followups.html" class="active">2b · Follow-ups</a>
+  <a href="stage-loading.html">3 · Loading</a>
+  <a href="stage-review.html">3 · Identity</a>
+  <a href="stage-review-competitors.html">8 · Competitors</a>
+  <a href="wizard-complete.html">9 · Done</a>
+</div>
+
+<div class="wiz-top">
+  <div class="logo">Brand Profile Wizard</div>
+  <div class="spacer"></div>
+  <div class="save-state"><span class="dot"></span> Auto-saved · just now</div>
+  <button class="btn btn-ghost btn-sm">Exit setup</button>
+</div>
+
+<div class="wiz-rail">
+  <div class="wiz-rail-inner">
+    <div class="wiz-rail-progress"><div style="width: 33%"></div></div>
+    <div class="wiz-rail-steps" data-current="2b"></div>
+  </div>
+</div>
+
+<div class="wiz-stage">
+
+  <span class="phase-note">✦ 3 follow-ups generated · conditioned on your edits to Q3, Q4 &amp; brand phase (Growing)</span>
+  <h1 class="wiz-headline">Just three more — these target the gaps</h1>
+  <p class="wiz-sub">The AI noticed thin spots in your earlier answers and drafted these targeted questions, plus a first-pass answer for each. Edit or regenerate as needed.</p>
+
+  <div class="qa-list">
+
+    <div class="qa-item followup">
+      <div class="q">
+        <span class="num">6</span>
+        You mentioned a B2B pilot in offices — who decides on office coffee, and what's their biggest objection?
+        <span class="badge fu">Follow-up</span>
+        <span class="badge ai">AI-drafted</span>
+      </div>
+      <textarea rows="2" placeholder="">Office managers and people-ops leads. Biggest objection is up-front equipment cost vs. existing pod machines — they want easy setup, no waste, and a predictable monthly bill.</textarea>
+      <div class="ai-meta">
+        <span>Triggered by: your edit to Q3 (B2B revenue)</span>
+        <a href="#">↻ Regenerate</a>
+        <a href="#">✕ Skip this</a>
+      </div>
+    </div>
+
+    <div class="qa-item followup">
+      <div class="q">
+        <span class="num">7</span>
+        Recyclable packaging is sticky differentiation — who's the closest competitor on sustainability, and how do you stay ahead?
+        <span class="badge fu">Follow-up</span>
+        <span class="badge ai">AI-drafted</span>
+      </div>
+      <textarea rows="2">Trade Coffee just rolled out compostable bags but their roasters aren't named and freshness windows are loose. We stay ahead by tying packaging to the farm story — every bag links back to the named roaster and origin.</textarea>
+      <div class="ai-meta">
+        <span>Triggered by: brand dump (packaging callout)</span>
+        <a href="#">↻ Regenerate</a>
+        <a href="#">✕ Skip this</a>
+      </div>
+    </div>
+
+    <div class="qa-item followup">
+      <div class="q">
+        <span class="num">8</span>
+        You said the voice should be "warm, direct, never precious" — what's an example of a phrase or style you'd actively avoid?
+        <span class="badge fu">Follow-up</span>
+        <span class="badge ai">AI-drafted</span>
+      </div>
+      <input type="text" value="Avoid: hushed reverence about coffee origins, words like 'artisanal' or 'premium', long tasting notes that read like wine snobbery. Lean into: plain-talk craft, small jokes, the actual person who roasted your bag.">
+      <div class="ai-meta">
+        <span>Triggered by: voice notes in brand dump</span>
+        <a href="#">↻ Regenerate</a>
+        <a href="#">✕ Skip this</a>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="next-note">
+    <span class="icon-sparkle"></span>
+    <span>Next: <strong>Identity</strong>. We'll draft your mission, vision, values, archetype, positioning and tagline using everything above. You'll review each, then we move to Voice, Audience, Offerings, Market, and Competitors — each as its own review screen.</span>
+  </div>
+</div>
+
+<div class="wiz-foot">
+  <div class="inner">
+    <span class="step-text">Step 2b of 9 · Follow-ups</span>
+    <div class="right">
+      <a href="step2-discovery.html" class="btn btn-ghost">← Back</a>
+      <button class="btn btn-ghost">↻ Regenerate all</button>
+      <a href="stage-loading.html" class="btn btn-primary">Continue to Identity →</a>
+    </div>
+  </div>
+</div>
+
+<script src="_wizard.js"></script>
+</body>
+</html>

@@ -6,45 +6,92 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="stylesheet" href="_shared.css">
 <style>
-  .wrap { max-width: 920px; margin: 60px auto; padding: 0 24px; }
+  .wrap { max-width: 1040px; margin: 48px auto; padding: 0 24px; }
   h1 { font-family: var(--bpw-font-heading); font-size: 32px; margin-bottom: 8px; letter-spacing: -0.01em; }
-  .lede { color: var(--bpw-text-sec); font-size: 16px; margin-bottom: 36px; max-width: 640px; line-height: 1.55; }
+  .lede { color: var(--bpw-text-sec); font-size: 16px; margin-bottom: 28px; max-width: 720px; line-height: 1.55; }
 
-  .links { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 36px; }
-  @media (max-width: 740px) { .links { grid-template-columns: 1fr; } }
+  .group-head {
+    display: flex; align-items: baseline; gap: 12px;
+    margin: 28px 0 12px;
+  }
+  .group-head h2 {
+    font-family: var(--bpw-font-heading);
+    font-size: 17px;
+    letter-spacing: -0.005em;
+  }
+  .group-head .badge {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 99px;
+    background: var(--bpw-primary-light);
+    color: var(--bpw-primary-dark);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .group-head .badge.app { background: var(--bpw-accent-light); color: var(--bpw-accent); }
+  .group-head .sub {
+    color: var(--bpw-text-muted);
+    font-size: 13px;
+    margin-left: auto;
+  }
+
+  .links {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+  }
   .link-card {
     display: block;
     background: var(--bpw-white);
     border: 1px solid var(--bpw-border);
-    border-radius: var(--bpw-radius-lg);
-    padding: 22px;
+    border-radius: var(--bpw-radius-md);
+    padding: 14px 16px;
     color: inherit;
     text-decoration: none;
-    transition: transform 0.15s, box-shadow 0.15s;
+    transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s;
   }
-  .link-card:hover { transform: translateY(-3px); box-shadow: var(--bpw-shadow-md); text-decoration: none; }
+  .link-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--bpw-shadow-md);
+    border-color: var(--bpw-primary);
+    text-decoration: none;
+  }
   .link-card .num {
     display: inline-block;
-    background: var(--bpw-primary-light); color: var(--bpw-primary-dark);
-    font-weight: 700; font-size: 11px;
-    padding: 3px 10px; border-radius: 99px;
-    margin-bottom: 10px;
+    background: var(--bpw-gray-100);
+    color: var(--bpw-text-sec);
+    font-weight: 700; font-size: 10.5px;
+    padding: 2px 8px; border-radius: 99px;
+    margin-bottom: 8px;
+    letter-spacing: 0.03em;
   }
-  .link-card h3 { font-family: var(--bpw-font-heading); font-size: 18px; margin-bottom: 6px; }
-  .link-card p { font-size: 13px; color: var(--bpw-text-sec); line-height: 1.5; }
+  .link-card.new .num { background: var(--bpw-success-light); color: var(--bpw-success); }
+  .link-card.rev .num { background: var(--bpw-warning-light); color: var(--bpw-warning); }
+  .link-card h3 {
+    font-family: var(--bpw-font-heading);
+    font-size: 14px;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .link-card p {
+    font-size: 12.5px;
+    color: var(--bpw-text-sec);
+    line-height: 1.45;
+  }
 
   .note {
-    background: var(--bpw-warning-light);
-    border-left: 3px solid var(--bpw-warning);
+    background: var(--bpw-primary-subtle);
+    border-left: 3px solid var(--bpw-primary);
     border-radius: 0 10px 10px 0;
     padding: 14px 18px;
     font-size: 13.5px;
+    line-height: 1.55;
     color: var(--bpw-text);
-    line-height: 1.5;
+    margin-bottom: 8px;
   }
-  .note strong { color: var(--bpw-warning); }
+  .note strong { color: var(--bpw-primary-dark); }
 
-  h2 { font-family: var(--bpw-font-heading); font-size: 20px; margin: 36px 0 12px; }
   ul.changes { padding-left: 20px; color: var(--bpw-text-sec); }
   ul.changes li { margin-bottom: 6px; font-size: 14px; line-height: 1.5; }
   ul.changes b { color: var(--bpw-text); }
@@ -54,45 +101,118 @@
 
 <div class="wrap">
   <h1>Brand Profile Wizard — redesign mocks</h1>
-  <p class="lede">Static wireframes for the phase-by-phase rebuild. Use these to react to layout, hierarchy, and AI affordances before any code is wired. Real data, real components, dummy content.</p>
-
-  <div class="links">
-    <a class="link-card" href="wizard.html">
-      <div class="num">PHASE 1</div>
-      <h3>Stepped setup wizard</h3>
-      <p>Six-step flow that branches by growth phase. Adaptive Q&amp;A, scrape review gate, surfaced custom instructions, confirm-and-launch.</p>
-    </a>
-    <a class="link-card" href="dashboard.html">
-      <div class="num">PHASE 3</div>
-      <h3>Dashboard landing</h3>
-      <p>Brand-at-a-glance hero, section completion grid (8 cards), recent activity. Replaces "Identity is the default view" with a real overview.</p>
-    </a>
-    <a class="link-card" href="identity-page.html">
-      <div class="num">PHASE 4</div>
-      <h3>Category page (Identity)</h3>
-      <p>All seven identity fields visible inline. Hover to edit, click sparkles for AI rewrite menu, side TOC, no list/detail clicking.</p>
-    </a>
-  </div>
+  <p class="lede">
+    Static wireframes for the AI-first review-and-refine rebuild. <strong>One UI for all growth phases</strong> — phase only changes prompt depth, not which screens appear. Click through in setup-flow order to see the whole arc.
+  </p>
 
   <div class="note">
-    <strong>These are static mocks.</strong> JS is limited to step navigation and small visual flourishes. Real data, AI calls, and state persistence wire up in Phases 1–6 of the implementation plan.
+    <strong>What's new in v2:</strong> AI runs lazily per stage (not in one upfront pass). Each category becomes its own review screen with AI-drafted content + inline editing. Discovery answers are <em>pre-filled</em> from a single brand-details dump, not blank. Competitors gets its own dedicated stage. Same dashboard, menu and pages for new / growing / established brands.
   </div>
 
-  <h2>What changes between today and these mocks</h2>
+  <!-- Wizard flow -->
+  <div class="group-head">
+    <h2>Setup wizard (v2 flow)</h2>
+    <span class="badge">9 steps</span>
+    <span class="sub">All AI runs lazily — only the current stage's call fires</span>
+  </div>
+  <div class="links">
+    <a class="link-card new" href="step1-basics.html">
+      <div class="num">STEP 1 · NEW</div>
+      <h3>Basics &amp; Brand Dump</h3>
+      <p>Single page: brand name, website, type, language, growth phase, AI config, and one giant "brand dump" textarea (replaces description + custom instructions).</p>
+    </a>
+    <a class="link-card new" href="step2-discovery.html">
+      <div class="num">STEP 2 · NEW</div>
+      <h3>Discovery review</h3>
+      <p>5 required Qs <em>pre-filled</em> by AI from the brand dump. User reviews/edits. One AI call.</p>
+    </a>
+    <a class="link-card new" href="step2b-followups.html">
+      <div class="num">STEP 2b · NEW</div>
+      <h3>Follow-ups review</h3>
+      <p>2–5 adaptive follow-up Qs generated &amp; pre-answered based on the discovery edits. Triggered by gaps the AI noticed.</p>
+    </a>
+    <a class="link-card new" href="stage-loading.html">
+      <div class="num">STEPS 3–8 · NEW</div>
+      <h3>Stage loading interlude</h3>
+      <p>Shown while each category's AI call runs. Sub-step list (mission → vision → archetype → …) gives texture without misleading progress.</p>
+    </a>
+    <a class="link-card new" href="stage-review.html">
+      <div class="num">STEPS 3–7 · NEW</div>
+      <h3>Stage review (Identity example)</h3>
+      <p>The canonical pattern. AI-drafted fields, hover-to-edit, per-field sparkle menu, regen, "approve &amp; continue → next stage". Voice / Audience / Offerings / Market all reuse this template.</p>
+    </a>
+    <a class="link-card new" href="stage-review-competitors.html">
+      <div class="num">STEP 8 · NEW</div>
+      <h3>Competitors review</h3>
+      <p>New dedicated stage. AI generates 3–5 competitor cards (positioning, strengths, weaknesses, vs-you). Add/remove/edit. Locks in last.</p>
+    </a>
+    <a class="link-card new" href="wizard-complete.html">
+      <div class="num">STEP 9 · NEW</div>
+      <h3>Wizard complete</h3>
+      <p>Brief celebration. Stats (sections, fields, cost). Drops user on the dashboard.</p>
+    </a>
+  </div>
+
+  <!-- App -->
+  <div class="group-head">
+    <h2>Post-setup app</h2>
+    <span class="badge app">uniform across phases</span>
+    <span class="sub">Same surfaces for new / growing / established</span>
+  </div>
+  <div class="links">
+    <a class="link-card rev" href="dashboard.html">
+      <div class="num">REVISED</div>
+      <h3>Dashboard</h3>
+      <p>Now includes a <strong>Competitors</strong> card in the grid, sharper growth-phase chip, and a real "Resume editing" link. Sidebar shows all sections for every phase.</p>
+    </a>
+    <a class="link-card" href="identity-page.html">
+      <div class="num">APPROVED</div>
+      <h3>Identity page</h3>
+      <p>The canonical category page. All seven identity fields visible inline, hover to edit, sparkle menu for AI rewrites. Voice / Audience / Offerings / Market / Competitors all follow this template.</p>
+    </a>
+    <a class="link-card new" href="settings-page.html">
+      <div class="num">NEW</div>
+      <h3>Settings</h3>
+      <p>Brand basics, growth-phase switcher, AI config, and the brand-details dump (re-editable). The phase switcher is the only meaningful re-entry into the wizard flow.</p>
+    </a>
+    <a class="link-card new" href="settings-phase-upgrade-modal.html">
+      <div class="num">NEW · MODAL</div>
+      <h3>Phase upgrade confirmation</h3>
+      <p>Triggered when upgrading phase. Shows exactly which sections get re-run with deeper prompts, and that existing content stays.</p>
+    </a>
+  </div>
+
+  <!-- v1 reference -->
+  <div class="group-head">
+    <h2>v1 reference (superseded by v2)</h2>
+    <span class="badge" style="background: var(--bpw-gray-100); color: var(--bpw-text-muted);">archived</span>
+    <span class="sub">Kept for design context — do not implement</span>
+  </div>
+  <div class="links">
+    <a class="link-card" href="wizard.html" style="opacity: 0.7;">
+      <div class="num">V1</div>
+      <h3>Original 6-step wizard</h3>
+      <p>The first redesign pass — monolithic AI run at the end, blank discovery Qs, scrape review as its own step. Replaced by the per-stage flow above.</p>
+    </a>
+  </div>
+
+  <h2 style="font-family: var(--bpw-font-heading); font-size: 20px; margin: 36px 0 12px;">What changed since v1</h2>
   <ul class="changes">
-    <li><b>Wizard:</b> monolithic form → 6 stepped pages with progress bar, growth-phase branching, surfaced custom instructions, scrape review styled as scannable cards.</li>
-    <li><b>App shell:</b> three-pane (sidebar → list → detail) → two-pane (sidebar → full page). Middle "list of fields" pane is removed entirely.</li>
-    <li><b>Identity (and every category):</b> 7 list cards each requiring a click → one scrollable page with every field visible, inline editing, per-field AI menu.</li>
-    <li><b>Dashboard:</b> didn't exist → new landing view showing completion across all 8 sections plus brand-at-a-glance.</li>
-    <li><b>AI prompts:</b> generic context dump → structured Brand Brief with growth-phase guidance and cross-stage references (e.g. voice references identity mission).</li>
+    <li><b>AI execution model:</b> one upfront mega-prompt → <b>lazy per-stage calls</b>, each with cumulative context. Voice references the approved Identity mission verbatim; Competitors references Market positioning.</li>
+    <li><b>Discovery Qs:</b> blank textareas → <b>AI-pre-filled drafts</b> the user reviews. Saves typing and seeds higher-quality downstream prompts.</li>
+    <li><b>Custom instructions + description:</b> two separate fields → <b>one "brand dump" textarea</b> as the anchor context for everything.</li>
+    <li><b>Per-phase UI variants:</b> three different dashboards / menus / wizard flows → <b>one UI for all phases</b>. Phase only modifies prompt depth and content richness.</li>
+    <li><b>Competitors:</b> buried inside the Market stage → <b>dedicated stage with its own review</b>, edit-as-cards UX.</li>
+    <li><b>Phase upgrade:</b> rewrites everything silently → <b>confirmation modal + the same review screens</b> the user used in setup. Adds depth without overwriting approved content.</li>
   </ul>
 
-  <h2>Open layout questions</h2>
+  <h2 style="font-family: var(--bpw-font-heading); font-size: 20px; margin: 36px 0 12px;">Open questions to discuss before Phase 1</h2>
   <ul class="changes">
-    <li>Should the dashboard hero use a brand-color gradient (as mocked) or a neutral card? The gradient adds personality but competes with the brand's own colors when we add brand-color tokens later.</li>
-    <li>Per-field AI menu (sparkles → dropdown) vs. always-visible "Improve / Shorter / Longer" inline buttons. Menu is cleaner; inline is faster.</li>
-    <li>TOC on the right of category pages (as in Identity mock) — useful on long pages, redundant when a category has &lt; 5 fields. Show only conditionally?</li>
-    <li>"Resume editing" pill on dashboard — is "last opened page + last opened field" the right granularity, or just "last opened page"?</li>
+    <li>Stage <b>cancel mid-draft</b>: should it revert to the previous stage (keep approved Identity but discard the in-flight Voice draft) or strand the user on an empty Voice screen?</li>
+    <li>Discovery follow-up <b>cap</b>: hard-limit to 3, or let the AI propose up to 5 if it sees enough gaps?</li>
+    <li>On phase <b>downgrade</b>, do we hide the extra depth (e.g. extra personas) or delete it? Hiding lets users upgrade back losslessly.</li>
+    <li>Competitor list: cap at 5 with "more" toggle, or scroll freely?</li>
+    <li>Should the AI-drafted brand dump itself be regeneratable (after edits, "tidy this up")? Cheap nice-to-have, but it muddies the "user's words" anchor.</li>
   </ul>
 </div>
 

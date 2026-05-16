@@ -242,14 +242,23 @@
   .gcard.todo { border-style: dashed; }
 
   /* icon colour variants */
-  .ic-identity { background: var(--bpw-primary-light);  color: var(--bpw-primary-dark); }
-  .ic-voice    { background: var(--bpw-accent-light);   color: var(--bpw-accent); }
-  .ic-audience { background: #fdecef;                   color: #d6336c; }
-  .ic-offerings{ background: #e9f9ee;                   color: var(--bpw-success); }
-  .ic-market   { background: #fff3e0;                   color: var(--bpw-warning); }
-  .ic-content  { background: #ede7f6;                   color: #5e35b1; }
-  .ic-seo      { background: #e0f7fa;                   color: #00838f; }
-  .ic-social   { background: #fff1f0;                   color: #d4380d; }
+  .ic-identity   { background: var(--bpw-primary-light);  color: var(--bpw-primary-dark); }
+  .ic-voice      { background: var(--bpw-accent-light);   color: var(--bpw-accent); }
+  .ic-audience   { background: #fdecef;                   color: #d6336c; }
+  .ic-offerings  { background: #e9f9ee;                   color: var(--bpw-success); }
+  .ic-market     { background: #fff3e0;                   color: var(--bpw-warning); }
+  .ic-competitors{ background: #fce8e6;                   color: var(--bpw-error); }
+  .ic-content    { background: #ede7f6;                   color: #5e35b1; }
+  .ic-seo        { background: #e0f7fa;                   color: #00838f; }
+  .ic-social     { background: #fff1f0;                   color: #d4380d; }
+
+  /* Growth-phase chip on hero (more legible) */
+  .hero .phase-chip {
+    background: rgba(255,255,255,0.95);
+    color: var(--bpw-primary-dark);
+    border: none;
+    font-weight: 600;
+  }
 
   /* Activity feed */
   .activity {
@@ -288,6 +297,9 @@
   <a href="wizard.html">Wizard</a>
   <a href="dashboard.html" class="active">Dashboard</a>
   <a href="identity-page.html">Identity</a>
+  <a href="settings-page.html">Settings</a>
+  <a href="step1-basics.html">Step 1</a>
+  <a href="stage-review.html">Stage review</a>
 </div>
 
 <div class="top">
@@ -312,6 +324,7 @@
     <div class="nav-section">Market</div>
     <div class="nav-link"><span class="ico">$</span>Offerings        <span class="meta">62%</span></div>
     <div class="nav-link"><span class="ico">⊞</span>Market           <span class="meta">40%</span></div>
+    <div class="nav-link"><span class="ico">⚔</span>Competitors      <span class="meta">4 logged</span></div>
 
     <div class="nav-section">Channels</div>
     <div class="nav-link"><span class="ico">✎</span>Content          <span class="meta">25%</span></div>
@@ -329,13 +342,13 @@
     <section class="hero">
       <div class="meta-row">
         <span class="meta-chip">Commercial</span>
-        <span class="meta-chip">🚀 Growing</span>
+        <span class="meta-chip phase-chip">🚀 Growing phase</span>
         <span class="meta-chip">English (US)</span>
         <span class="meta-chip">Last updated 2h ago</span>
       </div>
       <h1>Northwind Coffee Co.</h1>
       <p class="tagline">Specialty coffee, delivered fresh within 14 days of roast.</p>
-      <div class="resume">Resume editing Identity → Mission <span class="muted">(last opened)</span></div>
+      <a href="identity-page.html" style="text-decoration:none" class="resume">Resume editing → Identity → Mission</a>
 
       <div class="hero-stats">
         <div class="stat"><div class="n">62%</div><div class="l">Profile completion</div></div>
@@ -421,16 +434,29 @@
         </div>
       </div>
 
-      <div class="gcard todo">
+      <div class="gcard">
         <div class="head">
           <div class="ic ic-market">⊞</div>
           <h4>Market</h4>
-          <span class="chip chip-warn">Needs work</span>
+          <span class="chip">70%</span>
         </div>
-        <div class="preview">Category set ("specialty coffee DTC"). 0 competitors logged. 1 differentiator. Run market analysis to fill in.</div>
+        <div class="preview">Category set ("specialty coffee DTC"). Positioning &amp; 3 differentiators logged. Trends section sparse — re-run when Established.</div>
         <div class="foot">
-          <div class="completion"><div class="bar"><div style="width:40%"></div></div><span class="pct">40%</span></div>
+          <div class="completion"><div class="bar"><div style="width:70%"></div></div><span class="pct">70%</span></div>
           <span>1d ago</span>
+        </div>
+      </div>
+
+      <div class="gcard">
+        <div class="head">
+          <div class="ic ic-competitors">⚔</div>
+          <h4>Competitors</h4>
+          <span class="chip chip-success">4 logged</span>
+        </div>
+        <div class="preview">Trade Coffee, Onyx, Atlas Coffee Club, indie locals. Strengths &amp; weaknesses captured. AI flagged 2 worth adding.</div>
+        <div class="foot">
+          <div class="completion"><div class="bar"><div style="width:85%"></div></div><span class="pct">85%</span></div>
+          <span>2h ago</span>
         </div>
       </div>
 
