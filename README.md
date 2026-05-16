@@ -2,7 +2,7 @@
 
 A 12-step, AI-powered brand profile builder that runs inside a Drupal node-edit form via the [Asset Injector](https://www.drupal.org/project/asset_injector) module.
 
-- **One bundled JS + one bundled CSS** in [`dist/`](dist/) — deploy via jsDelivr CDN or paste directly into Asset Injector.
+- **One bundled JS + one bundled CSS** in [`dist/`](dist/) — deploy via jsDelivr CDN or paste directly into Asset Injector. Each build emits both a minified bundle (`bpw.min.{js,css}`, what Asset Injector loads) and an unminified bundle (`bpw.{js,css}`, for staging / debugging), each with sourcemaps.
 - **Source organised by feature** in [`src/`](src/) — `core/`, `ui/`, `editing/`, `ai/`, `settings/`, `activity/`, `utils/`, `styles/`.
 - **Multi-provider AI** — Gemini, Claude, OpenAI, OpenRouter, Grok, custom.
 - **No bundled secrets** — API keys are read from the Drupal DOM at runtime.
@@ -13,7 +13,10 @@ In your Drupal site, create an Asset Injector "JS Injector" rule on the brand-pr
 
 ```js
 (function () {
-  var v = '@main'; // production: pin to a tag like '@v1.0.0'
+  // Hybrid pattern: pin production to a tag, point staging at @latest.
+  //   var v = '@v0.1.0';   // production — explicit, rollback-friendly
+  //   var v = '@latest';   // staging   — auto-follows newest release
+  var v = '@v0.1.0';
   var s = document.createElement('script');
   s.src = 'https://cdn.jsdelivr.net/gh/devenpro/guaBrandProfile' + v + '/dist/bpw.min.js';
   document.head.appendChild(s);
@@ -59,7 +62,7 @@ examples/        stage-N JSON fixtures
 scripts/         build script (esbuild)
 ```
 
-> **Note:** at v0.1.0 the four monolithic source files live in `src/legacy/` while the feature modules under `src/core/`, `src/ui/`, etc. are populated incrementally. See [`docs/REFACTOR-PLAN.md`](docs/REFACTOR-PLAN.md) once published.
+> **Note:** at v0.1.0 the four monolithic source files live in `src/legacy/` while the feature modules under `src/core/`, `src/ui/`, etc. are populated incrementally. See [`docs/REFACTOR-PLAN.md`](docs/REFACTOR-PLAN.md) for the migration plan.
 
 ## Documentation
 
@@ -70,6 +73,7 @@ scripts/         build script (esbuild)
 - [Quick reference](docs/BPW-QUICK-REFERENCE.md)
 - [Deployment](docs/DEPLOYMENT.md)
 - [Project conventions](docs/PROJECT.md)
+- [Platform backports](docs/PLATFORM-BACKPORTS.md) — patterns BPW developed that other Go Ultra AI apps may want to adopt
 
 ## License
 

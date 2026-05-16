@@ -1,6 +1,20 @@
 # Deployment — Drupal Asset Injector
 
-The Brand Profile Wizard ships as **one** minified JS bundle plus **one** minified CSS bundle in [`dist/`](../dist/). This document covers the two deployment modes — pick one per Drupal environment.
+The Brand Profile Wizard ships as **one** minified JS bundle plus **one** minified CSS bundle in [`dist/`](../dist/), with a matching pair of unminified bundles for debugging. This document covers the two deployment modes — pick one per Drupal environment.
+
+| Bundle | Purpose | Asset Injector? |
+|---|---|---|
+| `bpw.min.js` + `bpw.min.css` | Production | **Yes** — default loader target |
+| `bpw.js` + `bpw.css` | Staging / debug / paste-in inspection | Optional — point a separate staging Asset Injector rule here when reproducing a bug |
+
+Every build also injects two read-only globals at the bundle wrapper, so devtools can answer "which build is live" without source inspection:
+
+```js
+window.BPW_VERSION     // e.g. "0.1.0"  — from package.json at build time
+window.BPW_BUILD_TIME  // e.g. "2026-05-16T12:27:28.604Z"  — UTC ISO string
+```
+
+A styled `[BPW] v… (…)` line is also logged to the console on bundle load.
 
 ---
 
@@ -18,11 +32,16 @@ Paste **one loader snippet** into Asset Injector's **JS Injector** field. The lo
 
 ```js
 (function () {
-  // ── version: bump to redeploy ────────────────────────────────
-  var v = '@main';                  // tracks the default branch
-  // var v = '@v1.0.0';             // production: pin to a semver tag
-  // var v = '@a1b2c3d';            // pin to a commit SHA
+  // ── version: hybrid pattern ──────────────────────────────────
+  //   '@v0.1.0'  production: pin to the tag CI published. Rollback
+  //              = change to the previous tag, save, drush cr.
+  //   '@latest'  staging: auto-follows newest GitHub Release. Use on
+  //              staging environments to smoke-test before promoting
+  //              the matching tag to production.
+  //   '@main'    avoid in production: every push lands within
+  //              jsDelivr's ~12 h cache TTL with no rollback target.
   // ─────────────────────────────────────────────────────────────
+  var v = '@v0.1.0';
   var base = 'https://cdn.jsdelivr.net/gh/devenpro/guaBrandProfile' + v + '/dist/';
 
   var s = document.createElement('script');
@@ -36,6 +55,8 @@ Paste **one loader snippet** into Asset Injector's **JS Injector** field. The lo
   document.head.appendChild(l);
 })();
 ```
+
+For **staging** Drupal sites, create a second Asset Injector rule with `v = '@latest'`. The CI release workflow tags each version bump on `main` and publishes a GitHub Release; jsDelivr resolves `@latest` to whichever tag was published most recently.
 
 - **Page paths:** restrict to brand-profile node edit pages, e.g.
   ```
@@ -51,24 +72,22 @@ Open a brand-profile node edit page. The wizard should mount within ~300 ms afte
 
 ### Step 3 — Redeploy when source changes
 
-Two paths:
+The release loop with CI in place:
 
-**Branch-tracked (fast iteration).** Leave `v = '@main'`. After `git push origin main`, jsDelivr will serve the new bundle within ~12 hours. To bust the cache immediately, hit the purge URLs once:
+1. Open a PR with source + rebuilt `dist/` + a `package.json` version bump.
+2. Squash-merge to `main`.
+3. The `Release` workflow (`.github/workflows/release.yml`) detects the new version, creates the `vX.Y.Z` tag, and publishes a GitHub Release with the bundle attached. Staging Asset Injector rules pinned to `@latest` pick up the new bundle within jsDelivr's cache TTL (~12 h, or immediately via purge URL below).
+4. Smoke-test on staging.
+5. Edit the **production** Asset Injector rule, change `v = '@v0.1.0'` to `v = '@v0.2.0'` (or whatever the new tag is), save, run `drush cr`. jsDelivr caches tagged versions permanently, so production never sees an unexpected swap.
+
+To bust jsDelivr's cache for the staging `@latest` URL immediately:
 
 ```
-https://purge.jsdelivr.net/gh/devenpro/guaBrandProfile@main/dist/bpw.min.js
-https://purge.jsdelivr.net/gh/devenpro/guaBrandProfile@main/dist/bpw.min.css
+https://purge.jsdelivr.net/gh/devenpro/guaBrandProfile@latest/dist/bpw.min.js
+https://purge.jsdelivr.net/gh/devenpro/guaBrandProfile@latest/dist/bpw.min.css
 ```
 
-**Version-pinned (production).** Change `v` to `'@v1.2.3'` matching a Git tag. jsDelivr caches tagged versions permanently. To deploy: build, commit, tag, push, then edit the Asset Injector rule to point at the new tag.
-
-```sh
-npm run build
-git add dist/
-git commit -m "build: v1.2.3"
-git tag v1.2.3
-git push origin main --tags
-```
+Manual override (no CI / no version bump): you can still drop straight to `v = '@<commit-sha>'` for a one-off pin to a specific commit. jsDelivr resolves any git ref.
 
 ---
 
@@ -84,8 +103,10 @@ npm run build
 ```
 
 This produces:
-- `dist/bpw.min.js`
-- `dist/bpw.min.css`
+- `dist/bpw.min.js` + `.map` — minified, what production Asset Injector loads
+- `dist/bpw.min.css` + `.map` — minified CSS
+- `dist/bpw.js` + `.map` — unminified, for staging / paste-in debugging
+- `dist/bpw.css` + `.map` — unminified CSS
 
 ### Step 2 — Paste into Asset Injector
 
@@ -112,11 +133,15 @@ If you keep any **legacy** Asset Injector rules for the old `bpw-part2a.js` / `p
 In the browser console on a brand-profile edit page:
 
 ```js
+window.BPW_VERSION      // → e.g. "0.1.0"
+window.BPW_BUILD_TIME   // → e.g. "2026-05-16T12:27:28.604Z"
 window._bpwState        // → object with .initialized = true
 window._bpwPart2A       // → object
 window._bpwPart2B       // → object
 window._bpwPart2C       // → object
 ```
+
+If `BPW_VERSION` is missing, the bundle never loaded. If it's there but doesn't match the tag you expect, jsDelivr may be serving a stale cached copy — see the cache-busting URLs above.
 
 If any of these are `undefined`, the bundle did not load or did not initialise — check the Network tab for failed requests and the Console tab for errors.
 
@@ -124,8 +149,8 @@ If any of these are `undefined`, the bundle did not load or did not initialise �
 
 ## Rollback
 
-- **Version-pinned mode:** edit the Asset Injector rule and revert `v` to the previous tag (e.g. `'@v1.1.0'`). Refresh — done.
-- **Branch-tracked mode:** revert the offending commit on `main` and purge jsDelivr.
+- **Production (tag-pinned):** edit the Asset Injector rule, change `v` to the previous tag (e.g. `'@v0.1.0'`), save, run `drush cr`. No repo-side change needed. jsDelivr already has the old tag cached, so propagation is immediate.
+- **Staging (`@latest`):** if you don't want `@latest` to track a broken release, pin staging temporarily to a known-good tag using the same procedure as production.
 - **Paste mode:** keep a backup of the previous `bpw.min.js` / `bpw.min.css` contents and paste them back.
 
 ---
@@ -134,4 +159,4 @@ If any of these are `undefined`, the bundle did not load or did not initialise �
 
 - [ ] No API keys, tokens, or `.env` values in `src/` or `dist/`. The codebase reads LLM keys from runtime DOM (`.llm-config-data` / `.llm-brand-config-data`); they should never be committed.
 - [ ] `git status` shows no untracked files containing secrets.
-- [ ] `dist/` only contains `bpw.min.js`, `bpw.min.css`, and their `.map` files.
+- [ ] `dist/` only contains `bpw.{min,}.{js,css}` and their `.map` files.

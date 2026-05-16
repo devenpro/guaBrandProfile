@@ -19,8 +19,10 @@
   If unsure, ask before the first commit.
 
 ## Build artifacts
-- `dist/bpw.min.js` and `dist/bpw.min.css` are committed. Always run
-  `npm run build` before committing source changes.
+- `dist/bpw.min.{js,css}` (production) and `dist/bpw.{js,css}` (debug)
+  are committed, along with their `.map` sourcemaps. Always run
+  `npm run build` before committing source changes — both bundles are
+  emitted by a single `npm run build` invocation.
 
 ## Merge etiquette
 - No force-push to a branch with an open PR without explicit confirmation.
