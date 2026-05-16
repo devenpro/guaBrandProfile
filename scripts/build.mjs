@@ -11,19 +11,29 @@ const bannerJs = [
   `try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}`,
 ].join('');
 
-const config = {
+const baseConfig = {
   entryPoints: ['src/index.js', 'src/index.css'],
   bundle: true,
-  minify: true,
   sourcemap: true,
   format: 'iife',
   target: ['es2018'],
   outdir: 'dist',
-  entryNames: 'bpw.min',
   loader: { '.css': 'css' },
   logLevel: 'info',
   legalComments: 'none',
   banner: { js: bannerJs },
+};
+
+const minifiedConfig = {
+  ...baseConfig,
+  minify: true,
+  entryNames: 'bpw.min',
+};
+
+const unminifiedConfig = {
+  ...baseConfig,
+  minify: false,
+  entryNames: 'bpw',
 };
 
 const isWatch = process.argv.includes('--watch');
@@ -31,14 +41,21 @@ const isWatch = process.argv.includes('--watch');
 rmSync('dist', { recursive: true, force: true });
 
 if (isWatch) {
-  const ctx = await context(config);
-  await ctx.watch();
-  console.log('\nWatching src/ — rebuilding on change. Ctrl+C to stop.');
+  const minCtx = await context(minifiedConfig);
+  const devCtx = await context(unminifiedConfig);
+  await minCtx.watch();
+  await devCtx.watch();
+  console.log('\nWatching src/ — rebuilding bpw.js + bpw.min.js on change. Ctrl+C to stop.');
 } else {
-  const result = await build(config);
-  if (result.warnings.length) {
-    console.warn(`\n${result.warnings.length} warning(s) reported above.`);
+  const [minResult, devResult] = await Promise.all([
+    build(minifiedConfig),
+    build(unminifiedConfig),
+  ]);
+  const warnings = minResult.warnings.length + devResult.warnings.length;
+  if (warnings) {
+    console.warn(`\n${warnings} warning(s) reported above.`);
   }
   console.log(`\nBuild complete: BPW v${VERSION} @ ${BUILD_TIME}`);
-  console.log('  → dist/bpw.min.js, dist/bpw.min.css');
+  console.log('  → dist/bpw.min.js, dist/bpw.min.css (production)');
+  console.log('  → dist/bpw.js, dist/bpw.css (debug/staging)');
 }
