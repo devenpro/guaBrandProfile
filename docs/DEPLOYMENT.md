@@ -1,6 +1,20 @@
 # Deployment — Drupal Asset Injector
 
-The Brand Profile Wizard ships as **one** minified JS bundle plus **one** minified CSS bundle in [`dist/`](../dist/). This document covers the two deployment modes — pick one per Drupal environment.
+The Brand Profile Wizard ships as **one** minified JS bundle plus **one** minified CSS bundle in [`dist/`](../dist/), with a matching pair of unminified bundles for debugging. This document covers the two deployment modes — pick one per Drupal environment.
+
+| Bundle | Purpose | Asset Injector? |
+|---|---|---|
+| `bpw.min.js` + `bpw.min.css` | Production | **Yes** — default loader target |
+| `bpw.js` + `bpw.css` | Staging / debug / paste-in inspection | Optional — point a separate staging Asset Injector rule here when reproducing a bug |
+
+Every build also injects two read-only globals at the bundle wrapper, so devtools can answer "which build is live" without source inspection:
+
+```js
+window.BPW_VERSION     // e.g. "0.1.0"  — from package.json at build time
+window.BPW_BUILD_TIME  // e.g. "2026-05-16T12:27:28.604Z"  — UTC ISO string
+```
+
+A styled `[BPW] v… (…)` line is also logged to the console on bundle load.
 
 ---
 
@@ -84,8 +98,10 @@ npm run build
 ```
 
 This produces:
-- `dist/bpw.min.js`
-- `dist/bpw.min.css`
+- `dist/bpw.min.js` + `.map` — minified, what production Asset Injector loads
+- `dist/bpw.min.css` + `.map` — minified CSS
+- `dist/bpw.js` + `.map` — unminified, for staging / paste-in debugging
+- `dist/bpw.css` + `.map` — unminified CSS
 
 ### Step 2 — Paste into Asset Injector
 
@@ -112,11 +128,15 @@ If you keep any **legacy** Asset Injector rules for the old `bpw-part2a.js` / `p
 In the browser console on a brand-profile edit page:
 
 ```js
+window.BPW_VERSION      // → e.g. "0.1.0"
+window.BPW_BUILD_TIME   // → e.g. "2026-05-16T12:27:28.604Z"
 window._bpwState        // → object with .initialized = true
 window._bpwPart2A       // → object
 window._bpwPart2B       // → object
 window._bpwPart2C       // → object
 ```
+
+If `BPW_VERSION` is missing, the bundle never loaded. If it's there but doesn't match the tag you expect, jsDelivr may be serving a stale cached copy — see the cache-busting URLs above.
 
 If any of these are `undefined`, the bundle did not load or did not initialise — check the Network tab for failed requests and the Console tab for errors.
 
@@ -134,4 +154,4 @@ If any of these are `undefined`, the bundle did not load or did not initialise �
 
 - [ ] No API keys, tokens, or `.env` values in `src/` or `dist/`. The codebase reads LLM keys from runtime DOM (`.llm-config-data` / `.llm-brand-config-data`); they should never be committed.
 - [ ] `git status` shows no untracked files containing secrets.
-- [ ] `dist/` only contains `bpw.min.js`, `bpw.min.css`, and their `.map` files.
+- [ ] `dist/` only contains `bpw.{min,}.{js,css}` and their `.map` files.
