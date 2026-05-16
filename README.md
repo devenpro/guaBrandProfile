@@ -13,7 +13,10 @@ In your Drupal site, create an Asset Injector "JS Injector" rule on the brand-pr
 
 ```js
 (function () {
-  var v = '@main'; // production: pin to a tag like '@v1.0.0'
+  // Hybrid pattern: pin production to a tag, point staging at @latest.
+  //   var v = '@v0.1.0';   // production — explicit, rollback-friendly
+  //   var v = '@latest';   // staging   — auto-follows newest release
+  var v = '@v0.1.0';
   var s = document.createElement('script');
   s.src = 'https://cdn.jsdelivr.net/gh/devenpro/guaBrandProfile' + v + '/dist/bpw.min.js';
   document.head.appendChild(s);
