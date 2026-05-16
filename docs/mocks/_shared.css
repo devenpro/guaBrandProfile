@@ -1,0 +1,172 @@
+/* ============================================================
+   Shared design tokens + utilities for BPW redesign mocks.
+   These mirror src/styles/tokens.css so the mocks match
+   what we'll ship. Mocks only — not bundled into dist/.
+   ============================================================ */
+:root {
+  --bpw-primary: #1a73e8;
+  --bpw-primary-hover: #1557b0;
+  --bpw-primary-light: #e8f0fe;
+  --bpw-primary-subtle: #f0f6ff;
+  --bpw-primary-dark: #174ea6;
+
+  --bpw-success: #0d904f;
+  --bpw-success-light: #e6f4ea;
+  --bpw-warning: #e37400;
+  --bpw-warning-light: #fef7e0;
+  --bpw-accent: #7c3aed;
+  --bpw-accent-light: #f3f0ff;
+  --bpw-error: #d93025;
+  --bpw-error-light: #fce8e6;
+
+  --bpw-white: #ffffff;
+  --bpw-gray-50: #f8f9fa;
+  --bpw-gray-100: #f1f3f4;
+  --bpw-gray-200: #e8eaed;
+  --bpw-gray-300: #dadce0;
+  --bpw-gray-400: #bdc1c6;
+  --bpw-gray-500: #9aa0a6;
+  --bpw-gray-600: #80868b;
+  --bpw-gray-700: #5f6368;
+  --bpw-gray-800: #3c4043;
+  --bpw-gray-900: #202124;
+
+  --bpw-bg: #f8f9fb;
+  --bpw-card-bg: #ffffff;
+  --bpw-text: #202124;
+  --bpw-text-sec: #5f6368;
+  --bpw-text-muted: #9aa0a6;
+  --bpw-border: #e8eaed;
+  --bpw-border-dark: #dadce0;
+
+  --bpw-font-body: 'DM Sans', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  --bpw-font-heading: 'Plus Jakarta Sans', 'Google Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --bpw-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --bpw-radius-sm: 6px;
+  --bpw-radius-md: 10px;
+  --bpw-radius-lg: 16px;
+  --bpw-radius-xl: 24px;
+  --bpw-radius-full: 9999px;
+
+  --bpw-shadow-sm: 0 1px 3px rgba(60,64,67,0.12), 0 1px 2px rgba(60,64,67,0.06);
+  --bpw-shadow-md: 0 4px 6px rgba(60,64,67,0.1), 0 2px 4px rgba(60,64,67,0.06);
+  --bpw-shadow-lg: 0 10px 20px rgba(60,64,67,0.1), 0 4px 8px rgba(60,64,67,0.06);
+  --bpw-shadow-glow: 0 0 0 4px rgba(26,115,232,0.15);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--bpw-font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--bpw-text);
+  background: var(--bpw-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5 { font-family: var(--bpw-font-heading); font-weight: 600; }
+
+a { color: var(--bpw-primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+
+input, textarea, select {
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--bpw-text);
+  background: var(--bpw-white);
+  border: 1px solid var(--bpw-border);
+  border-radius: var(--bpw-radius-md);
+  padding: 10px 14px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--bpw-primary);
+  box-shadow: var(--bpw-shadow-glow);
+}
+textarea { resize: vertical; min-height: 84px; }
+
+/* ----------------------------------------------------------
+   Reusable building blocks
+   ---------------------------------------------------------- */
+.mock-nav {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  background: var(--bpw-white);
+  border: 1px solid var(--bpw-border);
+  border-radius: var(--bpw-radius-md);
+  padding: 6px;
+  display: flex;
+  gap: 4px;
+  box-shadow: var(--bpw-shadow-md);
+  z-index: 100;
+  font-size: 12px;
+}
+.mock-nav a {
+  padding: 6px 10px;
+  border-radius: 6px;
+  color: var(--bpw-text-sec);
+}
+.mock-nav a.active { background: var(--bpw-primary-light); color: var(--bpw-primary-dark); }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 18px;
+  border-radius: var(--bpw-radius-md);
+  font-weight: 500;
+  font-size: 14px;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+}
+.btn-primary { background: var(--bpw-primary); color: var(--bpw-white); }
+.btn-primary:hover { background: var(--bpw-primary-hover); }
+.btn-ghost { background: transparent; color: var(--bpw-text-sec); border-color: var(--bpw-border); }
+.btn-ghost:hover { background: var(--bpw-gray-50); color: var(--bpw-text); }
+.btn-subtle { background: var(--bpw-primary-light); color: var(--bpw-primary-dark); }
+.btn-subtle:hover { background: var(--bpw-primary-subtle); }
+.btn-icon { width: 32px; height: 32px; padding: 0; border-radius: 8px; color: var(--bpw-text-muted); }
+.btn-icon:hover { background: var(--bpw-gray-100); color: var(--bpw-text); }
+.btn-sm { height: 30px; padding: 0 12px; font-size: 13px; }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--bpw-radius-full);
+  background: var(--bpw-gray-100);
+  color: var(--bpw-text-sec);
+  font-size: 12px;
+  font-weight: 500;
+}
+.chip-primary { background: var(--bpw-primary-light); color: var(--bpw-primary-dark); }
+.chip-success { background: var(--bpw-success-light); color: var(--bpw-success); }
+.chip-warn    { background: var(--bpw-warning-light); color: var(--bpw-warning); }
+.chip-accent  { background: var(--bpw-accent-light); color: var(--bpw-accent); }
+
+.card {
+  background: var(--bpw-card-bg);
+  border: 1px solid var(--bpw-border);
+  border-radius: var(--bpw-radius-lg);
+  box-shadow: var(--bpw-shadow-sm);
+}
+
+.muted { color: var(--bpw-text-muted); }
+.sec   { color: var(--bpw-text-sec); }
+
+.icon-sparkle::before {
+  content: "✦"; font-size: 13px; line-height: 1;
+}
+.icon-edit::before { content: "✎"; font-size: 13px; line-height: 1; }
+.icon-check::before { content: "✓"; font-size: 13px; line-height: 1; color: var(--bpw-success); }
+.icon-arrow::before { content: "→"; font-size: 13px; line-height: 1; }
+.icon-back::before  { content: "←"; font-size: 13px; line-height: 1; }

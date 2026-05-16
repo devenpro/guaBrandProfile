@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BPW Mock — Identity Page</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="_shared.css">
+<style>
+  /* Reuse shell pattern from dashboard mock */
+  .top {
+    height: 56px;
+    background: var(--bpw-white);
+    border-bottom: 1px solid var(--bpw-border);
+    display: flex; align-items: center; padding: 0 22px; gap: 12px;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .top .logo { font-family: var(--bpw-font-heading); font-weight: 700; color: var(--bpw-primary-dark); }
+  .top .crumb { color: var(--bpw-text-muted); font-size: 13px; }
+  .top .crumb b { color: var(--bpw-text); font-weight: 600; }
+  .top .spacer { flex: 1; }
+
+  .shell { display: grid; grid-template-columns: 232px 1fr; min-height: calc(100vh - 56px); }
+  .nav {
+    background: var(--bpw-white);
+    border-right: 1px solid var(--bpw-border);
+    padding: 16px 12px;
+    position: sticky; top: 56px; height: calc(100vh - 56px); overflow-y: auto;
+  }
+  .nav-section { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--bpw-text-muted); padding: 12px 12px 6px; font-weight: 600; }
+  .nav-link { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; font-size: 13.5px; color: var(--bpw-text-sec); cursor: pointer; }
+  .nav-link:hover { background: var(--bpw-gray-50); color: var(--bpw-text); }
+  .nav-link.active { background: var(--bpw-primary-light); color: var(--bpw-primary-dark); font-weight: 500; }
+  .nav-link .ico { width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; background: var(--bpw-gray-100); color: var(--bpw-text-sec); border-radius: 6px; font-size: 11px; font-weight: 700; }
+  .nav-link.active .ico { background: var(--bpw-primary); color: var(--bpw-white); }
+
+  /* Page-level header */
+  .page-hd {
+    background: var(--bpw-white);
+    border-bottom: 1px solid var(--bpw-border);
+    padding: 22px 32px;
+    display: flex;
+    align-items: flex-end;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  .page-hd .text { flex: 1; min-width: 280px; }
+  .page-hd .eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--bpw-text-muted); margin-bottom: 4px; font-weight: 600; }
+  .page-hd h1 {
+    font-size: 28px;
+    font-family: var(--bpw-font-heading);
+    letter-spacing: -0.01em;
+    margin-bottom: 6px;
+  }
+  .page-hd .lede { color: var(--bpw-text-sec); font-size: 14px; max-width: 580px; }
+  .page-hd .actions { display: flex; gap: 8px; }
+  .page-hd .meta {
+    margin-top: 12px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    font-size: 12px;
+    color: var(--bpw-text-muted);
+  }
+  .page-hd .meta .completion { display: flex; align-items: center; gap: 6px; }
+  .page-hd .meta .completion .bar { width: 100px; height: 5px; border-radius: 99px; background: var(--bpw-gray-200); overflow: hidden; }
+  .page-hd .meta .completion .bar > div { height: 100%; background: var(--bpw-success); width: 100%; }
+
+  /* TOC on the side */
+  .body {
+    display: grid;
+    grid-template-columns: 1fr 200px;
+    gap: 32px;
+    padding: 28px 32px 80px;
+    max-width: 1200px;
+  }
+  .toc {
+    position: sticky;
+    top: 90px;
+    align-self: start;
+    border-left: 2px solid var(--bpw-border);
+    padding: 4px 0 4px 14px;
+    font-size: 12.5px;
+  }
+  .toc .h { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--bpw-text-muted); margin-bottom: 8px; font-weight: 600; }
+  .toc a { display: block; padding: 4px 0; color: var(--bpw-text-sec); }
+  .toc a.cur { color: var(--bpw-primary-dark); font-weight: 500; border-left: 2px solid var(--bpw-primary); margin-left: -16px; padding-left: 14px; }
+
+  /* Blocks */
+  .block {
+    background: var(--bpw-white);
+    border: 1px solid var(--bpw-border);
+    border-radius: var(--bpw-radius-lg);
+    padding: 22px 24px;
+    margin-bottom: 14px;
+    position: relative;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .block:hover { border-color: var(--bpw-border-dark); }
+  .block:hover .row-actions { opacity: 1; }
+
+  .block-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .block-head h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--bpw-text-muted);
+    font-weight: 600;
+  }
+  .row-actions {
+    display: flex; gap: 4px;
+    opacity: 0.55;
+    transition: opacity 0.15s;
+  }
+  .row-actions button {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    color: var(--bpw-text-muted);
+    font-size: 13px;
+  }
+  .row-actions button:hover { background: var(--bpw-gray-100); color: var(--bpw-text); }
+  .row-actions .ai { color: var(--bpw-accent); }
+  .row-actions .ai:hover { background: var(--bpw-accent-light); color: var(--bpw-accent); }
+
+  .text-prose {
+    font-size: 17px;
+    line-height: 1.55;
+    color: var(--bpw-text);
+    cursor: text;
+    padding: 4px 0;
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+  .text-prose:hover { background: var(--bpw-primary-subtle); padding-left: 8px; padding-right: 8px; margin-left: -8px; margin-right: -8px; }
+  .text-prose-md { font-size: 15px; }
+  .text-prose-sm { font-size: 14px; color: var(--bpw-text-sec); }
+
+  .block .footer-meta {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 11.5px;
+    color: var(--bpw-text-muted);
+  }
+  .block .footer-meta .pill {
+    background: var(--bpw-gray-100);
+    color: var(--bpw-text-sec);
+    padding: 2px 8px;
+    border-radius: 99px;
+  }
+
+  /* Chip group (values) */
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip-val {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    border-radius: 99px;
+    background: var(--bpw-primary-subtle);
+    color: var(--bpw-primary-dark);
+    font-size: 13.5px;
+    font-weight: 500;
+    border: 1px solid var(--bpw-primary-light);
+  }
+  .chip-val .x { font-size: 12px; color: var(--bpw-primary); opacity: 0.6; cursor: pointer; }
+  .chip-add {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px;
+    border-radius: 99px;
+    border: 1.5px dashed var(--bpw-border-dark);
+    color: var(--bpw-text-sec);
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .chip-add:hover { border-color: var(--bpw-primary); color: var(--bpw-primary); }
+
+  /* Editing state (mission) — to show inline edit affordance */
+  .block.editing {
+    border-color: var(--bpw-primary);
+    box-shadow: var(--bpw-shadow-glow);
+  }
+  .block.editing .text-prose {
+    background: var(--bpw-white);
+    outline: none;
+    padding: 12px;
+    margin: 0;
+    border: 1px solid var(--bpw-border);
+    border-radius: 8px;
+  }
+  .edit-toolbar {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .edit-toolbar .group {
+    display: flex; gap: 4px; border: 1px solid var(--bpw-border); border-radius: 8px; padding: 3px;
+  }
+  .edit-toolbar .group button {
+    height: 28px; padding: 0 8px; font-size: 12px;
+    border-radius: 5px; color: var(--bpw-text-sec);
+  }
+  .edit-toolbar .group button:hover { background: var(--bpw-gray-100); color: var(--bpw-text); }
+  .edit-toolbar .spacer { flex: 1; }
+
+  /* Archetype card */
+  .archetype-card {
+    display: flex; align-items: center; gap: 18px;
+  }
+  .archetype-badge {
+    width: 80px; height: 80px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #7c3aed, #1a73e8);
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px;
+    flex-shrink: 0;
+  }
+  .archetype-card .name { font-family: var(--bpw-font-heading); font-size: 22px; font-weight: 700; }
+  .archetype-card .name .sub { font-weight: 400; color: var(--bpw-text-muted); font-size: 14px; margin-left: 8px; }
+  .archetype-card .blurb { color: var(--bpw-text-sec); font-size: 14px; margin-top: 4px; }
+
+  /* AI suggestion banner under a field */
+  .ai-suggest {
+    background: var(--bpw-accent-light);
+    border: 1px solid #e2d8fa;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-top: 10px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 13px;
+    color: var(--bpw-text);
+  }
+  .ai-suggest .ico { color: var(--bpw-accent); font-size: 14px; line-height: 1.4; }
+  .ai-suggest .body { flex: 1; }
+  .ai-suggest .body strong { color: var(--bpw-accent); }
+  .ai-suggest .actions { display: flex; gap: 6px; }
+  .ai-suggest .actions button { font-size: 12px; padding: 4px 10px; border-radius: 6px; }
+  .ai-suggest .actions .accept { background: var(--bpw-accent); color: white; }
+  .ai-suggest .actions .dismiss { color: var(--bpw-text-sec); }
+
+  /* Quick-improve menu (mocked open) */
+  .improve-menu {
+    position: absolute;
+    top: 56px; right: 16px;
+    background: var(--bpw-white);
+    border: 1px solid var(--bpw-border);
+    border-radius: 10px;
+    box-shadow: var(--bpw-shadow-lg);
+    padding: 6px;
+    min-width: 220px;
+    z-index: 5;
+    font-size: 13px;
+  }
+  .improve-menu .item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .improve-menu .item:hover { background: var(--bpw-gray-50); }
+  .improve-menu .item .ico { width: 18px; color: var(--bpw-text-muted); }
+  .improve-menu .item .ico-sparkles { color: var(--bpw-accent); }
+  .improve-menu .sep { height: 1px; background: var(--bpw-border); margin: 4px 6px; }
+  .improve-menu .label { flex: 1; }
+  .improve-menu .kbd { font-family: var(--bpw-font-mono); font-size: 11px; color: var(--bpw-text-muted); }
+</style>
+</head>
+<body>
+
+<div class="mock-nav">
+  <a href="index.html">Index</a>
+  <a href="wizard.html">Wizard</a>
+  <a href="dashboard.html">Dashboard</a>
+  <a href="identity-page.html" class="active">Identity</a>
+</div>
+
+<div class="top">
+  <div class="logo">Brand Profile Wizard</div>
+  <div class="crumb">/ <b>Northwind Coffee Co.</b> / Identity</div>
+  <div class="spacer"></div>
+  <button class="btn btn-ghost btn-sm">⌘K Search</button>
+  <button class="btn-icon" title="Settings">⚙</button>
+</div>
+
+<div class="shell">
+  <aside class="nav">
+    <div class="nav-section">Brand</div>
+    <div class="nav-link"><span class="ico">⌂</span>Dashboard</div>
+    <div class="nav-link active"><span class="ico">⚑</span>Identity</div>
+    <div class="nav-link"><span class="ico">♪</span>Voice</div>
+    <div class="nav-link"><span class="ico">◉</span>Audience</div>
+
+    <div class="nav-section">Market</div>
+    <div class="nav-link"><span class="ico">$</span>Offerings</div>
+    <div class="nav-link"><span class="ico">⊞</span>Market</div>
+
+    <div class="nav-section">Channels</div>
+    <div class="nav-link"><span class="ico">✎</span>Content</div>
+    <div class="nav-link"><span class="ico">🔎</span>SEO</div>
+    <div class="nav-link"><span class="ico">⌖</span>Social</div>
+
+    <div class="nav-section">App</div>
+    <div class="nav-link"><span class="ico">⚙</span>Settings</div>
+    <div class="nav-link"><span class="ico">↻</span>Activity</div>
+  </aside>
+
+  <div>
+    <header class="page-hd">
+      <div class="text">
+        <div class="eyebrow">Brand Section</div>
+        <h1>Identity</h1>
+        <p class="lede">Everything that defines who your brand is — mission, vision, values, archetype, and how you introduce yourself. Click any block to edit. AI can rewrite, sharpen, or expand on demand.</p>
+        <div class="meta">
+          <span class="completion"><div class="bar"><div></div></div><strong>100%</strong> complete</span>
+          <span>·</span>
+          <span>7 of 7 fields filled</span>
+          <span>·</span>
+          <span>Last refined 2h ago</span>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-ghost">Compare to last version</button>
+        <button class="btn btn-subtle">✦ Regenerate all</button>
+      </div>
+    </header>
+
+    <div class="body">
+
+      <main>
+
+        <!-- Mission (editing state) -->
+        <section class="block editing" id="mission">
+          <div class="block-head">
+            <h2>Mission</h2>
+            <div class="row-actions">
+              <button class="ai" title="AI menu">✦</button>
+              <button title="History">↺</button>
+              <button title="More">⋯</button>
+            </div>
+          </div>
+          <div class="text-prose" contenteditable="true">To make specialty coffee a daily ritual anyone can enjoy — by sourcing single-origin beans directly from farms, roasting weekly in Portland, and shipping every order within 14 days of roast.</div>
+          <div class="edit-toolbar">
+            <div class="group">
+              <button title="Bold"><b>B</b></button>
+              <button title="Italic"><em>I</em></button>
+              <button title="List">≡</button>
+            </div>
+            <div class="spacer"></div>
+            <button class="btn btn-ghost btn-sm">Cancel</button>
+            <button class="btn btn-primary btn-sm">Save</button>
+          </div>
+
+          <!-- improve menu (mocked open to show what AI options look like) -->
+          <div class="improve-menu">
+            <div class="item"><span class="ico ico-sparkles">✦</span><span class="label">Improve clarity</span><span class="kbd">⌘1</span></div>
+            <div class="item"><span class="ico ico-sparkles">✦</span><span class="label">Make it shorter</span><span class="kbd">⌘2</span></div>
+            <div class="item"><span class="ico ico-sparkles">✦</span><span class="label">Make it more inspiring</span><span class="kbd">⌘3</span></div>
+            <div class="sep"></div>
+            <div class="item"><span class="ico">↺</span><span class="label">Generate 3 alternatives</span></div>
+            <div class="item"><span class="ico">⎘</span><span class="label">Copy from website tagline</span></div>
+            <div class="sep"></div>
+            <div class="item"><span class="ico">✎</span><span class="label">Custom AI instruction…</span></div>
+          </div>
+        </section>
+
+        <!-- Vision (default state with AI suggestion banner) -->
+        <section class="block" id="vision">
+          <div class="block-head">
+            <h2>Vision</h2>
+            <div class="row-actions">
+              <button class="ai" title="AI menu">✦</button>
+              <button title="History">↺</button>
+              <button title="More">⋯</button>
+            </div>
+          </div>
+          <div class="text-prose">A world where great coffee isn't a Saturday luxury but a Tuesday-morning given — fresh, traceable, and made by people you can name.</div>
+
+          <div class="ai-suggest">
+            <span class="ico icon-sparkle"></span>
+            <div class="body">
+              <strong>AI suggests:</strong> tighten this to one sentence and lead with the world you want to create — e.g. <em>"A world where every cup is fresh, traceable, and human-made."</em>
+            </div>
+            <div class="actions">
+              <button class="accept">Accept</button>
+              <button class="dismiss">Dismiss</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Core Values (chips) -->
+        <section class="block" id="values">
+          <div class="block-head">
+            <h2>Core values</h2>
+            <div class="row-actions">
+              <button class="ai" title="AI menu">✦</button>
+              <button title="History">↺</button>
+              <button title="More">⋯</button>
+            </div>
+          </div>
+          <div class="chip-row">
+            <span class="chip-val">Craft <span class="x">×</span></span>
+            <span class="chip-val">Transparency <span class="x">×</span></span>
+            <span class="chip-val">Patience <span class="x">×</span></span>
+            <span class="chip-val">Approachability <span class="x">×</span></span>
+            <span class="chip-val">Sustainability <span class="x">×</span></span>
+            <span class="chip-add">+ Add value</span>
+            <span class="chip-add">✦ Suggest 3</span>
+          </div>
+          <div class="footer-meta">
+            <span class="pill">5 of 5 max</span>
+            <span>Suggested by AI from your discovery answers</span>
+          </div>
+        </section>
+
+        <!-- Archetype (badge card) -->
+        <section class="block" id="archetype">
+          <div class="block-head">
+            <h2>Brand archetype</h2>
+            <div class="row-actions">
+              <button class="ai" title="AI menu">✦</button>
+              <button title="History">↺</button>
+              <button title="More">⋯</button>
+            </div>
+          </div>
+          <div class="archetype-card">
+            <div class="archetype-badge">🧙</div>
+            <div>
+              <div class="name">The Sage <span class="sub">· secondary: The Caregiver</span></div>
+              <div class="blurb">Sages share knowledge and create clarity in a complex world. For Northwind: educate without lecturing, and earn trust by showing your work — the farm, the roast date, the recyclable pouch.</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Elevator Pitch -->
+        <section class="block" id="pitch">
+          <div class="block-head">
+            <h2>Elevator pitch</h2>
+            <div class="row-actions">
+              <button class="ai" title="AI menu">✦</button>
+              <button title="History">↺</button>
+              <button title="More">⋯</button>
+            </div>
+          </div>
+          <div class="text-prose text-prose-md">Northwind Coffee Co. roasts small-batch, single-origin coffee in Portland and ships it to your door within 14 days of roast. We work directly with three farms, name the roaster on every bag, and pack everything in recyclable pouches — so you taste exactly what the grower meant you to taste.</div>
+        </section>
+
+        <!-- Tagline -->
+        <section class="block" id="tagline">
+          <div class="block-head">
+            <h2>Tagline</h2>
+            <div class="row-actions">
+              <button class="ai" title="AI menu">✦</button>
+              <button title="Variants">⇆ 3 variants</button>
+              <button title="More">⋯</button>
+            </div>
+          </div>
+          <div class="text-prose" style="font-family: var(--bpw-font-heading); font-size: 22px; font-weight: 600; color: var(--bpw-primary-dark);">Specialty coffee, delivered fresh.</div>
+          <div class="footer-meta">
+            <span class="pill">Active</span>
+            <span class="pill">Alt 1: "Roasted Tuesday. At your door Thursday."</span>
+            <span class="pill">Alt 2: "Closer to the farm. Sooner to your cup."</span>
+          </div>
+        </section>
+
+        <!-- Positioning -->
+        <section class="block" id="positioning">
+          <div class="block-head">
+            <h2>Positioning statement</h2>
+            <div class="row-actions">
+              <button class="ai" title="AI menu">✦</button>
+              <button title="History">↺</button>
+              <button title="More">⋯</button>
+            </div>
+          </div>
+          <div class="text-prose text-prose-sm">
+            <strong>For</strong> urban knowledge workers, 28–45, who care about craft <em>and</em> convenience<br>
+            <strong>Northwind Coffee Co.</strong> is the specialty-coffee subscription<br>
+            <strong>that</strong> delivers single-origin beans within 14 days of roast<br>
+            <strong>unlike</strong> grocery-shelf "premium" brands that sit for months,<br>
+            <strong>because</strong> we work directly with three named farms and roast weekly in Portland.
+          </div>
+        </section>
+
+      </main>
+
+      <aside class="toc">
+        <div class="h">On this page</div>
+        <a href="#mission" class="cur">Mission</a>
+        <a href="#vision">Vision</a>
+        <a href="#values">Core values</a>
+        <a href="#archetype">Archetype</a>
+        <a href="#pitch">Elevator pitch</a>
+        <a href="#tagline">Tagline</a>
+        <a href="#positioning">Positioning</a>
+      </aside>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  // Highlight TOC on scroll (purely cosmetic for the mock)
+  const tocLinks = document.querySelectorAll('.toc a');
+  const blocks = document.querySelectorAll('.block');
+  window.addEventListener('scroll', () => {
+    let cur = blocks[0].id;
+    blocks.forEach(b => {
+      if (b.getBoundingClientRect().top < 160) cur = b.id;
+    });
+    tocLinks.forEach(a => a.classList.toggle('cur', a.getAttribute('href') === '#' + cur));
+  });
+</script>
+
+</body>
+</html>

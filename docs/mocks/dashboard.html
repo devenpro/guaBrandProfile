@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BPW Mock — Dashboard</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="_shared.css">
+<style>
+  /* Top app bar */
+  .top {
+    height: 56px;
+    background: var(--bpw-white);
+    border-bottom: 1px solid var(--bpw-border);
+    display: flex;
+    align-items: center;
+    padding: 0 22px;
+    gap: 12px;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .top .logo {
+    font-family: var(--bpw-font-heading);
+    font-weight: 700;
+    color: var(--bpw-primary-dark);
+  }
+  .top .crumb { color: var(--bpw-text-muted); font-size: 13px; }
+  .top .crumb b { color: var(--bpw-text); font-weight: 600; }
+  .top .spacer { flex: 1; }
+  .top .tools { display: flex; gap: 6px; }
+
+  /* Side nav */
+  .shell { display: grid; grid-template-columns: 232px 1fr; min-height: calc(100vh - 56px); }
+  .nav {
+    background: var(--bpw-white);
+    border-right: 1px solid var(--bpw-border);
+    padding: 16px 12px;
+    position: sticky; top: 56px; height: calc(100vh - 56px);
+    overflow-y: auto;
+  }
+  .nav-section {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--bpw-text-muted);
+    padding: 12px 12px 6px;
+    font-weight: 600;
+  }
+  .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    color: var(--bpw-text-sec);
+    cursor: pointer;
+  }
+  .nav-link:hover { background: var(--bpw-gray-50); color: var(--bpw-text); }
+  .nav-link.active { background: var(--bpw-primary-light); color: var(--bpw-primary-dark); font-weight: 500; }
+  .nav-link .ico {
+    width: 22px; height: 22px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--bpw-gray-100); color: var(--bpw-text-sec);
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .nav-link.active .ico { background: var(--bpw-primary); color: var(--bpw-white); }
+  .nav-link .meta { margin-left: auto; font-size: 11px; color: var(--bpw-text-muted); }
+
+  /* Main content */
+  .main { padding: 24px 28px 60px; max-width: 1200px; }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, #1a73e8, #7c3aed);
+    color: white;
+    border-radius: var(--bpw-radius-xl);
+    padding: 26px 28px 24px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--bpw-shadow-md);
+  }
+  .hero::after {
+    content: '';
+    position: absolute; right: -60px; top: -60px;
+    width: 240px; height: 240px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 50%;
+  }
+  .hero h1 {
+    font-size: 30px;
+    line-height: 1.1;
+    margin-bottom: 6px;
+    letter-spacing: -0.02em;
+  }
+  .hero .tagline {
+    font-size: 15px;
+    opacity: 0.92;
+    margin-bottom: 18px;
+  }
+  .hero .meta-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+  .hero .meta-chip {
+    background: rgba(255,255,255,0.18);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.25);
+    padding: 4px 10px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .hero .resume {
+    background: white;
+    color: var(--bpw-primary-dark);
+    padding: 10px 18px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: var(--bpw-shadow-sm);
+  }
+  .hero .resume:hover { box-shadow: var(--bpw-shadow-md); }
+  .hero-stats {
+    display: flex;
+    gap: 28px;
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(255,255,255,0.2);
+  }
+  .hero-stats .stat .n { font-size: 22px; font-weight: 700; }
+  .hero-stats .stat .l { font-size: 11px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  /* At-a-glance */
+  .glance-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 22px 0;
+  }
+  .glance-card {
+    background: var(--bpw-white);
+    border: 1px solid var(--bpw-border);
+    border-radius: var(--bpw-radius-lg);
+    padding: 18px 20px;
+  }
+  .glance-card h3 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bpw-text-muted);
+    margin-bottom: 10px;
+  }
+  .glance-card .big {
+    font-family: var(--bpw-font-heading);
+    font-size: 18px;
+    line-height: 1.35;
+    color: var(--bpw-text);
+    font-weight: 600;
+  }
+  .glance-card .small {
+    color: var(--bpw-text-sec);
+    font-size: 13px;
+    margin-top: 6px;
+  }
+
+  /* Section grid */
+  .grid-head { display: flex; align-items: center; margin: 28px 0 14px; }
+  .grid-head h2 { font-size: 20px; font-family: var(--bpw-font-heading); }
+  .grid-head .actions { margin-left: auto; display: flex; gap: 8px; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+  }
+  .gcard {
+    background: var(--bpw-white);
+    border: 1px solid var(--bpw-border);
+    border-radius: var(--bpw-radius-lg);
+    padding: 18px;
+    transition: transform 0.15s, box-shadow 0.15s;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .gcard:hover { transform: translateY(-2px); box-shadow: var(--bpw-shadow-md); }
+  .gcard .head { display: flex; align-items: center; gap: 10px; }
+  .gcard .head .ic {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .gcard .head h4 { font-size: 15px; font-weight: 600; flex: 1; }
+  .gcard .preview {
+    font-size: 13px;
+    color: var(--bpw-text-sec);
+    line-height: 1.45;
+    flex: 1;
+    /* show 3 lines */
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .gcard .foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid var(--bpw-border);
+    padding-top: 10px;
+    font-size: 12px;
+    color: var(--bpw-text-muted);
+  }
+  .gcard .completion {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .gcard .completion .bar {
+    width: 50px; height: 4px;
+    border-radius: 99px;
+    background: var(--bpw-gray-200);
+    overflow: hidden;
+  }
+  .gcard .completion .bar > div {
+    height: 100%;
+    background: var(--bpw-success);
+  }
+  .gcard .completion .pct {
+    font-weight: 600; color: var(--bpw-text-sec);
+  }
+  .gcard.todo .completion .bar > div { background: var(--bpw-warning); }
+  .gcard.todo { border-style: dashed; }
+
+  /* icon colour variants */
+  .ic-identity { background: var(--bpw-primary-light);  color: var(--bpw-primary-dark); }
+  .ic-voice    { background: var(--bpw-accent-light);   color: var(--bpw-accent); }
+  .ic-audience { background: #fdecef;                   color: #d6336c; }
+  .ic-offerings{ background: #e9f9ee;                   color: var(--bpw-success); }
+  .ic-market   { background: #fff3e0;                   color: var(--bpw-warning); }
+  .ic-content  { background: #ede7f6;                   color: #5e35b1; }
+  .ic-seo      { background: #e0f7fa;                   color: #00838f; }
+  .ic-social   { background: #fff1f0;                   color: #d4380d; }
+
+  /* Activity feed */
+  .activity {
+    background: var(--bpw-white);
+    border: 1px solid var(--bpw-border);
+    border-radius: var(--bpw-radius-lg);
+    padding: 18px 20px;
+    margin-top: 28px;
+  }
+  .activity h3 {
+    font-size: 14px;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .activity ul { list-style: none; }
+  .activity li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--bpw-gray-100);
+    font-size: 13px;
+  }
+  .activity li:last-child { border-bottom: none; }
+  .activity li .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--bpw-primary);
+  }
+  .activity li .when { margin-left: auto; color: var(--bpw-text-muted); font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="mock-nav">
+  <a href="index.html">Index</a>
+  <a href="wizard.html">Wizard</a>
+  <a href="dashboard.html" class="active">Dashboard</a>
+  <a href="identity-page.html">Identity</a>
+</div>
+
+<div class="top">
+  <div class="logo">Brand Profile Wizard</div>
+  <div class="crumb">/ <b>Northwind Coffee Co.</b> / Dashboard</div>
+  <div class="spacer"></div>
+  <div class="tools">
+    <button class="btn btn-ghost btn-sm">✦ Refine all with AI</button>
+    <button class="btn btn-ghost btn-sm">Export</button>
+    <button class="btn-icon" title="Settings">⚙</button>
+  </div>
+</div>
+
+<div class="shell">
+  <aside class="nav">
+    <div class="nav-section">Brand</div>
+    <div class="nav-link active"><span class="ico">⌂</span>Dashboard</div>
+    <div class="nav-link"><span class="ico">⚑</span>Identity         <span class="meta">100%</span></div>
+    <div class="nav-link"><span class="ico">♪</span>Voice            <span class="meta">88%</span></div>
+    <div class="nav-link"><span class="ico">◉</span>Audience         <span class="meta">76%</span></div>
+
+    <div class="nav-section">Market</div>
+    <div class="nav-link"><span class="ico">$</span>Offerings        <span class="meta">62%</span></div>
+    <div class="nav-link"><span class="ico">⊞</span>Market           <span class="meta">40%</span></div>
+
+    <div class="nav-section">Channels</div>
+    <div class="nav-link"><span class="ico">✎</span>Content          <span class="meta">25%</span></div>
+    <div class="nav-link"><span class="ico">🔎</span>SEO              <span class="meta">0%</span></div>
+    <div class="nav-link"><span class="ico">⌖</span>Social           <span class="meta">3 set</span></div>
+
+    <div class="nav-section">App</div>
+    <div class="nav-link"><span class="ico">⚙</span>Settings</div>
+    <div class="nav-link"><span class="ico">↻</span>Activity</div>
+  </aside>
+
+  <main class="main">
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="meta-row">
+        <span class="meta-chip">Commercial</span>
+        <span class="meta-chip">🚀 Growing</span>
+        <span class="meta-chip">English (US)</span>
+        <span class="meta-chip">Last updated 2h ago</span>
+      </div>
+      <h1>Northwind Coffee Co.</h1>
+      <p class="tagline">Specialty coffee, delivered fresh within 14 days of roast.</p>
+      <div class="resume">Resume editing Identity → Mission <span class="muted">(last opened)</span></div>
+
+      <div class="hero-stats">
+        <div class="stat"><div class="n">62%</div><div class="l">Profile completion</div></div>
+        <div class="stat"><div class="n">8</div><div class="l">Sections</div></div>
+        <div class="stat"><div class="n">14</div><div class="l">AI runs this week</div></div>
+        <div class="stat"><div class="n">3</div><div class="l">Open suggestions</div></div>
+      </div>
+    </section>
+
+    <!-- At-a-glance -->
+    <div class="glance-row">
+      <div class="glance-card">
+        <h3>Elevator pitch</h3>
+        <div class="big">"We roast small-batch single-origin coffee in Portland and ship it to your door within 14 days — so every cup tastes the way the roaster meant it to."</div>
+        <div class="small">From Identity · Last refined 2h ago</div>
+      </div>
+      <div class="glance-card">
+        <h3>Primary tone &amp; audience</h3>
+        <div class="big">Warm, conversational, lightly playful — speaking to urban knowledge workers, 28–45, who care about craft <em>and</em> convenience.</div>
+        <div class="small">From Voice + Audience · Synced</div>
+      </div>
+    </div>
+
+    <!-- Section grid -->
+    <div class="grid-head">
+      <h2>Brand sections</h2>
+      <div class="actions">
+        <button class="btn btn-ghost btn-sm">Sort: completion</button>
+        <button class="btn btn-subtle btn-sm">✦ Refine incomplete (3)</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="gcard">
+        <div class="head">
+          <div class="ic ic-identity">⚑</div>
+          <h4>Identity</h4>
+          <span class="chip chip-success">Complete</span>
+        </div>
+        <div class="preview">Mission, vision, values, archetype (The Sage), elevator pitch, tagline, positioning — all generated and reviewed.</div>
+        <div class="foot">
+          <div class="completion"><div class="bar"><div style="width:100%"></div></div><span class="pct">100%</span></div>
+          <span>2h ago</span>
+        </div>
+      </div>
+
+      <div class="gcard">
+        <div class="head">
+          <div class="ic ic-voice">♪</div>
+          <h4>Voice</h4>
+          <span class="chip">88%</span>
+        </div>
+        <div class="preview">Primary tone, 5 personality traits, do/don't list, preferred vocabulary, sample paragraph. Missing tone-by-context.</div>
+        <div class="foot">
+          <div class="completion"><div class="bar"><div style="width:88%"></div></div><span class="pct">88%</span></div>
+          <span>2h ago</span>
+        </div>
+      </div>
+
+      <div class="gcard">
+        <div class="head">
+          <div class="ic ic-audience">◉</div>
+          <h4>Audience</h4>
+          <span class="chip">76%</span>
+        </div>
+        <div class="preview">Primary description, 2 segments, 1 detailed persona. Add a second persona for B2B office-channel pilot.</div>
+        <div class="foot">
+          <div class="completion"><div class="bar"><div style="width:76%"></div></div><span class="pct">76%</span></div>
+          <span>4h ago</span>
+        </div>
+      </div>
+
+      <div class="gcard">
+        <div class="head">
+          <div class="ic ic-offerings">$</div>
+          <h4>Offerings</h4>
+          <span class="chip">62%</span>
+        </div>
+        <div class="preview">3 offerings listed (subscription, single-bag, gift bundles). Pricing model set. No revenue split entered yet.</div>
+        <div class="foot">
+          <div class="completion"><div class="bar"><div style="width:62%"></div></div><span class="pct">62%</span></div>
+          <span>4h ago</span>
+        </div>
+      </div>
+
+      <div class="gcard todo">
+        <div class="head">
+          <div class="ic ic-market">⊞</div>
+          <h4>Market</h4>
+          <span class="chip chip-warn">Needs work</span>
+        </div>
+        <div class="preview">Category set ("specialty coffee DTC"). 0 competitors logged. 1 differentiator. Run market analysis to fill in.</div>
+        <div class="foot">
+          <div class="completion"><div class="bar"><div style="width:40%"></div></div><span class="pct">40%</span></div>
+          <span>1d ago</span>
+        </div>
+      </div>
+
+      <div class="gcard todo">
+        <div class="head">
+          <div class="ic ic-content">✎</div>
+          <h4>Content</h4>
+          <span class="chip chip-warn">Needs work</span>
+        </div>
+        <div class="preview">2 pillars suggested. No hashtags or channel plan yet.</div>
+        <div class="foot">
+          <div class="completion"><div class="bar"><div style="width:25%"></div></div><span class="pct">25%</span></div>
+          <span>—</span>
+        </div>
+      </div>
+
+      <div class="gcard todo">
+        <div class="head">
+          <div class="ic ic-seo">🔎</div>
+          <h4>SEO</h4>
+          <span class="chip">Empty</span>
+        </div>
+        <div class="preview">No keywords, metadata, or hints generated. Recommend running after Audience is locked.</div>
+        <div class="foot">
+          <div class="completion"><div class="bar"><div style="width:0%"></div></div><span class="pct">0%</span></div>
+          <span>—</span>
+        </div>
+      </div>
+
+      <div class="gcard">
+        <div class="head">
+          <div class="ic ic-social">⌖</div>
+          <h4>Social</h4>
+          <span class="chip chip-primary">3 set</span>
+        </div>
+        <div class="preview">Instagram, TikTok, LinkedIn linked from website scrape. Twitter/X handle missing.</div>
+        <div class="foot">
+          <div class="completion"><div class="bar"><div style="width:60%"></div></div><span class="pct">60%</span></div>
+          <span>2h ago</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity -->
+    <section class="activity">
+      <h3>Recent activity</h3>
+      <ul>
+        <li><span class="dot"></span> Identity regenerated with new mission direction <span class="when">2h ago</span></li>
+        <li><span class="dot"></span> Voice profile updated — added "warm" personality trait <span class="when">2h ago</span></li>
+        <li><span class="dot"></span> Audience segment B added ("office coffee buyer") <span class="when">4h ago</span></li>
+        <li><span class="dot"></span> Website scraped, 8 fields imported <span class="when">5h ago</span></li>
+        <li><span class="dot"></span> Brand profile setup completed <span class="when">5h ago</span></li>
+      </ul>
+    </section>
+
+  </main>
+</div>
+
+</body>
+</html>
