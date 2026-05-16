@@ -75,6 +75,10 @@ import './ui/views/social.js';
 import './ui/views/settings.js';
 
 import './ui/app-shell.js';
+// Error boundary — additive monkey-patch around _bpwAppShell + window
+// error backstop. Loads immediately after app-shell so the wrap finds
+// the global on first poll.
+import './ui/_app-shell-safe.js';
 
 // Legacy monolith — still defines its own LLMService closure and
 // `window._bpwLLMService` alias used by bpw-part2a/2b/2c. Loaded last
