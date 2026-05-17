@@ -1,4 +1,4 @@
-window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T05:30:21.058Z";try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}
+window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T18:43:36.261Z";try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}
 (() => {
   // src/ai/providers/registry.js
   (function() {
