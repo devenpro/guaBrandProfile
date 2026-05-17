@@ -4854,6 +4854,72 @@ body.bpw-app-shell-active {
   background: var(--bpw-gray-50);
   color: var(--bpw-text);
 }
+@media (max-width: 720px) {
+  .bpw-shell-detail--dashboard {
+    padding: var(--bpw-sp-4);
+  }
+  .bpw-dash-hero {
+    padding: var(--bpw-sp-5);
+  }
+  .bpw-dash-hero-title {
+    font-size: 22px;
+  }
+  .bpw-dash-hero-stats {
+    gap: var(--bpw-sp-4);
+  }
+  .bpw-dash-grid {
+    grid-template-columns: 1fr;
+  }
+  .bpw-shell-detail--page {
+    padding: var(--bpw-sp-4);
+  }
+  .bpw-page-field {
+    padding: var(--bpw-sp-3);
+  }
+  .bpw-page-field-refine {
+    opacity: 1;
+  }
+  .bpw-shell-detail-head h1 {
+    font-size: 22px;
+  }
+  .bpw-comp-grid {
+    grid-template-columns: 1fr;
+    padding: 0;
+  }
+  .bpw-modal {
+    width: calc(100vw - 16px);
+  }
+  .bpw-modal-head,
+  .bpw-modal-body,
+  .bpw-modal-foot {
+    padding-left: var(--bpw-sp-4);
+    padding-right: var(--bpw-sp-4);
+  }
+}
+.bpw-page-field-refine:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--bpw-primary);
+  outline-offset: 2px;
+}
+.bpw-dash-card:focus-visible {
+  outline: 2px solid var(--bpw-primary);
+  outline-offset: -2px;
+}
+.bpw-settings-phase-opt:focus-visible {
+  outline: 2px solid var(--bpw-primary);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bpw-modal {
+    animation: none;
+  }
+  .bpw-modal-backdrop {
+    animation: none;
+  }
+  .bpw-dash-card {
+    transition: none;
+  }
+}
 
 /* src/styles/responsive.css */
 @media (max-width: 1200px) {

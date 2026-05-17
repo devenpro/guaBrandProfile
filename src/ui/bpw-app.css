@@ -1214,3 +1214,54 @@ body.bpw-app-shell-active { overflow: hidden; }
 .bpw-btn-primary:hover { background: var(--bpw-primary-hover); border-color: var(--bpw-primary-hover); }
 .bpw-btn-ghost { background: transparent; color: var(--bpw-text-sec); border-color: var(--bpw-border); }
 .bpw-btn-ghost:hover { background: var(--bpw-gray-50); color: var(--bpw-text); }
+
+/* ──────────────────────────────────────────────────────────────────
+   v2 mobile breakpoints + polish.
+   ──────────────────────────────────────────────────────────────── */
+@media (max-width: 720px) {
+  /* Dashboard hero: stack stats, smaller padding. */
+  .bpw-shell-detail--dashboard { padding: var(--bpw-sp-4); }
+  .bpw-dash-hero { padding: var(--bpw-sp-5); }
+  .bpw-dash-hero-title { font-size: 22px; }
+  .bpw-dash-hero-stats { gap: var(--bpw-sp-4); }
+  .bpw-dash-grid { grid-template-columns: 1fr; }
+
+  /* Page-style fields: tighter padding on mobile. */
+  .bpw-shell-detail--page { padding: var(--bpw-sp-4); }
+  .bpw-page-field { padding: var(--bpw-sp-3); }
+  .bpw-page-field-refine { opacity: 1; }
+  .bpw-shell-detail-head h1 { font-size: 22px; }
+
+  /* Competitors grid stacks. */
+  .bpw-comp-grid { grid-template-columns: 1fr; padding: 0; }
+
+  /* Modal full-width on tiny screens. */
+  .bpw-modal { width: calc(100vw - 16px); }
+  .bpw-modal-head, .bpw-modal-body, .bpw-modal-foot { padding-left: var(--bpw-sp-4); padding-right: var(--bpw-sp-4); }
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   v2 a11y polish: focus rings on page-field hover affordances so
+   keyboard users can reach the refine button without a pointer.
+   Dashboard cards already have :focus styles via the button reset.
+   ──────────────────────────────────────────────────────────────── */
+.bpw-page-field-refine:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--bpw-primary);
+  outline-offset: 2px;
+}
+.bpw-dash-card:focus-visible {
+  outline: 2px solid var(--bpw-primary);
+  outline-offset: -2px;
+}
+.bpw-settings-phase-opt:focus-visible {
+  outline: 2px solid var(--bpw-primary);
+  outline-offset: 2px;
+}
+
+/* Reduced motion: kill modal pop animation. */
+@media (prefers-reduced-motion: reduce) {
+  .bpw-modal { animation: none; }
+  .bpw-modal-backdrop { animation: none; }
+  .bpw-dash-card { transition: none; }
+}
