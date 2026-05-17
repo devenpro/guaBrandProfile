@@ -38,8 +38,13 @@
 
   function _seedContext() {
     var seed = (W && W.seedContext) || {};
+    var dumpFn = window._bpwAIHelpers && window._bpwAIHelpers.consolidateSeedDump;
     return {
       name: (seed.name || '').trim(),
+      dump: dumpFn ? dumpFn(seed) : (seed.dump || seed.description || '').trim(),
+      // Legacy fields kept on the returned shape so any older caller
+      // that destructures `description` / `customInstructions` keeps
+      // working until the Phase-2 wizard rewrite removes those reads.
       description: (seed.description || '').trim(),
       customInstructions: (seed.customInstructions || '').trim()
     };
@@ -56,8 +61,9 @@
 
     var contextLines = [];
     if (ctx.name)               contextLines.push('Brand name: ' + ctx.name);
-    if (ctx.description)        contextLines.push('Brand description (provided by the brand owner): ' + ctx.description);
-    if (ctx.customInstructions) contextLines.push('Custom instructions from the brand owner:\n' + ctx.customInstructions);
+    if (ctx.dump)               contextLines.push('Brand details (provided by the brand owner):\n' + ctx.dump);
+    else if (ctx.description)   contextLines.push('Brand description (provided by the brand owner): ' + ctx.description);
+    if (!ctx.dump && ctx.customInstructions) contextLines.push('Custom instructions from the brand owner:\n' + ctx.customInstructions);
     var contextBlock = contextLines.length ? '\n\n--- BRAND CONTEXT (authoritative — anchor your analysis on this) ---\n' + contextLines.join('\n') + '\n--- END BRAND CONTEXT ---' : '';
 
     var fetchNote = '\n\nIMPORTANT: If your environment cannot actually retrieve this URL (no live web access), DO NOT invent details. Set "fetched" to false and only fill fields that are clearly supported by the BRAND CONTEXT above. Leave the other fields as empty strings or empty arrays. If you can retrieve the URL, set "fetched" to true and extract real data from the page contents.';

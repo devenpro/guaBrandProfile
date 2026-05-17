@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BPW Mock — Step 2 · Discovery Review</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="_wizard.css">
+</head>
+<body>
+
+<div class="mock-nav">
+  <a href="index.html">Index</a>
+  <a href="step1-basics.html">1 · Basics</a>
+  <a href="step2-discovery.html" class="active">2 · Discovery</a>
+  <a href="step2b-followups.html">2b · Follow-ups</a>
+  <a href="stage-loading.html">3 · Loading</a>
+  <a href="stage-review.html">3 · Identity</a>
+  <a href="stage-review-competitors.html">8 · Competitors</a>
+  <a href="wizard-complete.html">9 · Done</a>
+  <a href="dashboard.html">Dashboard</a>
+  <a href="settings-page.html">Settings</a>
+</div>
+
+<div class="wiz-top">
+  <div class="logo">Brand Profile Wizard</div>
+  <div class="spacer"></div>
+  <div class="save-state"><span class="dot"></span> Auto-saved · just now</div>
+  <button class="btn btn-ghost btn-sm">Exit setup</button>
+</div>
+
+<div class="wiz-rail">
+  <div class="wiz-rail-inner">
+    <div class="wiz-rail-progress"><div style="width: 22%"></div></div>
+    <div class="wiz-rail-steps" data-current="2"></div>
+  </div>
+</div>
+
+<div class="wiz-stage">
+
+  <span class="phase-note success">✦ AI pre-filled 5 answers from your brand dump · 4.2s</span>
+  <h1 class="wiz-headline">We took a stab at the basics</h1>
+  <p class="wiz-sub">Edit anything that's off. These answers anchor every later AI prompt, so accuracy here saves cleanup later. Required questions only — follow-ups come next.</p>
+
+  <div class="qa-list">
+
+    <div class="qa-item">
+      <div class="q">
+        <span class="num">1</span>
+        What problem does your brand solve?
+        <span class="badge ai">AI-filled</span>
+      </div>
+      <textarea rows="2">Helping busy professionals get specialty-grade coffee at home without the gear, the cost, or the guesswork of café-quality brewing.</textarea>
+      <div class="ai-meta">
+        <span>Drawn from: your brand dump · website tagline</span>
+        <a href="#">↻ Regenerate</a>
+      </div>
+    </div>
+
+    <div class="qa-item">
+      <div class="q">
+        <span class="num">2</span>
+        Who is your ideal customer?
+        <span class="badge ai">AI-filled</span>
+      </div>
+      <textarea rows="2">Knowledge workers, 28–45, urban, $80k+ household income, who value craft and convenience equally. They brew at home daily but won't fuss with grinders or scales.</textarea>
+      <div class="ai-meta">
+        <span>Drawn from: brand dump (lines 4–5)</span>
+        <a href="#">↻ Regenerate</a>
+      </div>
+    </div>
+
+    <div class="qa-item">
+      <div class="q">
+        <span class="num">3</span>
+        How do you make money?
+        <span class="badge ai">AI-filled</span>
+      </div>
+      <input type="text" value="Direct-to-consumer subscriptions (70% of revenue) plus one-time orders, shipped from Portland. B2B office channel in pilot.">
+      <div class="ai-meta">
+        <span>Drawn from: brand dump (revenue breakdown)</span>
+        <a href="#">↻ Regenerate</a>
+      </div>
+    </div>
+
+    <div class="qa-item">
+      <div class="q">
+        <span class="num">4</span>
+        What makes you different from competitors?
+        <span class="badge ai">AI-filled</span>
+      </div>
+      <textarea rows="2">Named roasters on every bag, a 14-day-from-roast freshness guarantee, recyclable packaging, and single-origin sourcing from three farms. We sit between Trade Coffee (mass) and Onyx (premium).</textarea>
+      <div class="ai-meta">
+        <span>Drawn from: brand dump · competitor mentions</span>
+        <a href="#">↻ Regenerate</a>
+      </div>
+    </div>
+
+    <div class="qa-item">
+      <div class="q">
+        <span class="num">5</span>
+        What's the one feeling every customer should walk away with?
+        <span class="badge ai">AI-filled</span>
+      </div>
+      <input type="text" value="That morning coffee can be a small ritual worth slowing down for.">
+      <div class="ai-meta">
+        <span>Drawn from: brand dump (tone notes)</span>
+        <a href="#">↻ Regenerate</a>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="next-note">
+    <span class="icon-sparkle"></span>
+    <span>Once you approve these, we'll generate <strong>smart follow-up questions</strong> that target the gaps — like who decides on office coffee, or who your closest sustainability competitor is.</span>
+  </div>
+</div>
+
+<div class="wiz-foot">
+  <div class="inner">
+    <span class="step-text">Step 2 of 9 · Discovery</span>
+    <div class="right">
+      <a href="step1-basics.html" class="btn btn-ghost">← Back</a>
+      <button class="btn btn-ghost">↻ Regenerate all</button>
+      <a href="step2b-followups.html" class="btn btn-primary">Generate follow-ups →</a>
+    </div>
+  </div>
+</div>
+
+<script src="_wizard.js"></script>
+</body>
+</html>

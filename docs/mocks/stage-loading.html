@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BPW Mock — Stage Loading</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="_wizard.css">
+</head>
+<body>
+
+<div class="mock-nav">
+  <a href="index.html">Index</a>
+  <a href="step1-basics.html">1 · Basics</a>
+  <a href="step2-discovery.html">2 · Discovery</a>
+  <a href="step2b-followups.html">2b · Follow-ups</a>
+  <a href="stage-loading.html" class="active">3 · Loading</a>
+  <a href="stage-review.html">3 · Identity</a>
+  <a href="stage-review-competitors.html">8 · Competitors</a>
+  <a href="wizard-complete.html">9 · Done</a>
+</div>
+
+<div class="wiz-top">
+  <div class="logo">Brand Profile Wizard</div>
+  <div class="spacer"></div>
+  <div class="save-state"><span class="dot"></span> Auto-saved · just now</div>
+  <button class="btn btn-ghost btn-sm">Exit setup</button>
+</div>
+
+<div class="wiz-rail">
+  <div class="wiz-rail-inner">
+    <div class="wiz-rail-progress"><div style="width: 44%"></div></div>
+    <div class="wiz-rail-steps" data-current="3"></div>
+  </div>
+</div>
+
+<div class="wiz-stage">
+  <div class="stage-loading">
+    <div class="ring"></div>
+    <h2>Drafting your Identity…</h2>
+    <p>Using your basics, brand dump, discovery answers and the Growing-phase prompt strategy. This typically takes 8–15 seconds.</p>
+
+    <div class="substeps">
+      <div class="item done">
+        <span class="b">✓</span>
+        <span>Built brief from 8 discovery answers</span>
+      </div>
+      <div class="item done">
+        <span class="b">✓</span>
+        <span>Drafted mission, vision &amp; values</span>
+      </div>
+      <div class="item now">
+        <span class="b"></span>
+        <span>Generating archetype &amp; positioning…</span>
+      </div>
+      <div class="item queued">
+        <span class="b">4</span>
+        <span>Tagline candidates</span>
+      </div>
+      <div class="item queued">
+        <span class="b">5</span>
+        <span>Elevator pitch</span>
+      </div>
+    </div>
+
+    <p style="margin-top: 28px; font-size: 12.5px; color: var(--bpw-text-muted);">
+      Same template will run for Voice → Audience → Offerings → Market → Competitors. <br>
+      You'll review each before the next stage starts.
+    </p>
+  </div>
+</div>
+
+<div class="wiz-foot">
+  <div class="inner">
+    <span class="step-text">Step 3 of 9 · Identity (drafting)</span>
+    <div class="right">
+      <button class="btn btn-ghost">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="_wizard.js"></script>
+</body>
+</html>

@@ -59,6 +59,77 @@
     return null;
   }
 
+  // ── SEED DUMP ──────────────────────────────────────────────────────
+  // Returns the effective brand-dump string. v2 prefers `seed.dump`
+  // (single anchor textarea on the new wizard's Step 1). Falls back to
+  // the legacy pair `description` + `customInstructions` so brands that
+  // were set up with the old wizard keep working until a Phase-7 settings
+  // edit promotes their data into the new field.
+  function consolidateSeedDump(seed) {
+    seed = seed || {};
+    var dump = (seed.dump || '').trim();
+    if (dump) return dump;
+    var d = (seed.description || '').trim();
+    var c = (seed.customInstructions || '').trim();
+    if (d && c) return d + '\n\n' + c;
+    return d || c || '';
+  }
+
+  // ── PHASE GUIDANCE ─────────────────────────────────────────────────
+  // Returns a prompt fragment that scales depth/richness by growth phase
+  // without changing which stages run. Appended to every per-stage AI
+  // prompt by the wizard orchestrator (Phase 3 wires this in).
+  //
+  // Generic fallback per phase, plus per-stage overrides where the
+  // shape differs meaningfully (e.g. audience personas count).
+  function phaseGuidance(level, stage) {
+    var lvl = (level || 'new').toLowerCase();
+    var key = (stage || '').toLowerCase();
+
+    var generic = {
+      'new':         'Brand phase: NEW. Keep output tight and foundational. Single variant per field. Prefer plain language over nuance — this brand is still finding its voice.',
+      'growing':    'Brand phase: GROWING. Standard depth. One primary variant per field, plus 1–2 alternates only where they meaningfully diverge. Sharp positioning, no fluff.',
+      'established':'Brand phase: ESTABLISHED. Rich, multi-variant output. Where it helps, offer 2–3 alternatives reflecting different strategic emphases. Nuanced positioning. Reference category trends and competitive context.'
+    };
+
+    var perStage = {
+      'identity': {
+        'new':         '\nIdentity rules: one mission, one vision, 3 core values, one tagline candidate.',
+        'growing':    '\nIdentity rules: one mission, one vision, 4 values, 2 tagline candidates, 1 positioning statement.',
+        'established':'\nIdentity rules: 3 mission alternatives (different strategic emphases), one vision, 4–5 values, 3 tagline candidates, nuanced positioning vs named competitors.'
+      },
+      'audience': {
+        'new':         '\nAudience rules: primary description only. No segments, no personas.',
+        'growing':    '\nAudience rules: primary + 2 segments + 1 detailed persona.',
+        'established':'\nAudience rules: primary + 3 segments + 2–3 detailed personas covering buyer + user + influencer where distinct.'
+      },
+      'competitors': {
+        'new':         '\nCompetitor rules: 0–2 lite cards (name + one-line positioning). Skip if the brand mentioned none.',
+        'growing':    '\nCompetitor rules: 3–4 cards with positioning + strengths + weaknesses.',
+        'established':'\nCompetitor rules: 4–5 cards with positioning + strengths + weaknesses + explicit "vs. you" delta. Include adjacent/indirect competitors.'
+      },
+      'market': {
+        'new':         '\nMarket rules: category + one-line positioning only.',
+        'growing':    '\nMarket rules: category + positioning + 3 differentiators.',
+        'established':'\nMarket rules: category + positioning + 3 differentiators + trends + 2 opportunity gaps.'
+      },
+      'voice': {
+        'new':         '\nVoice rules: primary tone + 3 personality traits + 5 dos/donts.',
+        'growing':    '\nVoice rules: primary tone + 5 personality traits + dos/donts + preferred vocabulary + 1 sample paragraph.',
+        'established':'\nVoice rules: primary tone + 5 personality traits + tone-by-context (email/social/support/sales/PR) + vocabulary + 2 sample paragraphs (long + short form).'
+      },
+      'offerings': {
+        'new':         '\nOfferings rules: list items the brand mentioned. Skip pricing detail if absent.',
+        'growing':    '\nOfferings rules: items + pricing model summary + per-item target audience.',
+        'established':'\nOfferings rules: items + pricing model + plans/tiers when discernible + per-item differentiators.'
+      }
+    };
+
+    var base = generic[lvl] || generic['new'];
+    var stageRule = (perStage[key] && perStage[key][lvl]) || '';
+    return base + stageRule;
+  }
+
   // ── BRAND SNIPPET ──────────────────────────────────────────────────
   // Build a compact context block to append to prompts. BPW reads from
   // W.acceptedSections via BrandService, not from external Drupal divs.
@@ -156,6 +227,8 @@
     extractBraceBlock: extractBraceBlock,
     brandSnippet: brandSnippet,
     callAIWithRetry: callAIWithRetry,
-    aiActionLoading: aiActionLoading
+    aiActionLoading: aiActionLoading,
+    consolidateSeedDump: consolidateSeedDump,
+    phaseGuidance: phaseGuidance
   };
 })();

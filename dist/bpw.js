@@ -1,4 +1,4 @@
-window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}
+window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T03:12:27.911Z";try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}
 (() => {
   // src/ai/providers/registry.js
   (function() {
@@ -362,24 +362,48 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
         if (p) {
           for (var i = 0; i < p.activeModels.length; i++) {
             if (p.activeModels[i].id === _config.default_model) {
-              return {
-                provider: p.id,
-                model: p.activeModels[i].id,
-                api_key: p.api_key,
-                temperature: p.activeModels[i].temperature,
-                max_tokens: p.activeModels[i].max_tokens || 8192
-              };
+              return _resolveModel(p, p.activeModels[i]);
             }
           }
         }
       }
-      var p0 = provs[0], m0 = p0.activeModels[0];
+      var preferred = _findPreferredFlashModel(provs);
+      if (preferred) return preferred;
+      var p0 = provs[0], m0 = _pickDefaultModel(p0) || p0.activeModels[0];
+      return _resolveModel(p0, m0);
+    }
+    function _findPreferredFlashModel(provs) {
+      var gemini = null;
+      for (var i = 0; i < provs.length; i++) {
+        if ((provs[i].id || "").toLowerCase() === "gemini") {
+          gemini = provs[i];
+          break;
+        }
+      }
+      if (!gemini) return null;
+      var order = [/2\.5.*flash/i, /2\.0.*flash/i, /flash/i];
+      for (var k = 0; k < order.length; k++) {
+        for (var j = 0; j < gemini.activeModels.length; j++) {
+          var m = gemini.activeModels[j];
+          if (order[k].test(m.id) || order[k].test(m.label || "")) return _resolveModel(gemini, m);
+        }
+      }
+      return _resolveModel(gemini, _pickDefaultModel(gemini) || gemini.activeModels[0]);
+    }
+    function _pickDefaultModel(p) {
+      if (!p || !p.activeModels) return null;
+      for (var i = 0; i < p.activeModels.length; i++) {
+        if (p.activeModels[i].is_default) return p.activeModels[i];
+      }
+      return null;
+    }
+    function _resolveModel(p, m) {
       return {
-        provider: p0.id,
-        model: m0.id,
-        api_key: p0.api_key,
-        temperature: m0.temperature,
-        max_tokens: m0.max_tokens || 8192
+        provider: p.id,
+        model: m.id,
+        api_key: p.api_key,
+        temperature: m.temperature !== void 0 ? m.temperature : 1,
+        max_tokens: m.max_tokens || 8192
       };
     }
     function _getSelection() {
@@ -555,15 +579,16 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
         return (BT[t] || {}).label || t;
       }).join(" + ");
     }
-    function getContextBlock() {
+    function getContextBlock(stageHint) {
       var ctx = getContext();
       var parts = [];
       parts.push("Brand: " + (ctx.seed && ctx.seed.name || "Unknown"));
       parts.push("Type: " + typeLabels());
       parts.push("Level: " + (ctx.brand_level || "new"));
       var seed = ctx.seed || {};
-      if (seed.description) parts.push("Description: " + seed.description);
-      if (seed.customInstructions) parts.push("Custom instructions from brand owner:\n" + seed.customInstructions);
+      var dumpFn = window._bpwAIHelpers && window._bpwAIHelpers.consolidateSeedDump;
+      var dump = dumpFn ? dumpFn(seed) : seed.dump || seed.description || "";
+      if (dump) parts.push("Brand details (provided by the brand owner):\n" + dump);
       if (seed.industry) parts.push("Industry: " + seed.industry);
       if (seed.business_model) parts.push("Business model: " + seed.business_model);
       if (seed.website_url) parts.push("Website: " + seed.website_url);
@@ -605,6 +630,11 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
         if (acc.voice && acc.voice.primary_tone) parts.push("Voice tone: " + acc.voice.primary_tone);
         if (acc.messaging && acc.messaging.primary_message) parts.push("Primary message: " + acc.messaging.primary_message);
         if (acc.market && acc.market.positioning) parts.push("Positioning: " + acc.market.positioning);
+      }
+      var H = window._bpwAIHelpers || {};
+      if (H.phaseGuidance && stageHint) {
+        var pg = H.phaseGuidance(ctx.brand_level || "new", stageHint);
+        if (pg) parts.push("\n--- Phase guidance ---\n" + pg);
       }
       return "\n\nBrand context:\n" + parts.join("\n");
     }
@@ -738,6 +768,59 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
       }
       return null;
     }
+    function consolidateSeedDump(seed) {
+      seed = seed || {};
+      var dump = (seed.dump || "").trim();
+      if (dump) return dump;
+      var d = (seed.description || "").trim();
+      var c = (seed.customInstructions || "").trim();
+      if (d && c) return d + "\n\n" + c;
+      return d || c || "";
+    }
+    function phaseGuidance(level, stage) {
+      var lvl = (level || "new").toLowerCase();
+      var key = (stage || "").toLowerCase();
+      var generic = {
+        "new": "Brand phase: NEW. Keep output tight and foundational. Single variant per field. Prefer plain language over nuance \u2014 this brand is still finding its voice.",
+        "growing": "Brand phase: GROWING. Standard depth. One primary variant per field, plus 1\u20132 alternates only where they meaningfully diverge. Sharp positioning, no fluff.",
+        "established": "Brand phase: ESTABLISHED. Rich, multi-variant output. Where it helps, offer 2\u20133 alternatives reflecting different strategic emphases. Nuanced positioning. Reference category trends and competitive context."
+      };
+      var perStage = {
+        "identity": {
+          "new": "\nIdentity rules: one mission, one vision, 3 core values, one tagline candidate.",
+          "growing": "\nIdentity rules: one mission, one vision, 4 values, 2 tagline candidates, 1 positioning statement.",
+          "established": "\nIdentity rules: 3 mission alternatives (different strategic emphases), one vision, 4\u20135 values, 3 tagline candidates, nuanced positioning vs named competitors."
+        },
+        "audience": {
+          "new": "\nAudience rules: primary description only. No segments, no personas.",
+          "growing": "\nAudience rules: primary + 2 segments + 1 detailed persona.",
+          "established": "\nAudience rules: primary + 3 segments + 2\u20133 detailed personas covering buyer + user + influencer where distinct."
+        },
+        "competitors": {
+          "new": "\nCompetitor rules: 0\u20132 lite cards (name + one-line positioning). Skip if the brand mentioned none.",
+          "growing": "\nCompetitor rules: 3\u20134 cards with positioning + strengths + weaknesses.",
+          "established": '\nCompetitor rules: 4\u20135 cards with positioning + strengths + weaknesses + explicit "vs. you" delta. Include adjacent/indirect competitors.'
+        },
+        "market": {
+          "new": "\nMarket rules: category + one-line positioning only.",
+          "growing": "\nMarket rules: category + positioning + 3 differentiators.",
+          "established": "\nMarket rules: category + positioning + 3 differentiators + trends + 2 opportunity gaps."
+        },
+        "voice": {
+          "new": "\nVoice rules: primary tone + 3 personality traits + 5 dos/donts.",
+          "growing": "\nVoice rules: primary tone + 5 personality traits + dos/donts + preferred vocabulary + 1 sample paragraph.",
+          "established": "\nVoice rules: primary tone + 5 personality traits + tone-by-context (email/social/support/sales/PR) + vocabulary + 2 sample paragraphs (long + short form)."
+        },
+        "offerings": {
+          "new": "\nOfferings rules: list items the brand mentioned. Skip pricing detail if absent.",
+          "growing": "\nOfferings rules: items + pricing model summary + per-item target audience.",
+          "established": "\nOfferings rules: items + pricing model + plans/tiers when discernible + per-item differentiators."
+        }
+      };
+      var base2 = generic[lvl] || generic["new"];
+      var stageRule = perStage[key] && perStage[key][lvl] || "";
+      return base2 + stageRule;
+    }
     function brandSnippet(type) {
       var BrandService = window.BrandService;
       if (!BrandService || !BrandService.isConfigured()) return "";
@@ -825,7 +908,9 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
       extractBraceBlock,
       brandSnippet,
       callAIWithRetry,
-      aiActionLoading
+      aiActionLoading,
+      consolidateSeedDump,
+      phaseGuidance
     };
   })();
 
@@ -850,8 +935,13 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
     }
     function _seedContext() {
       var seed = W2 && W2.seedContext || {};
+      var dumpFn = window._bpwAIHelpers && window._bpwAIHelpers.consolidateSeedDump;
       return {
         name: (seed.name || "").trim(),
+        dump: dumpFn ? dumpFn(seed) : (seed.dump || seed.description || "").trim(),
+        // Legacy fields kept on the returned shape so any older caller
+        // that destructures `description` / `customInstructions` keeps
+        // working until the Phase-2 wizard rewrite removes those reads.
         description: (seed.description || "").trim(),
         customInstructions: (seed.customInstructions || "").trim()
       };
@@ -862,8 +952,9 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
       var socialSchema = platformType === "website" ? ',\n  "social_profiles": [\n    {"platform": "youtube|instagram|linkedin|twitter_x|facebook|tiktok|google_business|other", "url": "full profile URL", "handle": "@handle or name"}\n  ]' : "";
       var contextLines = [];
       if (ctx.name) contextLines.push("Brand name: " + ctx.name);
-      if (ctx.description) contextLines.push("Brand description (provided by the brand owner): " + ctx.description);
-      if (ctx.customInstructions) contextLines.push("Custom instructions from the brand owner:\n" + ctx.customInstructions);
+      if (ctx.dump) contextLines.push("Brand details (provided by the brand owner):\n" + ctx.dump);
+      else if (ctx.description) contextLines.push("Brand description (provided by the brand owner): " + ctx.description);
+      if (!ctx.dump && ctx.customInstructions) contextLines.push("Custom instructions from the brand owner:\n" + ctx.customInstructions);
       var contextBlock = contextLines.length ? "\n\n--- BRAND CONTEXT (authoritative \u2014 anchor your analysis on this) ---\n" + contextLines.join("\n") + "\n--- END BRAND CONTEXT ---" : "";
       var fetchNote = '\n\nIMPORTANT: If your environment cannot actually retrieve this URL (no live web access), DO NOT invent details. Set "fetched" to false and only fill fields that are clearly supported by the BRAND CONTEXT above. Leave the other fields as empty strings or empty arrays. If you can retrieve the URL, set "fetched" to true and extract real data from the page contents.';
       return {
@@ -920,7 +1011,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
     function getPrompt() {
       var depth = _isDeep() ? "comprehensive" : "brief";
       var typeDesc = BrandService.typeLabels();
-      var ctx = BrandService.getContextBlock();
+      var ctx = BrandService.getContextBlock("market");
       var lang = BrandService.getLangSuffix();
       var deepKeys = _isDeep() ? ',\n  "market_trends": ["string"],\n  "market_opportunities": ["string"]' : "";
       var fieldReqs = "\n\nFIELD REQUIREMENTS:\n- Every competitor MUST include: name, url (full URL \u2014 no placeholders), strengths (>= 2), weaknesses (>= 2), comparison (1-2 sentences on how the brand differs)\n- Every differentiator MUST include: point (short claim) AND evidence (concrete proof)\n- 3-5 competitors total, 3-5 differentiators total";
@@ -955,7 +1046,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
       var guidance = customGuidance ? "\n\nUser direction: " + customGuidance : "";
       var prompt = {
         system: "You are a competitive intelligence analyst. Find competitors not already in the brand profile." + BrandService.getLangSuffix(),
-        user: "Find 3-5 additional competitors for this brand." + BrandService.getContextBlock() + (existing.length ? "\n\nDO NOT repeat these already-tracked competitors: " + existing.join(", ") : "") + guidance + '\n\nReturn ONLY valid JSON:\n{\n  "competitors": [\n    {"name":"","description":"","url":"","strengths":[""],"weaknesses":[""],"comparison":""}\n  ]\n}' + _jsonOnly()
+        user: "Find 3-5 additional competitors for this brand." + BrandService.getContextBlock("competitors") + (existing.length ? "\n\nDO NOT repeat these already-tracked competitors: " + existing.join(", ") : "") + guidance + '\n\nReturn ONLY valid JSON:\n{\n  "competitors": [\n    {"name":"","description":"","url":"","strengths":[""],"weaknesses":[""],"comparison":""}\n  ]\n}' + _jsonOnly()
       };
       callAIWithRetry(prompt.user, function(rawText) {
         var parsed = parseJSON(rawText);
@@ -991,7 +1082,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
       var typeDesc = BrandService.typeLabels();
       return {
         system: "You are an expert brand strategist. Generate 3 compelling, distinct mission statement options for a " + typeDesc + " brand. Each should capture a different strategic angle or emphasis." + BrandService.getLangSuffix(),
-        user: "Generate 3 mission statement options for this brand. Each should be unique in angle, tone, or strategic emphasis." + BrandService.getContextBlock() + '\n\nReturn ONLY valid JSON:\n{\n  "identity_mission_options": ["mission option 1 \u2014 clear and concise", "mission option 2 \u2014 different angle", "mission option 3 \u2014 different emphasis"]\n}' + _jsonOnly()
+        user: "Generate 3 mission statement options for this brand. Each should be unique in angle, tone, or strategic emphasis." + BrandService.getContextBlock("identity") + '\n\nReturn ONLY valid JSON:\n{\n  "identity_mission_options": ["mission option 1 \u2014 clear and concise", "mission option 2 \u2014 different angle", "mission option 3 \u2014 different emphasis"]\n}' + _jsonOnly()
       };
     }
     function getIdentityPrompt() {
@@ -1008,14 +1099,14 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
       var missionFields = selectedMission ? "" : '\n  "identity_mission_options": ["mission option 1", "mission option 2", "mission option 3"],\n  "identity_mission": "the recommended mission statement",';
       return {
         system: "You are an expert brand strategist. Create brand identity elements for a " + typeDesc + " brand." + (selectedMission ? " The mission is already decided \u2014 build everything else around it." : " Generate multiple alternatives for mission so the user can choose.") + BrandService.getLangSuffix(),
-        user: "Generate brand identity elements." + missionNote + BrandService.getContextBlock() + "\n\nReturn ONLY valid JSON:\n{" + missionFields + '\n  "identity_vision": "vision statement aligned with the mission",\n  "identity_values": [\n    {"value":"","description":""}\n  ],\n  "identity_archetype": "string \u2014 one of the 12 brand archetypes with brief explanation",\n  "identity_pitch": "30-second elevator pitch"\n}' + _jsonOnly()
+        user: "Generate brand identity elements." + missionNote + BrandService.getContextBlock("identity") + "\n\nReturn ONLY valid JSON:\n{" + missionFields + '\n  "identity_vision": "vision statement aligned with the mission",\n  "identity_values": [\n    {"value":"","description":""}\n  ],\n  "identity_archetype": "string \u2014 one of the 12 brand archetypes with brief explanation",\n  "identity_pitch": "30-second elevator pitch"\n}' + _jsonOnly()
       };
     }
     function getVoicePrompt() {
       var typeDesc = BrandService.typeLabels();
       return {
         system: "You are an expert brand voice strategist. Define the complete voice, tone, and messaging framework for a " + typeDesc + " brand." + BrandService.getLangSuffix(),
-        user: "Generate voice and messaging framework." + BrandService.getContextBlock() + '\n\nReturn ONLY valid JSON:\n{\n  "voice_tone": "primary tone description \u2014 2-3 sentences",\n  "voice_personality": ["trait1", "trait2", "trait3", "trait4", "trait5"],\n  "voice_dos": ["rule1", "rule2", "rule3", "rule4", "rule5"],\n  "voice_donts": ["rule1", "rule2", "rule3", "rule4", "rule5"],\n  "voice_preferred": ["term1", "term2", "term3"],\n  "voice_avoided": ["term1", "term2", "term3"],\n  "messaging_primary": "primary brand message \u2014 one powerful sentence",\n  "messaging_supporting": ["supporting message 1", "supporting message 2", "supporting message 3"],\n  "messaging_headlines": [\n    {"context":"landing page","headline":""},\n    {"context":"social media bio","headline":""},\n    {"context":"email subject","headline":""}\n  ],\n  "voice_sample": "A 3-4 sentence sample text written IN the brand voice \u2014 a product announcement or content piece"\n}' + _jsonOnly()
+        user: "Generate voice and messaging framework." + BrandService.getContextBlock("voice") + '\n\nReturn ONLY valid JSON:\n{\n  "voice_tone": "primary tone description \u2014 2-3 sentences",\n  "voice_personality": ["trait1", "trait2", "trait3", "trait4", "trait5"],\n  "voice_dos": ["rule1", "rule2", "rule3", "rule4", "rule5"],\n  "voice_donts": ["rule1", "rule2", "rule3", "rule4", "rule5"],\n  "voice_preferred": ["term1", "term2", "term3"],\n  "voice_avoided": ["term1", "term2", "term3"],\n  "messaging_primary": "primary brand message \u2014 one powerful sentence",\n  "messaging_supporting": ["supporting message 1", "supporting message 2", "supporting message 3"],\n  "messaging_headlines": [\n    {"context":"landing page","headline":""},\n    {"context":"social media bio","headline":""},\n    {"context":"email subject","headline":""}\n  ],\n  "voice_sample": "A 3-4 sentence sample text written IN the brand voice \u2014 a product announcement or content piece"\n}' + _jsonOnly()
       };
     }
     function _callPrompt(prompt, actionId, callback) {
@@ -1096,7 +1187,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
       var typeDesc = BrandService.typeLabels();
       return {
         system: "You are an expert brand voice strategist. Define the complete voice, tone, and messaging framework for a " + typeDesc + " brand." + BrandService.getLangSuffix(),
-        user: "Generate voice and messaging framework." + BrandService.getContextBlock() + '\n\nReturn ONLY valid JSON:\n{\n  "voice_tone": "primary tone description \u2014 2-3 sentences",\n  "voice_personality": ["trait1", "trait2", "trait3", "trait4", "trait5"],\n  "voice_dos": ["rule1", "rule2", "rule3", "rule4", "rule5"],\n  "voice_donts": ["rule1", "rule2", "rule3", "rule4", "rule5"],\n  "voice_preferred": ["term1", "term2", "term3"],\n  "voice_avoided": ["term1", "term2", "term3"],\n  "messaging_primary": "primary brand message \u2014 one powerful sentence",\n  "messaging_supporting": ["supporting message 1", "supporting message 2", "supporting message 3"],\n  "messaging_headlines": [\n    {"context":"landing page","headline":""},\n    {"context":"social media bio","headline":""},\n    {"context":"email subject","headline":""}\n  ],\n  "voice_sample": "A 3-4 sentence sample text written IN the brand voice \u2014 a product announcement or content piece"\n}' + _jsonOnly()
+        user: "Generate voice and messaging framework." + BrandService.getContextBlock("voice") + '\n\nReturn ONLY valid JSON:\n{\n  "voice_tone": "primary tone description \u2014 2-3 sentences",\n  "voice_personality": ["trait1", "trait2", "trait3", "trait4", "trait5"],\n  "voice_dos": ["rule1", "rule2", "rule3", "rule4", "rule5"],\n  "voice_donts": ["rule1", "rule2", "rule3", "rule4", "rule5"],\n  "voice_preferred": ["term1", "term2", "term3"],\n  "voice_avoided": ["term1", "term2", "term3"],\n  "messaging_primary": "primary brand message \u2014 one powerful sentence",\n  "messaging_supporting": ["supporting message 1", "supporting message 2", "supporting message 3"],\n  "messaging_headlines": [\n    {"context":"landing page","headline":""},\n    {"context":"social media bio","headline":""},\n    {"context":"email subject","headline":""}\n  ],\n  "voice_sample": "A 3-4 sentence sample text written IN the brand voice \u2014 a product announcement or content piece"\n}' + _jsonOnly()
       };
     }
     function run4(callback) {
@@ -1129,7 +1220,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
       };
       var prompt = {
         system: "You are a brand copywriter. Write content in the exact voice and tone defined for this brand. Match the personality, vocabulary, and style rules precisely." + BrandService.getLangSuffix(),
-        user: "Write " + (formatDesc[format] || formatDesc.custom) + " for this brand." + BrandService.getContextBlock() + "\n\nReturn ONLY the text content. No JSON wrapper, no quotes, no explanation. Just the raw text in brand voice."
+        user: "Write " + (formatDesc[format] || formatDesc.custom) + " for this brand." + BrandService.getContextBlock("voice") + "\n\nReturn ONLY the text content. No JSON wrapper, no quotes, no explanation. Just the raw text in brand voice."
       };
       LLMService.callAI(prompt.user, function(rawText) {
         var clean = rawText.replace(/```[a-z]*\s*/gi, "").replace(/```\s*/gi, "").trim();
@@ -1174,7 +1265,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
       var fieldReqs = "\n\nFIELD REQUIREMENTS (every item):\n- segment.pain_points: at least 3 specific pains (no empty array)\n- segment.goals: at least 2 concrete goals\n- segment.channels: at least 2 channels where this segment lives\n" + (personaCount > 0 ? "- persona.age: a realistic age or age range\n- persona.journey: 1-2 sentences on how they discover, evaluate, decide\n- persona.decision_criteria: at least 3 concrete criteria\n- persona.pain_points: at least 3 specific pains\n- persona.goals: at least 2 concrete goals\n" : "");
       return {
         system: "You are an expert audience researcher. Profile the target audience for a " + typeDesc + " brand." + BrandService.getLangSuffix(),
-        user: "Generate audience profile." + BrandService.getContextBlock() + '\n\nReturn ONLY valid JSON:\n{\n  "audience_primary": "2-3 sentence primary audience description",\n  "audience_segments": [\n    {"name":"","description":"","pain_points":[""],"goals":[""],"channels":[""]}\n  ]' + personaSchema + "\n}\n\nGenerate 2-3 segments." + personaInstr + fieldReqs + _jsonOnly()
+        user: "Generate audience profile." + BrandService.getContextBlock("audience") + '\n\nReturn ONLY valid JSON:\n{\n  "audience_primary": "2-3 sentence primary audience description",\n  "audience_segments": [\n    {"name":"","description":"","pain_points":[""],"goals":[""],"channels":[""]}\n  ]' + personaSchema + "\n}\n\nGenerate 2-3 segments." + personaInstr + fieldReqs + _jsonOnly()
       };
     }
     function _offeringsPrompt() {
@@ -1186,7 +1277,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
       var fieldReqs = "\n\nFIELD REQUIREMENTS (every offering and program):\n- name: short distinctive name\n- category: classification (product / service / course / consulting / etc.)\n- features: at least 2 concrete features\n- benefits: at least 2 outcomes the customer experiences\n- target_audience: who this is specifically for (1 sentence)\n- status: one of active / coming soon / sunset";
       return {
         system: "You are a business strategist. Structure the " + offeringsType + " for a " + typeDesc + " brand." + BrandService.getLangSuffix(),
-        user: "Generate offerings profile." + BrandService.getContextBlock() + '\n\nReturn ONLY valid JSON:\n{\n  "offerings_items": [\n    {"name":"","category":"","description":"","features":[""],"benefits":[""],"target_audience":"","status":"active"}\n  ]' + creatorFields + commercFields + nonprofFields + "\n}\n\nGenerate 3-6 offerings based on available context." + fieldReqs + _jsonOnly()
+        user: "Generate offerings profile." + BrandService.getContextBlock("offerings") + '\n\nReturn ONLY valid JSON:\n{\n  "offerings_items": [\n    {"name":"","category":"","description":"","features":[""],"benefits":[""],"target_audience":"","status":"active"}\n  ]' + creatorFields + commercFields + nonprofFields + "\n}\n\nGenerate 3-6 offerings based on available context." + fieldReqs + _jsonOnly()
       };
     }
     function _callPrompt(prompt, actionId, callback) {
@@ -1241,7 +1332,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
       }).filter(Boolean);
       var prompt = {
         system: "You are an expert audience researcher building detailed buyer personas." + BrandService.getLangSuffix(),
-        user: "Generate 2-3 additional detailed personas for this brand." + BrandService.getContextBlock() + (existing.length ? "\n\nDO NOT repeat these existing personas: " + existing.join(", ") : "") + (customGuidance ? "\n\nUser direction: " + customGuidance : "") + '\n\nReturn ONLY valid JSON:\n{\n  "personas": [\n    {"name":"","role":"","age":"","story":"","pain_points":[""],"goals":[""],"decision_criteria":[""],"journey":""}\n  ]\n}' + _jsonOnly()
+        user: "Generate 2-3 additional detailed personas for this brand." + BrandService.getContextBlock("audience") + (existing.length ? "\n\nDO NOT repeat these existing personas: " + existing.join(", ") : "") + (customGuidance ? "\n\nUser direction: " + customGuidance : "") + '\n\nReturn ONLY valid JSON:\n{\n  "personas": [\n    {"name":"","role":"","age":"","story":"","pain_points":[""],"goals":[""],"decision_criteria":[""],"journey":""}\n  ]\n}' + _jsonOnly()
       };
       callAIWithRetry(prompt.user, function(rawText) {
         var parsed = parseJSON(rawText);
@@ -1286,7 +1377,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
       var fieldReqs = "\n\nFIELD REQUIREMENTS (every offering and program):\n- name: short distinctive name\n- category: classification\n- description: 1-2 sentences\n- features: at least 2 concrete features (never empty)\n- benefits: at least 2 outcomes (never empty)\n- target_audience: 1 sentence on who this is for\n- status: active / coming soon / sunset";
       return {
         system: "You are a business strategist. Structure the " + offeringsType + " for a " + typeDesc + " brand." + BrandService.getLangSuffix(),
-        user: "Generate offerings profile." + BrandService.getContextBlock() + '\n\nReturn ONLY valid JSON:\n{\n  "offerings_items": [\n    {"name":"","category":"","description":"","features":[""],"benefits":[""],"target_audience":"","status":"active"}\n  ]' + creatorFields + commercFields + nonprofFields + "\n}\n\nGenerate 3-6 offerings based on available context." + fieldReqs + _jsonOnly()
+        user: "Generate offerings profile." + BrandService.getContextBlock("offerings") + '\n\nReturn ONLY valid JSON:\n{\n  "offerings_items": [\n    {"name":"","category":"","description":"","features":[""],"benefits":[""],"target_audience":"","status":"active"}\n  ]' + creatorFields + commercFields + nonprofFields + "\n}\n\nGenerate 3-6 offerings based on available context." + fieldReqs + _jsonOnly()
       };
     }
     function run4(callback) {
@@ -1327,7 +1418,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
       var fieldReqs = '\n\nFIELD REQUIREMENTS:\n- Every pillar MUST include: pillar (short name), description (1-2 sentences), topics (>= 3 concrete topics)\n- Every channel MUST include: channel (e.g. Instagram, YouTube, Newsletter), purpose, frequency, format (e.g. "short-form vertical video", "long-form essay") \u2014 never leave format empty\n- SEO keywords are 2-5-word phrases a real user would search\n- Hashtags include the # prefix';
       return {
         system: "You are a content strategist. Build a content and channel strategy for a " + typeDesc + " brand." + BrandService.getLangSuffix(),
-        user: "Generate content strategy." + BrandService.getContextBlock() + '\n\nReturn ONLY valid JSON:\n{\n  "content_pillars": [\n    {"pillar":"","description":"","topics":[""]}\n  ],\n  "content_channels": [\n    {"channel":"","purpose":"","frequency":"","format":""}\n  ],\n  "content_seo": ["keyword1", "keyword2", "keyword3"],\n  "content_hashtags": ["#hashtag1", "#hashtag2"]\n}\n\nGenerate 3-5 pillars, 3-5 channels, 8-12 SEO keywords, and 5-8 hashtags.' + fieldReqs + _jsonOnly()
+        user: "Generate content strategy." + BrandService.getContextBlock("content") + '\n\nReturn ONLY valid JSON:\n{\n  "content_pillars": [\n    {"pillar":"","description":"","topics":[""]}\n  ],\n  "content_channels": [\n    {"channel":"","purpose":"","frequency":"","format":""}\n  ],\n  "content_seo": ["keyword1", "keyword2", "keyword3"],\n  "content_hashtags": ["#hashtag1", "#hashtag2"]\n}\n\nGenerate 3-5 pillars, 3-5 channels, 8-12 SEO keywords, and 5-8 hashtags.' + fieldReqs + _jsonOnly()
       };
     }
     function run4(callback) {
@@ -1368,7 +1459,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
       var focusLine = focus2 ? "\n\nFocus area: " + focus2 : "";
       return {
         system: "You are an SEO strategist. Run a structured audit for a " + typeDesc + " brand." + BrandService.getLangSuffix(),
-        user: "Run an SEO audit for this brand." + BrandService.getContextBlock() + focusLine + '\n\nReturn ONLY valid JSON:\n{\n  "keyword_clusters": [\n    {"cluster":"","seed_keyword":"","intent":"informational|commercial|transactional","keywords":[""],"difficulty":"low|medium|high"}\n  ],\n  "competitor_analysis": [\n    {"name":"","strengths":[""],"weaknesses":[""],"opportunities":[""]}\n  ],\n  "content_gaps": [\n    {"topic":"","why_it_matters":"","suggested_angle":""}\n  ],\n  "quick_wins": [\n    {"action":"","impact":"low|medium|high","effort":"low|medium|high"}\n  ]\n}\n\nGenerate 4-6 keyword clusters, up to 4 competitors, 3-5 content gaps, and 3-5 quick wins.' + _jsonOnly()
+        user: "Run an SEO audit for this brand." + BrandService.getContextBlock("seo") + focusLine + '\n\nReturn ONLY valid JSON:\n{\n  "keyword_clusters": [\n    {"cluster":"","seed_keyword":"","intent":"informational|commercial|transactional","keywords":[""],"difficulty":"low|medium|high"}\n  ],\n  "competitor_analysis": [\n    {"name":"","strengths":[""],"weaknesses":[""],"opportunities":[""]}\n  ],\n  "content_gaps": [\n    {"topic":"","why_it_matters":"","suggested_angle":""}\n  ],\n  "quick_wins": [\n    {"action":"","impact":"low|medium|high","effort":"low|medium|high"}\n  ]\n}\n\nGenerate 4-6 keyword clusters, up to 4 competitors, 3-5 content gaps, and 3-5 quick wins.' + _jsonOnly()
       };
     }
     function audit(focus2, callback) {
@@ -1392,6 +1483,43 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
   // src/ai/actions/competitors.js
   (function() {
     "use strict";
+    var W2, LLMService, BrandService, parseJSON, callAIWithRetry;
+    function _resolveHelpers() {
+      W2 = window._bpwState;
+      LLMService = window.LLMService;
+      BrandService = window.BrandService;
+      var H = window._bpwAIHelpers || {};
+      parseJSON = H.parseJSON;
+      callAIWithRetry = H.callAIWithRetry;
+    }
+    function _jsonOnly() {
+      return "\n\nRESPOND WITH VALID JSON ONLY. No markdown, no preamble.";
+    }
+    function getPrompt() {
+      _resolveHelpers();
+      var typeDesc = BrandService.typeLabels();
+      var ctx = BrandService.getContextBlock("competitors");
+      var lang = BrandService.getLangSuffix();
+      return {
+        system: "You are a competitive intelligence analyst researching the competitive landscape for a " + typeDesc + " brand. Focus exclusively on competitors \u2014 do not propose positioning or differentiators here, the Market stage already covers those." + lang,
+        user: "Research competitors for this brand. Use the brand context and phase guidance to choose how many cards and how much depth." + ctx + '\n\nFIELD REQUIREMENTS:\n- Every competitor MUST include: name, url (full URL \u2014 no placeholders), description (1 line), strengths (>= 2), weaknesses (>= 2), comparison (1-2 sentences on how this brand differs).\n- Prefer real, identifiable competitors over generic categories. If the brand mentions specific competitor names in the dump, include those by name first.\n\nReturn ONLY valid JSON:\n{\n  "competitors": [\n    {"name":"","description":"","url":"","strengths":[""],"weaknesses":[""],"comparison":""}\n  ]\n}' + _jsonOnly()
+      };
+    }
+    function run4(callback) {
+      _resolveHelpers();
+      if (!LLMService || !LLMService.isConfigured()) {
+        if (callback) callback({ success: false, error: "No AI providers configured" });
+        return;
+      }
+      var prompt = getPrompt();
+      callAIWithRetry(prompt.user, function(rawText) {
+        var parsed = parseJSON(rawText);
+        var competitors = parsed.competitors || parsed.market_competitors || [];
+        if (callback) callback({ success: true, data: { competitors } });
+      }, function(err) {
+        if (callback) callback({ success: false, error: err });
+      }, "ai-competitors", prompt.system);
+    }
     function findMore(customGuidance, callback) {
       var market = window._bpwAIActions && window._bpwAIActions.market;
       if (!market || !market.findMoreCompetitors) {
@@ -1401,7 +1529,11 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
       return market.findMoreCompetitors(customGuidance, callback);
     }
     window._bpwAIActions = window._bpwAIActions || {};
-    window._bpwAIActions.competitors = { findMore };
+    window._bpwAIActions.competitors = {
+      run: run4,
+      getPrompt,
+      findMore
+    };
   })();
 
   // src/ai/actions/personas.js
@@ -1473,7 +1605,8 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
       }
       var currentValue = store.get(path);
       var shapeHint = _shapeHint(currentValue);
-      var ctxBlock = brandSvc.getContextBlock();
+      var stageHint = (path || "").split(".")[0] || "";
+      var ctxBlock = brandSvc.getContextBlock(stageHint);
       var system = "You are a senior brand strategist refining one specific element of a brand profile. Stay strictly within the requested scope \u2014 do not rewrite adjacent fields. Match the existing voice and brand context. Output valid JSON only.";
       var userPrompt = "Refine the following brand-profile field.\n\nField path: " + path + "\nField shape: " + shapeHint.label + "\n\nCurrent value:\n" + _stringify(currentValue) + "\n\nUser instructions for this refine:\n" + (instructions || "(none \u2014 improve generally while keeping the same shape)") + "\n" + ctxBlock + "\n\nReturn ONLY valid JSON in this exact shape:\n" + shapeHint.outputSchema + "\nNo markdown, no commentary \u2014 JSON object only.";
       helpers.callAIWithRetry(userPrompt, function(rawText) {
@@ -1679,6 +1812,10 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
         gate: { growthPhase: ["growing", "deep"], brandTypes: ["commercial", "local"] },
         dependsOn: ["scrape"],
         aiActionRef: "market.run",
+        // v2 per-stage review: every AI stage pauses for user confirmation
+        // before moving on. The orchestrator's needsReview / awaitingReview
+        // machinery already handles this — we just flip the flag.
+        needsReview: true,
         summaryLine: function() {
           return "Analysing market category and competitors\u2026";
         },
@@ -1706,6 +1843,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
         gate: { growthPhase: ["new", "growing"] },
         dependsOn: ["scrape"],
         aiActionRef: "identity.runMergedIdentityVoice",
+        needsReview: true,
         summaryLine: function() {
           return "Generating mission, voice, and tone\u2026";
         },
@@ -1729,6 +1867,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
         gate: { growthPhase: ["deep"] },
         dependsOn: ["scrape"],
         aiActionRef: "identity.runIdentity",
+        needsReview: true,
         summaryLine: function() {
           return "Generating mission, vision, values, archetype\u2026";
         },
@@ -1751,6 +1890,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
         gate: { growthPhase: ["deep"] },
         dependsOn: ["identity"],
         aiActionRef: "voice.run",
+        needsReview: true,
         summaryLine: function() {
           return "Generating tone, vocabulary, messaging\u2026";
         },
@@ -1773,6 +1913,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
         gate: { growthPhase: ["new", "growing"] },
         dependsOn: ["identity_voice"],
         aiActionRef: "audience.runMergedAudienceOfferings",
+        needsReview: true,
         summaryLine: function() {
           return "Profiling audience and structuring offerings\u2026";
         },
@@ -1797,6 +1938,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
         gate: { growthPhase: ["deep"] },
         dependsOn: ["voice"],
         aiActionRef: "audience.run",
+        needsReview: true,
         summaryLine: function() {
           return "Profiling audience and personas\u2026";
         },
@@ -1819,6 +1961,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
         gate: { growthPhase: ["deep"], brandTypes: ["commercial", "local", "nonprofit"] },
         dependsOn: ["audience"],
         aiActionRef: "offerings.run",
+        needsReview: true,
         summaryLine: function() {
           return "Structuring offerings\u2026";
         },
@@ -1837,6 +1980,37 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
           return '<div class="bpw-setup-stage-detail"><ul class="bpw-setup-list">' + rows + "</ul></div>";
         }
       },
+      // v2 dedicated competitor research stage. Runs after market (where
+      // category + positioning are set) so the AI can frame each competitor
+      // relative to the brand's own positioning. The competitors action
+      // normalises output to the same { competitors: [...] } shape that
+      // Market stores, so the existing schema slot accepts it as-is.
+      {
+        id: "competitors",
+        label: "Competitors",
+        group: "market",
+        gate: { growthPhase: ["growing", "deep"], brandTypes: ["commercial", "local", "nonprofit", "creator"] },
+        dependsOn: ["market"],
+        aiActionRef: "competitors.run",
+        needsReview: true,
+        summaryLine: function() {
+          return "Researching competitive landscape\u2026";
+        },
+        summary: function(state) {
+          var comps = _list(state, "market_competitors", 4);
+          return comps.length ? "Competitors: " + comps.map(function(c) {
+            return c.name || c;
+          }).filter(Boolean).join(", ") : "Competitors drafted.";
+        },
+        expandRenderer: function(state) {
+          var comps = _list(state, "market_competitors", 10) || [];
+          if (!comps.length) return '<div class="bpw-setup-stage-detail"><div class="bpw-setup-readonly">No competitors yet.</div></div>';
+          var rows = comps.map(function(c) {
+            return "<li><strong>" + _esc(c.name || "") + "</strong>" + (c.description ? " \u2014 " + _esc(c.description) : "") + (c.comparison ? "<br><small>" + _esc(c.comparison) + "</small>" : "") + "</li>";
+          }).join("");
+          return '<div class="bpw-setup-stage-detail"><ul class="bpw-setup-list">' + rows + "</ul></div>";
+        }
+      },
       {
         id: "content",
         label: "Content strategy",
@@ -1845,6 +2019,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
         dependsOn: [],
         // Soft dependency — runs after audience but can stand alone.
         aiActionRef: "content.run",
+        needsReview: true,
         summaryLine: function() {
           return "Building pillars, channels, SEO seeds\u2026";
         },
@@ -2527,8 +2702,8 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
       var seed = W2.seedContext || {};
       var name = W2.acceptedSections && W2.acceptedSections.identity && W2.acceptedSections.identity.name || seed.name || "";
       var url = seed.url || seed.website_url || "";
-      var description = seed.description || "";
-      var customInstructions = seed.customInstructions || "";
+      var dumpFn = window._bpwAIHelpers && window._bpwAIHelpers.consolidateSeedDump;
+      var dump = dumpFn ? dumpFn(seed) : seed.dump || "";
       var types = W2.brandTypes || [];
       var awaiting = W2.setup && W2.setup.awaitingReview || null;
       var locked = running && !awaiting;
@@ -2554,13 +2729,9 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
       html += '<p class="bpw-setup-help">' + _icon("circle-info") + " Many AI models can't actually open this URL \u2014 if results look generic, paste real details below instead.</p>";
       html += "</div>";
       html += '<div class="bpw-setup-field">';
-      html += '<label for="bpw-setup-description">What does your brand do? <span class="bpw-setup-field-hint">1\u20132 sentences</span></label>';
-      html += '<textarea id="bpw-setup-description" class="bpw-setup-textarea" data-field="description" rows="2" placeholder="e.g. Acme Studio designs and sells handmade ceramic homeware for small modern kitchens."' + disabled + ">" + _esc(description) + "</textarea>";
-      html += "</div>";
-      html += '<div class="bpw-setup-field">';
-      html += '<label for="bpw-setup-custom-instructions">Custom instructions <span class="bpw-setup-field-hint">paste anything that matters</span></label>';
-      html += '<textarea id="bpw-setup-custom-instructions" class="bpw-setup-textarea bpw-setup-textarea-tall" data-field="customInstructions" rows="6" placeholder="Anything that should anchor the AI \u2014 your About page copy, key product names, target customer, tone you want, things to avoid, competitors, awards, etc. The richer this is, the better."' + disabled + ">" + _esc(customInstructions) + "</textarea>";
-      html += '<p class="bpw-setup-help">' + _icon("lightbulb") + " Treat this like a brief for a junior strategist \u2014 facts the AI couldn't know otherwise.</p>";
+      html += '<label for="bpw-setup-dump">Tell us about your brand <span class="bpw-setup-field-hint">the secret sauce</span></label>';
+      html += '<textarea id="bpw-setup-dump" class="bpw-setup-textarea bpw-setup-textarea-tall" data-field="dump" rows="8" placeholder="About page text, target customers, key offerings, what makes you different, tone preferences, things to avoid, competitor names \u2014 anything goes. The more you write here, the better every AI draft will be."' + disabled + ">" + _esc(dump) + "</textarea>";
+      html += '<p class="bpw-setup-help">' + _icon("lightbulb") + ' Single anchor field used by every downstream AI prompt. Replaces the old "description" + "custom instructions" pair.</p>';
       html += "</div>";
       html += "</div>";
       html += '<div class="bpw-setup-section">';
@@ -2569,9 +2740,11 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
       html += "<label>Growth phase</label>";
       html += '<div class="bpw-setup-radio-group">';
       [
-        ["new", "New", "Just starting \u2014 basics first"],
-        ["growing", "Growing", "Established \u2014 refine + expand"],
-        ["deep", "Deep dive", "Full strategic profile"]
+        ["new", "New", "Just starting \u2014 concise, foundational output"],
+        ["growing", "Growing", "Established but scaling \u2014 standard depth"],
+        // Internal value stays "deep" for back-compat with saved brand
+        // data. Label reads "Established" per the v2 mocks.
+        ["deep", "Established", "Mature \u2014 rich, multi-variant, deep competitive lens"]
       ].forEach(function(p) {
         var checked = lvl === p[0] ? " checked" : "";
         html += '<label class="bpw-setup-radio"><input type="radio" name="bpw-growth" value="' + p[0] + '"' + checked + disabled + "><span>" + _esc(p[1]) + "<small>" + _esc(p[2]) + "</small></span></label>";
@@ -2693,6 +2866,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
         W2.seedContext = W2.seedContext || {};
         if (field === "url") W2.seedContext.url = $(this).val();
         if (field === "name") W2.seedContext.name = $(this).val();
+        if (field === "dump") W2.seedContext.dump = $(this).val();
         if (field === "description") W2.seedContext.description = $(this).val();
         if (field === "customInstructions") W2.seedContext.customInstructions = $(this).val();
       });
@@ -2804,8 +2978,8 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
         var stageId = $(this).data("stage-id");
         if (stageId === "scrape") {
           var seed = W2.seedContext || {};
-          if (!(seed.url || seed.description || seed.customInstructions)) {
-            if (window._bpwToast) window._bpwToast("Add a URL, description, or custom instructions before re-running.", "warning");
+          if (!(seed.url || seed.dump || seed.description || seed.customInstructions)) {
+            if (window._bpwToast) window._bpwToast("Add a URL, brand details, or custom instructions before re-running.", "warning");
             return;
           }
         }
@@ -26123,23 +26297,21 @@ ${prefix}
       })(n);
     }
     var SECTIONS = [
+      { id: "dashboard", label: "Dashboard", icon: "gauge-high", minLevel: "new", isDefault: true },
       { id: "identity", label: "Identity", icon: "fingerprint", minLevel: "new" },
       { id: "voice", label: "Voice", icon: "comment-dots", minLevel: "new" },
       { id: "audience", label: "Audience", icon: "users", minLevel: "new" },
       { id: "offerings", label: "Offerings", icon: "box-open", minLevel: "new", brandTypes: ["commercial", "local", "nonprofit"] },
-      { id: "market", label: "Market", icon: "chart-line", minLevel: "growing", brandTypes: ["commercial", "local"] },
-      { id: "content", label: "Content", icon: "pen-nib", minLevel: "new", brandTypes: ["creator", "commercial"] },
-      { id: "seo", label: "SEO", icon: "magnifying-glass", minLevel: "growing" },
+      { id: "market", label: "Market", icon: "chart-line", minLevel: "new" },
+      { id: "competitors", label: "Competitors", icon: "crosshairs", minLevel: "new" },
+      { id: "content", label: "Content", icon: "pen-nib", minLevel: "new" },
+      { id: "seo", label: "SEO", icon: "magnifying-glass", minLevel: "new" },
       { id: "social", label: "Social", icon: "share-nodes", minLevel: "new" },
       { id: "settings", label: "Settings", icon: "gear", minLevel: "new", isMeta: true }
     ];
     function _visibleSections(W2) {
-      var levelOrder = window._bpwConstants && window._bpwConstants.LEVEL_ORDER || { "new": 0, "growing": 1, "deep": 2 };
-      var currentRank = levelOrder[W2.brandLevel || "new"] || 0;
       var types = W2.brandTypes || [];
       return SECTIONS.filter(function(s) {
-        var rank = levelOrder[s.minLevel] || 0;
-        if (rank > currentRank) return false;
         if (s.brandTypes) {
           var matches2 = false;
           for (var i = 0; i < s.brandTypes.length; i++) {
@@ -26154,7 +26326,7 @@ ${prefix}
       });
     }
     function render(W2) {
-      var active = W2.ui && W2.ui.section || "identity";
+      var active = W2.ui && W2.ui.section || "dashboard";
       var visible = _visibleSections(W2);
       var html = '<aside class="bpw-shell-sidebar" role="navigation" aria-label="Brand sections">';
       html += '<div class="bpw-shell-sidebar-group">';
@@ -26398,6 +26570,13 @@ ${prefix}
         return x == null ? "" : String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
       })(s);
     }
+    function _icon(n) {
+      return (window._bpwIcon || function(name) {
+        if (!name) return "";
+        if (name.indexOf("fa-") === 0) return '<i class="' + name + '"></i>';
+        return '<i class="fa-solid fa-' + name + '"></i>';
+      })(n);
+    }
     function _E() {
       return window._bpwEditors;
     }
@@ -26422,44 +26601,7 @@ ${prefix}
     function _identity(W2) {
       return W2.acceptedSections && W2.acceptedSections.identity || {};
     }
-    function _snippet(v, isList2) {
-      if (v == null || v === "") return "";
-      if (isList2 && Array.isArray(v)) return v.map(function(x) {
-        return x.value || x.name || x;
-      }).filter(Boolean).join(", ");
-      if (typeof v === "object") {
-        try {
-          return JSON.stringify(v);
-        } catch (e) {
-          return "";
-        }
-      }
-      return String(v);
-    }
-    function renderList(W2) {
-      var id = _identity(W2);
-      var activeItem = W2.ui && W2.ui.itemId || null;
-      var html = "";
-      for (var i = 0; i < FIELDS.length; i++) {
-        var f = FIELDS[i];
-        var v = id[f.id];
-        var snippet = _snippet(v, f.type === "list");
-        var cls = activeItem === f.id ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + cls + '" data-item-id="' + _esc(f.id) + '" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _esc(f.label) + "</div>";
-        html += '<div class="bpw-shell-card-snippet">' + (snippet ? _esc(snippet) : '<em class="bpw-shell-detail-value-empty">Not set yet</em>') + "</div>";
-        html += "</article>";
-      }
-      return html;
-    }
-    function renderDetail(W2, selectedId) {
-      if (!selectedId) return "";
-      var field = null;
-      for (var i = 0; i < FIELDS.length; i++) if (FIELDS[i].id === selectedId) {
-        field = FIELDS[i];
-        break;
-      }
-      if (!field) return "";
+    function _renderFieldCard(W2, field) {
       var id = _identity(W2);
       var path = "identity." + field.id;
       var value = id[field.id];
@@ -26470,17 +26612,214 @@ ${prefix}
       } else {
         editor = E.renderField({ type: field.type, path, value, tall: field.tall, placeholder: field.placeholder });
       }
-      return '<div class="bpw-shell-detail-card"><h3>' + _esc(field.label) + "</h3>" + editor + "</div>";
+      return '<article class="bpw-page-field" data-field-id="' + _esc(field.id) + '"><header class="bpw-page-field-head"><h3 class="bpw-page-field-label">' + _esc(field.label) + '</h3><button class="bpw-page-field-refine" data-action="refine" data-refine-path="' + _esc(path) + '" type="button" title="Improve with AI">' + _icon("sparkles") + '</button></header><div class="bpw-page-field-body">' + editor + "</div></article>";
+    }
+    function renderList() {
+      return "";
+    }
+    function renderDetail(W2) {
+      var html = '<section class="bpw-shell-detail bpw-shell-detail--page" aria-label="Identity">';
+      html += '<header class="bpw-shell-detail-head">';
+      html += "<h1>Identity</h1>";
+      html += '<p class="bpw-shell-detail-sub">Mission, vision, values, archetype, positioning. Hover any field for an AI refine button, or edit inline.</p>';
+      html += "</header>";
+      html += '<div class="bpw-page-fields">';
+      for (var i = 0; i < FIELDS.length; i++) {
+        html += _renderFieldCard(W2, FIELDS[i]);
+      }
+      html += "</div>";
+      html += "</section>";
+      return html;
     }
     window._bpwUIViews = window._bpwUIViews || {};
     window._bpwUIViews.identity = {
       id: "identity",
       title: "Identity",
       minLevel: "new",
-      listMode: "fixed-cards",
+      listMode: "none",
       renderList,
       renderDetail,
       inlineActions: []
+    };
+  })();
+
+  // src/ui/views/dashboard.js
+  (function() {
+    "use strict";
+    function _esc(s) {
+      return (window._bpwEsc || function(x) {
+        return x == null ? "" : String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      })(s);
+    }
+    function _icon(n) {
+      return (window._bpwIcon || function(name) {
+        if (!name) return "";
+        if (name.indexOf("fa-") === 0) return '<i class="' + name + '"></i>';
+        return '<i class="fa-solid fa-' + name + '"></i>';
+      })(n);
+    }
+    function _truncate(s, n) {
+      if (!s) return "";
+      s = String(s);
+      return s.length > n ? s.substring(0, n - 1) + "\u2026" : s;
+    }
+    function _sectionStat(W2, id) {
+      var acc = W2.acceptedSections || {};
+      var s = acc[id] || {};
+      var pct = 0;
+      var preview = "";
+      if (id === "identity") {
+        var have = 0, total = 6;
+        if (s.mission) have++;
+        if (s.vision) have++;
+        if (s.values && s.values.length) have++;
+        if (s.brand_archetype) have++;
+        if (s.positioning_statement) have++;
+        if (s.tagline || s.elevator_pitch) have++;
+        pct = Math.round(have / total * 100);
+        preview = s.mission || s.tagline || s.elevator_pitch || "";
+      } else if (id === "voice") {
+        var v = 0, vt = 4;
+        if (s.primary_tone) v++;
+        if (s.personality_traits && s.personality_traits.length) v++;
+        if (s.dos && s.dos.length) v++;
+        if (s.donts && s.donts.length) v++;
+        pct = Math.round(v / vt * 100);
+        preview = s.primary_tone || (s.personality_traits || []).slice(0, 3).join(", ");
+      } else if (id === "audience") {
+        var a = 0, at = 3;
+        if (s.primary_description) a++;
+        if (s.segments && s.segments.length) a++;
+        if (s.personas && s.personas.length) a++;
+        pct = Math.round(a / at * 100);
+        preview = s.primary_description || (s.segments || []).length + " segments, " + (s.personas || []).length + " personas";
+      } else if (id === "offerings") {
+        var items = s.items || [];
+        pct = items.length ? 100 : 0;
+        preview = items.length ? items.map(function(it) {
+          return it.name || it.title || "";
+        }).filter(Boolean).slice(0, 3).join(", ") : "";
+      } else if (id === "market") {
+        var m = 0, mt = 3;
+        if (s.category) m++;
+        if (s.positioning) m++;
+        if (s.differentiators && s.differentiators.length) m++;
+        pct = Math.round(m / mt * 100);
+        preview = s.category ? "Category: " + s.category : "";
+      } else if (id === "competitors") {
+        var comps = (acc.market || {}).competitors || [];
+        pct = comps.length ? Math.min(100, comps.length * 25) : 0;
+        preview = comps.length ? comps.slice(0, 3).map(function(c2) {
+          return c2.name || "";
+        }).filter(Boolean).join(", ") : "";
+      } else if (id === "content") {
+        var cs = acc.content_strategy || s;
+        var c = 0, ct = 3;
+        if (cs.pillars && cs.pillars.length) c++;
+        if (cs.channels && cs.channels.length) c++;
+        if (cs.hashtags && cs.hashtags.length) c++;
+        pct = Math.round(c / ct * 100);
+        preview = (cs.pillars || []).slice(0, 3).join(", ");
+      } else if (id === "seo") {
+        var seo = s;
+        var sok = seo.keywords && seo.keywords.length ? 50 : 0;
+        sok += seo.metadata && Object.keys(seo.metadata).length ? 50 : 0;
+        pct = sok;
+        preview = (seo.keywords || []).slice(0, 5).join(", ");
+      } else if (id === "social") {
+        var profiles = s.profiles || [];
+        pct = profiles.length ? Math.min(100, profiles.length * 25) : 0;
+        preview = profiles.length + " profile" + (profiles.length === 1 ? "" : "s");
+      }
+      return { pct, preview };
+    }
+    var CARDS = [
+      { id: "identity", label: "Identity", icon: "fingerprint", iconCls: "ic-identity" },
+      { id: "voice", label: "Voice", icon: "comment-dots", iconCls: "ic-voice" },
+      { id: "audience", label: "Audience", icon: "users", iconCls: "ic-audience" },
+      { id: "offerings", label: "Offerings", icon: "box-open", iconCls: "ic-offerings" },
+      { id: "market", label: "Market", icon: "chart-line", iconCls: "ic-market" },
+      { id: "competitors", label: "Competitors", icon: "crosshairs", iconCls: "ic-competitors" },
+      { id: "content", label: "Content", icon: "pen-nib", iconCls: "ic-content" },
+      { id: "seo", label: "SEO", icon: "magnifying-glass", iconCls: "ic-seo" },
+      { id: "social", label: "Social", icon: "share-nodes", iconCls: "ic-social" }
+    ];
+    function _heroHtml(W2) {
+      var BrandService = window.BrandService;
+      var ident = BrandService ? BrandService.getIdentity() : (W2.acceptedSections || {}).identity || {};
+      var seed = W2.seedContext || {};
+      var brand = ident.name || seed.name || "Your brand";
+      var tagline = ident.tagline || ident.elevator_pitch || seed.dump ? (seed.dump || "").split("\n")[0] : "";
+      var levelLabels = { "new": "\u{1F331} New", "growing": "\u{1F680} Growing", "deep": "\u{1F3DB} Established" };
+      var phaseChip = levelLabels[W2.brandLevel || "new"] || "Setup pending";
+      var typeChips = (W2.brandTypes || []).slice(0, 2);
+      var totalPct = 0, totalCount = 0;
+      for (var i = 0; i < CARDS.length; i++) {
+        var st = _sectionStat(W2, CARDS[i].id);
+        totalPct += st.pct;
+        totalCount++;
+      }
+      var avgPct = totalCount ? Math.round(totalPct / totalCount) : 0;
+      var resumePage = W2._lastOpenedPage;
+      var resumeField = W2._lastOpenedField;
+      var resumeChip = "";
+      if (resumePage && resumePage !== "dashboard") {
+        resumeChip = '<button class="bpw-dash-resume" data-section="' + _esc(resumePage) + '" type="button">' + _icon("forward") + " Resume editing \u2192 " + _esc(resumePage) + (resumeField ? " \u2192 " + _esc(resumeField) : "") + "</button>";
+      }
+      var html = '<header class="bpw-dash-hero">';
+      html += '<div class="bpw-dash-hero-chips">';
+      typeChips.forEach(function(t) {
+        html += '<span class="bpw-dash-chip">' + _esc(t) + "</span>";
+      });
+      html += '<span class="bpw-dash-chip bpw-dash-chip-phase">' + _esc(phaseChip) + "</span>";
+      html += "</div>";
+      html += '<h1 class="bpw-dash-hero-title">' + _esc(brand) + "</h1>";
+      if (tagline) html += '<p class="bpw-dash-hero-tagline">' + _esc(_truncate(tagline, 160)) + "</p>";
+      if (resumeChip) html += '<div class="bpw-dash-hero-resume">' + resumeChip + "</div>";
+      html += '<div class="bpw-dash-hero-stats">';
+      html += '<div class="bpw-dash-stat"><div class="n">' + avgPct + '%</div><div class="l">Profile completion</div></div>';
+      html += '<div class="bpw-dash-stat"><div class="n">' + CARDS.length + '</div><div class="l">Sections</div></div>';
+      html += "</div>";
+      html += "</header>";
+      return html;
+    }
+    function _cardHtml(W2, card) {
+      var st = _sectionStat(W2, card.id);
+      var status = st.pct >= 100 ? "Complete" : st.pct > 0 ? st.pct + "%" : "Empty";
+      var pctClass = st.pct >= 100 ? "done" : st.pct > 0 ? "partial" : "todo";
+      var html = '<button class="bpw-dash-card bpw-dash-card--' + pctClass + '" data-section="' + _esc(card.id) + '" type="button">';
+      html += '<div class="bpw-dash-card-head">';
+      html += '<span class="bpw-dash-card-ic ' + card.iconCls + '">' + _icon(card.icon) + "</span>";
+      html += '<span class="bpw-dash-card-title">' + _esc(card.label) + "</span>";
+      html += '<span class="bpw-dash-card-status">' + _esc(status) + "</span>";
+      html += "</div>";
+      if (st.preview) html += '<div class="bpw-dash-card-preview">' + _esc(_truncate(st.preview, 140)) + "</div>";
+      html += '<div class="bpw-dash-card-foot">';
+      html += '<div class="bpw-dash-card-bar"><div style="width:' + st.pct + '%"></div></div>';
+      html += '<span class="bpw-dash-card-pct">' + st.pct + "%</span>";
+      html += "</div>";
+      html += "</button>";
+      return html;
+    }
+    function renderDetail(W2) {
+      var html = '<section class="bpw-shell-detail bpw-shell-detail--dashboard" aria-label="Dashboard">';
+      html += _heroHtml(W2);
+      html += '<div class="bpw-dash-grid">';
+      for (var i = 0; i < CARDS.length; i++) {
+        html += _cardHtml(W2, CARDS[i]);
+      }
+      html += "</div>";
+      html += "</section>";
+      return html;
+    }
+    function renderList() {
+      return "";
+    }
+    window._bpwUIViews = window._bpwUIViews || {};
+    window._bpwUIViews.dashboard = {
+      renderList,
+      renderDetail,
+      listMode: "none"
     };
   })();
 
@@ -26491,6 +26830,13 @@ ${prefix}
       return (window._bpwEsc || function(x) {
         return x == null ? "" : String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
       })(s);
+    }
+    function _icon(n) {
+      return (window._bpwIcon || function(name) {
+        if (!name) return "";
+        if (name.indexOf("fa-") === 0) return '<i class="' + name + '"></i>';
+        return '<i class="fa-solid fa-' + name + '"></i>';
+      })(n);
     }
     function _E() {
       return window._bpwEditors;
@@ -26527,45 +26873,7 @@ ${prefix}
       }
       return cur;
     }
-    function _snippet(v, type) {
-      if (v == null || v === "") return "";
-      if (Array.isArray(v)) {
-        return v.map(function(x) {
-          return x && (x.headline || x.context || x.value || x.name) || x;
-        }).filter(Boolean).slice(0, 5).join(" \xB7 ");
-      }
-      if (typeof v === "object") {
-        try {
-          return JSON.stringify(v);
-        } catch (e) {
-          return "";
-        }
-      }
-      return String(v);
-    }
-    function renderList(W2) {
-      var activeItem = W2.ui && W2.ui.itemId || null;
-      var html = "";
-      for (var i = 0; i < FIELDS.length; i++) {
-        var f = FIELDS[i];
-        var v = _readPath(W2, f.path);
-        var snippet = _snippet(v, f.type);
-        var cls = activeItem === f.id ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + cls + '" data-item-id="' + _esc(f.id) + '" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _esc(f.label) + "</div>";
-        html += '<div class="bpw-shell-card-snippet">' + (snippet ? _esc(snippet) : '<em class="bpw-shell-detail-value-empty">Not set yet</em>') + "</div>";
-        html += "</article>";
-      }
-      return html;
-    }
-    function renderDetail(W2, selectedId) {
-      if (!selectedId) return "";
-      var field = null;
-      for (var i = 0; i < FIELDS.length; i++) if (FIELDS[i].id === selectedId) {
-        field = FIELDS[i];
-        break;
-      }
-      if (!field) return "";
+    function _renderFieldCard(W2, field) {
       var value = _readPath(W2, field.path);
       var E = _E();
       var editor;
@@ -26574,14 +26882,31 @@ ${prefix}
       } else {
         editor = E.renderField({ type: field.type, path: field.path, value, tall: field.tall, placeholder: field.placeholder });
       }
-      return '<div class="bpw-shell-detail-card"><h3>' + _esc(field.label) + "</h3>" + editor + "</div>";
+      return '<article class="bpw-page-field" data-field-id="' + _esc(field.id) + '"><header class="bpw-page-field-head"><h3 class="bpw-page-field-label">' + _esc(field.label) + '</h3><button class="bpw-page-field-refine" data-action="refine" data-refine-path="' + _esc(field.path) + '" type="button" title="Improve with AI">' + _icon("sparkles") + '</button></header><div class="bpw-page-field-body">' + editor + "</div></article>";
+    }
+    function renderList() {
+      return "";
+    }
+    function renderDetail(W2) {
+      var html = '<section class="bpw-shell-detail bpw-shell-detail--page" aria-label="Voice and messaging">';
+      html += '<header class="bpw-shell-detail-head">';
+      html += "<h1>Voice &amp; messaging</h1>";
+      html += '<p class="bpw-shell-detail-sub">Tone, personality, vocabulary, sample, primary message, headlines &amp; CTAs. All editable inline.</p>';
+      html += "</header>";
+      html += '<div class="bpw-page-fields">';
+      for (var i = 0; i < FIELDS.length; i++) {
+        html += _renderFieldCard(W2, FIELDS[i]);
+      }
+      html += "</div>";
+      html += "</section>";
+      return html;
     }
     window._bpwUIViews = window._bpwUIViews || {};
     window._bpwUIViews.voice = {
       id: "voice",
       title: "Voice & messaging",
       minLevel: "new",
-      listMode: "fixed-cards",
+      listMode: "none",
       renderList,
       renderDetail,
       inlineActions: []
@@ -27004,6 +27329,94 @@ ${prefix}
           itemTemplate: { point: "", evidence: "" }
         }
       ]
+    };
+  })();
+
+  // src/ui/views/competitors.js
+  (function() {
+    "use strict";
+    function _esc(s) {
+      return (window._bpwEsc || function(x) {
+        return x == null ? "" : String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      })(s);
+    }
+    function _icon(n) {
+      return (window._bpwIcon || function(name) {
+        if (!name) return "";
+        if (name.indexOf("fa-") === 0) return '<i class="' + name + '"></i>';
+        return '<i class="fa-solid fa-' + name + '"></i>';
+      })(n);
+    }
+    function _competitors(W2) {
+      var market = (W2.acceptedSections || {}).market || {};
+      return Array.isArray(market.competitors) ? market.competitors : [];
+    }
+    function renderList(W2) {
+      var comps = _competitors(W2);
+      var html = '<aside class="bpw-shell-list" aria-label="Competitors list">';
+      html += '<header class="bpw-shell-list-head"><h3>Competitors</h3><button class="bpw-shell-list-action" data-action="ai-find-more-competitors" type="button">' + _icon("plus") + " Find more</button></header>";
+      if (!comps.length) {
+        html += '<div class="bpw-shell-list-empty">' + _icon("crosshairs") + '<p>No competitors yet.</p><button class="bpw-btn bpw-btn-primary" data-action="ai-find-more-competitors" type="button">' + _icon("sparkles") + " Research competitors</button></div>";
+      } else {
+        html += '<ul class="bpw-shell-list-items">';
+        for (var i = 0; i < comps.length; i++) {
+          var c = comps[i] || {};
+          html += '<li class="bpw-shell-list-item" data-item-id="' + _esc("comp-" + i) + '">';
+          html += '<div class="bpw-shell-list-item-title">' + _esc(c.name || "Untitled") + "</div>";
+          if (c.description) html += '<div class="bpw-shell-list-item-sub">' + _esc(c.description) + "</div>";
+          html += "</li>";
+        }
+        html += "</ul>";
+      }
+      html += "</aside>";
+      return html;
+    }
+    function _renderCard(c, idx) {
+      var html = '<article class="bpw-comp-card" data-idx="' + idx + '">';
+      html += '<header class="bpw-comp-card-head">';
+      html += '<h3 class="bpw-comp-card-name">' + _esc(c.name || "Untitled") + "</h3>";
+      if (c.url) html += '<a class="bpw-comp-card-link" href="' + _esc(c.url) + '" target="_blank" rel="noopener">' + _icon("arrow-up-right-from-square") + "</a>";
+      html += "</header>";
+      if (c.description) html += '<p class="bpw-comp-card-desc">' + _esc(c.description) + "</p>";
+      var rows = [
+        ["Strengths", Array.isArray(c.strengths) ? c.strengths.join("; ") : c.strengths || ""],
+        ["Weaknesses", Array.isArray(c.weaknesses) ? c.weaknesses.join("; ") : c.weaknesses || ""],
+        ["vs. you", c.comparison || ""]
+      ];
+      for (var r = 0; r < rows.length; r++) {
+        if (!rows[r][1]) continue;
+        html += '<div class="bpw-comp-card-row">';
+        html += '<span class="bpw-comp-card-k">' + _esc(rows[r][0]) + "</span>";
+        html += '<span class="bpw-comp-card-v">' + _esc(rows[r][1]) + "</span>";
+        html += "</div>";
+      }
+      html += "</article>";
+      return html;
+    }
+    function renderDetail(W2) {
+      var comps = _competitors(W2);
+      var html = '<section class="bpw-shell-detail" aria-label="Competitors">';
+      html += '<header class="bpw-shell-detail-head">';
+      html += "<h1>Competitors</h1>";
+      html += '<button class="bpw-btn bpw-btn-ghost" data-action="ai-find-more-competitors" type="button">' + _icon("sparkles") + " Find more competitors</button>";
+      html += "</header>";
+      if (!comps.length) {
+        html += '<div class="bpw-shell-detail-empty">' + _icon("crosshairs") + '<h3>No competitors logged</h3><p>Run the Competitors stage from setup, or click "Find more" to research now.</p></div>';
+      } else {
+        html += '<div class="bpw-comp-grid">';
+        for (var i = 0; i < comps.length; i++) {
+          html += _renderCard(comps[i] || {}, i);
+        }
+        html += "</div>";
+      }
+      html += "</section>";
+      return html;
+    }
+    window._bpwUIViews = window._bpwUIViews || {};
+    window._bpwUIViews.competitors = {
+      renderList,
+      renderDetail,
+      listMode: "variable-items"
     };
   })();
 
@@ -27433,89 +27846,144 @@ ${prefix}
         return '<i class="fa-solid fa-' + name + '"></i>';
       })(n);
     }
-    var CARDS = [
-      { id: "basics", label: "Brand basics", icon: "building" },
-      { id: "growth", label: "Growth phase", icon: "arrow-up-right-dots" },
-      { id: "types", label: "Brand types", icon: "tags" },
-      { id: "language", label: "Language", icon: "language" },
-      { id: "ai", label: "AI provider & model", icon: "robot" },
-      { id: "re-run-setup", label: "Re-run setup", icon: "rotate-right" }
+    var PHASES = [
+      { key: "new", emoji: "\u{1F331}", label: "New", desc: "Just starting \u2014 concise, foundational output" },
+      { key: "growing", emoji: "\u{1F680}", label: "Growing", desc: "Established but scaling \u2014 standard depth" },
+      // Internal value 'deep' stays for back-compat; label is 'Established'.
+      { key: "deep", emoji: "\u{1F3DB}", label: "Established", desc: "Mature \u2014 rich, multi-variant, deep competitive lens" }
     ];
-    function renderList(W2) {
-      var active = W2.ui && W2.ui.itemId || null;
-      var html = "";
-      for (var i = 0; i < CARDS.length; i++) {
-        var c = CARDS[i];
-        var cls = active === c.id ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + cls + '" data-item-id="' + _esc(c.id) + '" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _icon(c.icon) + " " + _esc(c.label) + "</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(_snippet(W2, c.id)) + "</div>";
-        html += "</article>";
-      }
-      return html;
+    function _section(title, sub, body) {
+      return '<section class="bpw-settings-section"><header class="bpw-settings-section-head"><h3>' + _esc(title) + "</h3>" + (sub ? "<p>" + _esc(sub) + "</p>" : "") + '</header><div class="bpw-settings-section-body">' + body + "</div></section>";
     }
-    function _snippet(W2, id) {
-      if (id === "basics") return W2.acceptedSections && W2.acceptedSections.identity && W2.acceptedSections.identity.name || W2.seedContext && W2.seedContext.url || "\u2014";
-      if (id === "growth") return W2.brandLevel || "\u2014";
-      if (id === "types") return (W2.brandTypes || []).join(", ") || "\u2014";
-      if (id === "language") return W2.language || "en";
-      if (id === "ai") return (W2.aiProvider || "\u2014") + (W2.aiModel ? " \xB7 " + W2.aiModel : "");
-      if (id === "re-run-setup") return "Re-open the autopilot to regenerate everything.";
-      return "";
-    }
-    function renderDetail(W2, selectedId) {
-      if (!selectedId) return "";
-      if (selectedId === "basics") return _renderBasicsCard(W2);
-      if (selectedId === "growth") return _renderGrowthCard(W2);
-      if (selectedId === "types") return _renderTypesCard(W2);
-      if (selectedId === "language") return _renderLanguageCard(W2);
-      if (selectedId === "ai") return _renderAICard(W2);
-      if (selectedId === "re-run-setup") return _renderReRunCard(W2);
-      return "";
-    }
-    function _renderBasicsCard(W2) {
+    function _renderBasics(W2) {
       var name = W2.acceptedSections && W2.acceptedSections.identity && W2.acceptedSections.identity.name || "";
       var url = W2.seedContext && (W2.seedContext.url || W2.seedContext.website_url) || "";
-      return '<div class="bpw-shell-detail-card"><h3>Brand basics</h3><div class="bpw-shell-detail-row"><div class="bpw-shell-detail-label">Brand name</div><input class="bpw-setup-input" data-settings-field="name" type="text" value="' + _esc(name) + '"></div><div class="bpw-shell-detail-row"><div class="bpw-shell-detail-label">Website URL</div><input class="bpw-setup-input" data-settings-field="url" type="url" value="' + _esc(url) + '"></div></div>';
+      var body = "";
+      body += '<div class="bpw-settings-row"><label>Brand name</label><input class="bpw-settings-input" data-settings-field="name" type="text" value="' + _esc(name) + '"></div>';
+      body += '<div class="bpw-settings-row"><label>Website URL</label><input class="bpw-settings-input" data-settings-field="url" type="url" value="' + _esc(url) + '"></div>';
+      body += '<div class="bpw-settings-row"><label>Language</label>' + _languageSelect(W2) + "</div>";
+      body += '<div class="bpw-settings-row"><label>Brand types</label>' + _typesPills(W2) + "</div>";
+      return _section("Brand basics", "Inline editable; changes ripple into every future AI run.", body);
     }
-    function _renderGrowthCard(W2) {
-      var lvl = W2.brandLevel || "new";
-      var rows = ["new", "growing", "deep"].map(function(p) {
-        var labels = { "new": "New", "growing": "Growing", "deep": "Deep dive" };
-        var checked = lvl === p ? " checked" : "";
-        return '<label class="bpw-setup-radio"><input type="radio" name="bpw-settings-growth" value="' + p + '"' + checked + "><span>" + _esc(labels[p]) + "</span></label>";
-      }).join("");
-      return '<div class="bpw-shell-detail-card"><h3>Growth phase</h3><p class="bpw-shell-detail-value">Upgrading runs the autopilot for the new stages. Downgrading hides UI sections but keeps all data.</p><div class="bpw-setup-radio-group">' + rows + "</div></div>";
-    }
-    function _renderTypesCard(W2) {
-      var BT = window._bpwConstants && window._bpwConstants.BRAND_TYPES || {};
-      var types = W2.brandTypes || [];
-      var rows = [["commercial", "Commercial"], ["local", "Local"], ["creator", "Creator"], ["nonprofit", "Cause"]].map(function(t) {
-        var checked = types.indexOf(t[0]) !== -1 ? " checked" : "";
-        var sub = BT[t[0]] && BT[t[0]].label || "";
-        return '<label class="bpw-setup-checkbox"><input type="checkbox" data-settings-brand-type="' + t[0] + '"' + checked + "><span>" + _esc(t[1]) + (sub ? "<small>" + _esc(sub) + "</small>" : "") + "</span></label>";
-      }).join("");
-      return '<div class="bpw-shell-detail-card"><h3>Brand types</h3><div class="bpw-setup-checkbox-group">' + rows + "</div></div>";
-    }
-    function _renderLanguageCard(W2) {
+    function _languageSelect(W2) {
       var LANG = window._bpwConstants && window._bpwConstants.LANGUAGES || [{ code: "en", label: "English" }];
       var cur = W2.language || "en";
       var opts = LANG.map(function(l) {
         return '<option value="' + _esc(l.code) + '"' + (l.code === cur ? " selected" : "") + ">" + _esc(l.label) + "</option>";
       }).join("");
-      return '<div class="bpw-shell-detail-card"><h3>Language</h3><select class="bpw-setup-input" data-settings-field="language">' + opts + "</select></div>";
+      return '<select class="bpw-settings-input" data-settings-field="language">' + opts + "</select>";
     }
-    function _renderAICard(W2) {
+    function _typesPills(W2) {
+      var BT = window._bpwConstants && window._bpwConstants.BRAND_TYPES || {};
+      var types = W2.brandTypes || [];
+      var html = '<div class="bpw-settings-pill-row">';
+      [["commercial", "Commercial"], ["local", "Local"], ["creator", "Creator"], ["nonprofit", "Cause"]].forEach(function(t) {
+        var checked = types.indexOf(t[0]) !== -1;
+        var sub = BT[t[0]] && BT[t[0]].label || "";
+        html += '<label class="bpw-settings-pill' + (checked ? " is-on" : "") + '"><input type="checkbox" data-settings-brand-type="' + t[0] + '"' + (checked ? " checked" : "") + "><span>" + _esc(t[1]) + (sub ? " <small>" + _esc(sub) + "</small>" : "") + "</span></label>";
+      });
+      html += "</div>";
+      return html;
+    }
+    function _renderPhase(W2) {
+      var cur = W2.brandLevel || "new";
+      var grid = '<div class="bpw-settings-phase-grid">';
+      PHASES.forEach(function(p) {
+        var isCur = p.key === cur;
+        grid += '<button class="bpw-settings-phase-opt' + (isCur ? " is-current" : "") + '" data-settings-phase="' + _esc(p.key) + '" type="button"' + (isCur ? " disabled" : "") + '><div class="bpw-settings-phase-top"><span class="bpw-settings-phase-emoji">' + p.emoji + '</span><span class="bpw-settings-phase-name">' + _esc(p.label) + '</span><span class="bpw-settings-phase-tag">' + (isCur ? "current" : _phaseDirection(cur, p.key)) + '</span></div><div class="bpw-settings-phase-desc">' + _esc(p.desc) + "</div></button>";
+      });
+      grid += "</div>";
+      return _section(
+        "Growth phase",
+        "Decides prompt depth, not which sections you see. All sections stay available at every phase.",
+        grid
+      );
+    }
+    function _phaseDirection(from2, to) {
+      var order = { "new": 0, "growing": 1, "deep": 2 };
+      if (order[to] > order[from2]) return "upgrade";
+      return "downgrade";
+    }
+    function _renderAI(W2) {
       var configured = window.LLMService && window.LLMService.isConfigured();
+      var body;
       if (!configured) {
-        return '<div class="bpw-shell-detail-card"><h3>AI provider</h3><div class="bpw-setup-warn">' + _icon("triangle-exclamation") + " No providers configured. Add credentials in the Drupal AI settings.</div></div>";
+        body = '<div class="bpw-setup-warn">' + _icon("triangle-exclamation") + " No providers configured. Add credentials in the Drupal AI settings.</div>";
+      } else {
+        body = '<div class="bpw-settings-row"><label>Provider</label>' + window.LLMService.renderProviderSelect() + '</div><div class="bpw-settings-row"><label>Model</label>' + window.LLMService.renderModelSelect() + "</div>";
       }
-      return '<div class="bpw-shell-detail-card"><h3>AI provider &amp; model</h3><div class="bpw-shell-detail-row"><div class="bpw-shell-detail-label">Provider</div>' + window.LLMService.renderProviderSelect() + '</div><div class="bpw-shell-detail-row"><div class="bpw-shell-detail-label">Model</div>' + window.LLMService.renderModelSelect() + "</div></div>";
+      return _section("AI provider & model", "Applied to every generation.", body);
     }
-    function _renderReRunCard(W2) {
-      return '<div class="bpw-shell-detail-card"><h3>Re-run setup</h3><p class="bpw-shell-detail-value">Re-opens the autopilot. Existing data stays in place \u2014 anything you regenerate replaces it after you accept the new version. Use this when you want to rebuild from scratch.</p><button class="bpw-setup-start" data-action="re-run-autopilot" type="button">' + _icon("rotate-right") + " Open autopilot</button></div>";
+    function _renderDump(W2) {
+      var seed = W2.seedContext || {};
+      var dumpFn = window._bpwAIHelpers && window._bpwAIHelpers.consolidateSeedDump;
+      var dump = dumpFn ? dumpFn(seed) : seed.dump || "";
+      var body = '<p class="bpw-settings-help">Single anchor field used by every AI run. Updating here improves every future regeneration. Replaces the old "description" + "custom instructions" pair.</p><textarea class="bpw-settings-textarea" data-settings-field="dump" rows="10">' + _esc(dump) + "</textarea>";
+      return _section("Brand details", "The secret sauce.", body);
     }
-    $(document).off("input.bpw-settings").on("input.bpw-settings", "[data-settings-field]", function() {
+    function _renderRerun() {
+      var body = '<p class="bpw-settings-help">Re-opens the autopilot with all stages queued. Existing accepted content stays put \u2014 anything you regenerate replaces it once you approve the new version.</p><button class="bpw-btn bpw-btn-ghost" data-action="re-run-autopilot" type="button">' + _icon("rotate-right") + " Re-run setup</button>";
+      return _section("Re-run setup", null, body);
+    }
+    function renderList() {
+      return "";
+    }
+    function renderDetail(W2) {
+      var html = '<section class="bpw-shell-detail bpw-shell-detail--page" aria-label="Settings">';
+      html += '<header class="bpw-shell-detail-head"><h1>Settings</h1><p class="bpw-shell-detail-sub">Brand basics, AI configuration, and growth-phase. Changes here ripple into every future AI run.</p></header>';
+      html += '<div class="bpw-settings-stack">';
+      html += _renderBasics(W2);
+      html += _renderPhase(W2);
+      html += _renderAI(W2);
+      html += _renderDump(W2);
+      html += _renderRerun();
+      html += "</div>";
+      html += "</section>";
+      return html;
+    }
+    function _openPhaseModal(newKey) {
+      var W2 = window._bpwState;
+      var cur = W2.brandLevel || "new";
+      var order = { "new": 0, "growing": 1, "deep": 2 };
+      var isUpgrade = (order[newKey] || 0) > (order[cur] || 0);
+      var curPhase = PHASES.find(function(p) {
+        return p.key === cur;
+      });
+      var newPhase = PHASES.find(function(p) {
+        return p.key === newKey;
+      });
+      if (!newPhase) return;
+      var body;
+      if (isUpgrade) {
+        body = "<p>Upgrading from <strong>" + _esc(curPhase ? curPhase.label : cur) + "</strong> to <strong>" + _esc(newPhase.label) + "</strong> re-runs the relevant stages with deeper prompts. You'll review each new draft before it sticks. Your existing approved content stays \u2014 the AI <em>adds</em> depth, it doesn't overwrite without your approval.</p>";
+      } else {
+        body = "<p>Downgrading from <strong>" + _esc(curPhase ? curPhase.label : cur) + "</strong> to <strong>" + _esc(newPhase.label) + "</strong> writes the new level but keeps every section's existing content. Future AI regenerations will use lighter prompts. No AI runs now.</p>";
+      }
+      var ctaLabel = isUpgrade ? "Upgrade & start drafting" : "Set phase";
+      var html = '<div class="bpw-modal-backdrop" data-action="phase-modal-close"><div class="bpw-modal" role="dialog" aria-modal="true"><header class="bpw-modal-head"><span class="bpw-modal-icon">' + _esc(newPhase.emoji) + "</span><div><h2>" + (isUpgrade ? "Upgrade to " : "Switch to ") + _esc(newPhase.label) + '?</h2><p class="bpw-modal-sub">' + (isUpgrade ? "Runs the additional stages with the same per-stage review screens you saw during setup." : "Non-destructive \u2014 your content stays, prompts get lighter.") + '</p></div></header><div class="bpw-modal-body">' + body + '</div><footer class="bpw-modal-foot"><button class="bpw-btn bpw-btn-ghost" data-action="phase-modal-close" type="button">Cancel</button><button class="bpw-btn bpw-btn-primary" data-action="phase-modal-confirm" data-phase="' + _esc(newKey) + '" type="button">' + _esc(ctaLabel) + " \u2192</button></footer></div></div>";
+      $("body").append(html);
+    }
+    function _closePhaseModal() {
+      $(".bpw-modal-backdrop").remove();
+    }
+    function _confirmPhase(newKey) {
+      var W2 = window._bpwState;
+      var cur = W2.brandLevel || "new";
+      var order = { "new": 0, "growing": 1, "deep": 2 };
+      var isUpgrade = (order[newKey] || 0) > (order[cur] || 0);
+      _closePhaseModal();
+      if (isUpgrade && window._bpwSetup && window._bpwSetup.openDelta) {
+        window._bpwSetup.openDelta(newKey);
+      } else {
+        W2.brandLevel = newKey;
+        if (window._bpwExportSync) window._bpwExportSync.syncAll();
+        if (window._bpwSyncToTextarea) window._bpwSyncToTextarea();
+        if (window._bpwAutoSave) window._bpwAutoSave();
+        if (window._bpwAppShell) window._bpwAppShell.render();
+        if (window._bpwToast) window._bpwToast("Growth phase set to " + newKey, "success");
+      }
+    }
+    $(document).off("input.bpw-settings change.bpw-settings").on("input.bpw-settings change.bpw-settings", "[data-settings-field]", function() {
       var W2 = window._bpwState;
       var f = $(this).data("settings-field");
       var val = $(this).val();
@@ -27527,6 +27995,10 @@ ${prefix}
       if (f === "url") {
         W2.seedContext = W2.seedContext || {};
         W2.seedContext.url = val;
+      }
+      if (f === "dump") {
+        W2.seedContext = W2.seedContext || {};
+        W2.seedContext.dump = val;
       }
       if (f === "language") W2.language = val;
       if (window._bpwExportSync) window._bpwExportSync.syncAll();
@@ -27546,24 +28018,23 @@ ${prefix}
       if (window._bpwAutoSave) window._bpwAutoSave();
       if (window._bpwAppShell) window._bpwAppShell.render();
     });
-    $(document).off("change.bpw-settings-growth").on("change.bpw-settings-growth", '[name="bpw-settings-growth"]', function() {
+    $(document).off("click.bpw-settings-phase").on("click.bpw-settings-phase", "[data-settings-phase]", function(e) {
+      e.preventDefault();
+      var newKey = $(this).data("settings-phase");
       var W2 = window._bpwState;
-      var newLevel = $(this).val();
-      var oldLevel = W2.brandLevel;
-      if (newLevel === oldLevel) return;
-      var levelOrder = window._bpwConstants && window._bpwConstants.LEVEL_ORDER || { "new": 0, "growing": 1, "deep": 2 };
-      var newRank = levelOrder[newLevel] || 0;
-      var oldRank = levelOrder[oldLevel] || 0;
-      if (newRank > oldRank && window._bpwSetup && window._bpwSetup.openDelta) {
-        window._bpwSetup.openDelta(newLevel);
-      } else {
-        W2.brandLevel = newLevel;
-        if (window._bpwExportSync) window._bpwExportSync.syncAll();
-        if (window._bpwSyncToTextarea) window._bpwSyncToTextarea();
-        if (window._bpwAutoSave) window._bpwAutoSave();
-        if (window._bpwAppShell) window._bpwAppShell.render();
-        if (window._bpwToast) window._bpwToast("Growth phase set to " + newLevel, "success");
+      if (!newKey || newKey === (W2.brandLevel || "new")) return;
+      _openPhaseModal(newKey);
+    });
+    $(document).off("click.bpw-phase-modal").on("click.bpw-phase-modal", '[data-action="phase-modal-close"]', function(e) {
+      if (e.target === e.currentTarget) {
+        _closePhaseModal();
+        return;
       }
+      if ($(e.target).is('button[data-action="phase-modal-close"]')) _closePhaseModal();
+    });
+    $(document).off("click.bpw-phase-confirm").on("click.bpw-phase-confirm", '[data-action="phase-modal-confirm"]', function(e) {
+      e.preventDefault();
+      _confirmPhase($(this).data("phase"));
     });
     $(document).off("click.bpw-rerun").on("click.bpw-rerun", '[data-action="re-run-autopilot"]', function(e) {
       e.preventDefault();
@@ -27577,7 +28048,7 @@ ${prefix}
       id: "settings",
       title: "Settings",
       minLevel: "new",
-      listMode: "fixed-cards",
+      listMode: "none",
       renderList,
       renderDetail,
       inlineActions: []
@@ -27609,7 +28080,7 @@ ${prefix}
     }, 100);
     function _init() {
       W2 = window._bpwState;
-      W2.ui = W2.ui || { section: "identity", itemId: null, activityOpen: false };
+      W2.ui = W2.ui || { section: "dashboard", itemId: null, activityOpen: false };
       _wireEvents();
       renderIfReady();
     }
@@ -27635,24 +28106,32 @@ ${prefix}
       W2.ui = W2.ui || {};
       W2.ui.section = id;
       W2.ui.itemId = null;
+      if (id && id !== "dashboard") {
+        W2._lastOpenedPage = id;
+      }
       render();
     }
     function setActiveItem(itemId) {
       if (!W2) return;
       W2.ui = W2.ui || {};
       W2.ui.itemId = itemId;
+      if (itemId) W2._lastOpenedField = itemId;
       render();
     }
     function state() {
       return W2 && W2.ui;
     }
     function _shellHTML() {
+      var section = W2.ui && W2.ui.section || "dashboard";
+      var view = (window._bpwUIViews || {})[section];
+      var singlePane = view && view.listMode === "none";
+      var bodyCls = singlePane ? "bpw-shell-body bpw-shell-body--single" : "bpw-shell-body";
       var topbar = window._bpwTopbar && window._bpwTopbar.render && window._bpwTopbar.render(W2) || "";
       var sidebar = window._bpwSidebar && window._bpwSidebar.render && window._bpwSidebar.render(W2) || "";
-      var list = window._bpwSectionList && window._bpwSectionList.render && window._bpwSectionList.render(W2) || "";
+      var list = singlePane ? "" : window._bpwSectionList && window._bpwSectionList.render && window._bpwSectionList.render(W2) || "";
       var detail = window._bpwDetailPane && window._bpwDetailPane.render && window._bpwDetailPane.render(W2) || "";
       var drawer = window._bpwActivityDrawer && window._bpwActivityDrawer.render && window._bpwActivityDrawer.render(W2) || "";
-      return topbar + '<div class="bpw-shell-body">' + sidebar + list + detail + "</div>" + drawer;
+      return topbar + '<div class="' + bodyCls + '">' + sidebar + list + detail + "</div>" + drawer;
     }
     function _wireEvents() {
       var ns = ".bpw-shell";
@@ -28039,7 +28518,15 @@ ${prefix}
     // Autopilot setup state — populated by src/setup/. Shape:
     //   { open, mode, currentStageId, stagesQueue[], stageStatus{},
     //     totalElapsedMs, paused, startedAt, finishedAt? }
-    setup: null
+    setup: null,
+    // v2 wizard state — populated by src/wizard/ on entry (Phase 2+).
+    // Shape: { currentStep, stageQueue[], stageResults{}, lastApprovedStage,
+    //          startedAt, source: 'setup' | 'phase-upgrade' }
+    _wizardV2: null,
+    // Resume-editing affordance for the new dashboard. Written by the
+    // app shell on navigation; read by the dashboard hero pill.
+    _lastOpenedPage: null,
+    _lastOpenedField: null
   };
 
   // src/legacy/bpw-app.js
@@ -28694,7 +29181,7 @@ ${prefix}
             mission: id.mission || "",
             vision: id.vision || "",
             industry: id.industry || "",
-            business_description: id.description || W.seedContext.description || "",
+            business_description: id.description || W.seedContext.description || W.seedContext.dump || "",
             brand_archetype: id.brand_archetype || "",
             brand_voice: [v.primary_tone || ""].concat(v.personality_traits || []).filter(Boolean).join(", "),
             elevator_pitch: id.elevator_pitch || "",

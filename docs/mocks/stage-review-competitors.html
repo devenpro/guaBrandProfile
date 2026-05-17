@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BPW Mock — Stage Review · Competitors</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="_wizard.css">
+</head>
+<body>
+
+<div class="mock-nav">
+  <a href="index.html">Index</a>
+  <a href="step1-basics.html">1 · Basics</a>
+  <a href="step2-discovery.html">2 · Discovery</a>
+  <a href="step2b-followups.html">2b · Follow-ups</a>
+  <a href="stage-loading.html">3 · Loading</a>
+  <a href="stage-review.html">3 · Identity</a>
+  <a href="stage-review-competitors.html" class="active">8 · Competitors</a>
+  <a href="wizard-complete.html">9 · Done</a>
+  <a href="dashboard.html">Dashboard</a>
+</div>
+
+<div class="wiz-top">
+  <div class="logo">Brand Profile Wizard</div>
+  <div class="spacer"></div>
+  <div class="save-state"><span class="dot"></span> Auto-saved · just now</div>
+  <button class="btn btn-ghost btn-sm">Exit setup</button>
+</div>
+
+<div class="wiz-rail">
+  <div class="wiz-rail-inner">
+    <div class="wiz-rail-progress"><div style="width: 95%"></div></div>
+    <div class="wiz-rail-steps" data-current="8"></div>
+  </div>
+</div>
+
+<div class="wiz-stage wide">
+
+  <div class="review-head">
+    <h1>Review the competitive landscape</h1>
+    <div class="review-actions">
+      <button class="btn btn-ghost btn-sm">↻ Regenerate all</button>
+      <button class="btn btn-subtle btn-sm"><span class="icon-sparkle"></span> Add a competitor</button>
+    </div>
+  </div>
+  <p class="review-sub">
+    Last stage. Drafted using the competitor names you mentioned plus your positioning. Add or remove names — each card is editable inline. Approve to finish setup.
+  </p>
+
+  <span class="phase-note success">✓ AI researched 4 competitors in 14.8s · references your positioning vs Trade &amp; Onyx</span>
+
+  <div class="comp-grid">
+
+    <div class="comp-card">
+      <div class="comp-head">
+        <span class="comp-name">Trade Coffee</span>
+        <div class="row-actions" style="opacity:1; display:flex; gap:4px;">
+          <button class="btn-icon icon-edit" title="Edit"></button>
+          <button class="btn-icon" title="Remove">✕</button>
+        </div>
+      </div>
+      <div class="comp-positioning">"Find your perfect coffee" — marketplace-style matchmaking across 50+ roasters.</div>
+      <div class="comp-row"><span class="k">Strengths</span><span class="v strength">Breadth of roaster catalog, slick quiz onboarding, scale economics, recent compostable bag rollout.</span></div>
+      <div class="comp-row"><span class="k">Weaknesses</span><span class="v weakness">No named roasters per bag, vague freshness windows, generic brand voice, no first-party roasting story.</span></div>
+      <div class="comp-row"><span class="k">vs. you</span><span class="v">You win on freshness guarantee &amp; named-roaster story; they win on variety &amp; brand recognition.</span></div>
+    </div>
+
+    <div class="comp-card">
+      <div class="comp-head">
+        <span class="comp-name">Onyx Coffee Lab</span>
+        <div class="row-actions" style="opacity:1; display:flex; gap:4px;">
+          <button class="btn-icon icon-edit" title="Edit"></button>
+          <button class="btn-icon" title="Remove">✕</button>
+        </div>
+      </div>
+      <div class="comp-positioning">Premium specialty roaster, competition-grade beans, café-forward brand.</div>
+      <div class="comp-row"><span class="k">Strengths</span><span class="v strength">World-class sourcing, awards credibility, retail café halo, packaging design.</span></div>
+      <div class="comp-row"><span class="k">Weaknesses</span><span class="v weakness">$22+ bags feel precious, language can be intimidating, slower fulfillment, no daily-ritual angle.</span></div>
+      <div class="comp-row"><span class="k">vs. you</span><span class="v">You win on accessible price &amp; warmth; they win on prestige &amp; coffee-nerd credibility.</span></div>
+    </div>
+
+    <div class="comp-card">
+      <div class="comp-head">
+        <span class="comp-name">Atlas Coffee Club</span>
+        <div class="row-actions" style="opacity:1; display:flex; gap:4px;">
+          <button class="btn-icon icon-edit" title="Edit"></button>
+          <button class="btn-icon" title="Remove">✕</button>
+        </div>
+      </div>
+      <div class="comp-positioning">Subscription "passport" — a new country's coffee every month.</div>
+      <div class="comp-row"><span class="k">Strengths</span><span class="v strength">Strong narrative hook, gift-friendly, low-commitment entry, polished postcard packaging.</span></div>
+      <div class="comp-row"><span class="k">Weaknesses</span><span class="v weakness">Less control over roast date, less repeat-favorite ability, roaster relationships are arms-length.</span></div>
+      <div class="comp-row"><span class="k">vs. you</span><span class="v">You win on freshness control &amp; favorites; they win on novelty &amp; gift positioning.</span></div>
+    </div>
+
+    <div class="comp-card">
+      <div class="comp-head">
+        <span class="comp-name">Local indie roaster (per market)</span>
+        <div class="row-actions" style="opacity:1; display:flex; gap:4px;">
+          <button class="btn-icon icon-edit" title="Edit"></button>
+          <button class="btn-icon" title="Remove">✕</button>
+        </div>
+      </div>
+      <div class="comp-positioning">Neighborhood cafés selling whole-bean retail — Stumptown, Heart, Joe Bean, Madcap, etc.</div>
+      <div class="comp-row"><span class="k">Strengths</span><span class="v strength">Local loyalty, freshest possible if you walk in, community storytelling, café experience.</span></div>
+      <div class="comp-row"><span class="k">Weaknesses</span><span class="v weakness">Only local, inconsistent online experience, no subscription convenience, limited shipping.</span></div>
+      <div class="comp-row"><span class="k">vs. you</span><span class="v">You win on national reach &amp; subscription habit; they win in their home zip code.</span></div>
+    </div>
+
+    <div class="comp-card add-card">
+      <div>+ Add a competitor</div>
+    </div>
+
+  </div>
+
+  <div class="approve-banner">
+    <div class="text">
+      <h3>That's the whole landscape</h3>
+      <p>Approving locks in competitors and finishes setup. You'll land on your dashboard with everything filled in and editable.</p>
+    </div>
+    <a href="wizard-complete.html" class="btn btn-primary">Approve &amp; finish setup →</a>
+  </div>
+</div>
+
+<div class="wiz-foot">
+  <div class="inner">
+    <span class="step-text">Step 8 of 9 · Competitors</span>
+    <div class="right">
+      <a href="stage-review.html" class="btn btn-ghost">← Back</a>
+      <button class="btn btn-ghost">Skip stage</button>
+      <a href="wizard-complete.html" class="btn btn-primary">Approve &amp; finish →</a>
+    </div>
+  </div>
+</div>
+
+<script src="_wizard.js"></script>
+</body>
+</html>

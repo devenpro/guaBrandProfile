@@ -27,7 +27,7 @@
     var typeDesc = BrandService.typeLabels();
     return {
       system: 'You are an expert brand voice strategist. Define the complete voice, tone, and messaging framework for a ' + typeDesc + ' brand.' + BrandService.getLangSuffix(),
-      user:   'Generate voice and messaging framework.' + BrandService.getContextBlock() +
+      user:   'Generate voice and messaging framework.' + BrandService.getContextBlock('voice') +
               '\n\nReturn ONLY valid JSON:\n{\n  "voice_tone": "primary tone description — 2-3 sentences",\n  "voice_personality": ["trait1", "trait2", "trait3", "trait4", "trait5"],\n  "voice_dos": ["rule1", "rule2", "rule3", "rule4", "rule5"],\n  "voice_donts": ["rule1", "rule2", "rule3", "rule4", "rule5"],\n  "voice_preferred": ["term1", "term2", "term3"],\n  "voice_avoided": ["term1", "term2", "term3"],\n  "messaging_primary": "primary brand message — one powerful sentence",\n  "messaging_supporting": ["supporting message 1", "supporting message 2", "supporting message 3"],\n  "messaging_headlines": [\n    {"context":"landing page","headline":""},\n    {"context":"social media bio","headline":""},\n    {"context":"email subject","headline":""}\n  ],\n  "voice_sample": "A 3-4 sentence sample text written IN the brand voice — a product announcement or content piece"\n}' + _jsonOnly()
     };
   }
@@ -63,7 +63,7 @@
     };
     var prompt = {
       system: 'You are a brand copywriter. Write content in the exact voice and tone defined for this brand. Match the personality, vocabulary, and style rules precisely.' + BrandService.getLangSuffix(),
-      user:   'Write ' + (formatDesc[format] || formatDesc.custom) + ' for this brand.' + BrandService.getContextBlock() +
+      user:   'Write ' + (formatDesc[format] || formatDesc.custom) + ' for this brand.' + BrandService.getContextBlock('voice') +
               '\n\nReturn ONLY the text content. No JSON wrapper, no quotes, no explanation. Just the raw text in brand voice.'
     };
     // Voice preview returns raw text, not JSON — call LLMService directly so

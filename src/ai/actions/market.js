@@ -43,7 +43,7 @@
   function getPrompt() {
     var depth = _isDeep() ? 'comprehensive' : 'brief';
     var typeDesc = BrandService.typeLabels();
-    var ctx = BrandService.getContextBlock();
+    var ctx = BrandService.getContextBlock('market');
     var lang = BrandService.getLangSuffix();
     var deepKeys = _isDeep()
       ? ',\n  "market_trends": ["string"],\n  "market_opportunities": ["string"]'
@@ -84,7 +84,7 @@
     var guidance = customGuidance ? '\n\nUser direction: ' + customGuidance : '';
     var prompt = {
       system: 'You are a competitive intelligence analyst. Find competitors not already in the brand profile.' + BrandService.getLangSuffix(),
-      user:   'Find 3-5 additional competitors for this brand.' + BrandService.getContextBlock() +
+      user:   'Find 3-5 additional competitors for this brand.' + BrandService.getContextBlock('competitors') +
               (existing.length ? '\n\nDO NOT repeat these already-tracked competitors: ' + existing.join(', ') : '') +
               guidance +
               '\n\nReturn ONLY valid JSON:\n{\n  "competitors": [\n    {"name":"","description":"","url":"","strengths":[""],"weaknesses":[""],"comparison":""}\n  ]\n}' + _jsonOnly()

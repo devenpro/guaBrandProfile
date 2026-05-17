@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BPW Mock — Stepped Setup Wizard</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="_shared.css">
+<style>
+  body { padding-bottom: 80px; }
+
+  /* Top app strip */
+  .wiz-top {
+    height: 56px;
+    background: var(--bpw-white);
+    border-bottom: 1px solid var(--bpw-border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .wiz-top .logo {
+    font-family: var(--bpw-font-heading);
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--bpw-primary-dark);
+  }
+  .wiz-top .spacer { flex: 1; }
+  .wiz-top .save-state {
+    font-size: 12px;
+    color: var(--bpw-text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .wiz-top .save-state .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--bpw-success); }
+
+  /* Step rail */
+  .wiz-rail {
+    background: var(--bpw-white);
+    border-bottom: 1px solid var(--bpw-border);
+    padding: 16px 20px 14px;
+  }
+  .wiz-rail-inner { max-width: 860px; margin: 0 auto; }
+  .wiz-rail-progress { height: 4px; background: var(--bpw-gray-100); border-radius: 2px; overflow: hidden; }
+  .wiz-rail-progress > div { height: 100%; background: var(--bpw-primary); transition: width 0.3s; }
+  .wiz-rail-steps {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    font-size: 12px;
+  }
+  .wiz-rail-steps .step {
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 8px 10px; border-radius: 8px;
+    color: var(--bpw-text-muted);
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .wiz-rail-steps .step .n { font-size: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+  .wiz-rail-steps .step.done    { color: var(--bpw-success); }
+  .wiz-rail-steps .step.current { color: var(--bpw-primary-dark); background: var(--bpw-primary-light); }
+
+  /* Main panel */
+  .wiz-stage {
+    max-width: 720px;
+    margin: 36px auto;
+    padding: 0 20px;
+  }
+  .wiz-headline {
+    font-family: var(--bpw-font-heading);
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--bpw-text);
+    margin-bottom: 6px;
+    letter-spacing: -0.01em;
+  }
+  .wiz-sub {
+    color: var(--bpw-text-sec);
+    font-size: 15px;
+    margin-bottom: 28px;
+  }
+
+  .field { margin-bottom: 20px; }
+  .field-label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 6px;
+    font-size: 13px;
+    color: var(--bpw-text);
+  }
+  .field-help {
+    color: var(--bpw-text-muted);
+    font-size: 12px;
+    margin-top: 6px;
+  }
+
+  /* Radio cards */
+  .radio-cards { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  .radio-cards.cols-2 { grid-template-columns: 1fr 1fr; }
+  .radio-card {
+    border: 1.5px solid var(--bpw-border);
+    border-radius: var(--bpw-radius-md);
+    padding: 14px 16px;
+    cursor: pointer;
+    background: var(--bpw-white);
+    transition: all 0.15s;
+  }
+  .radio-card:hover { border-color: var(--bpw-primary); background: var(--bpw-primary-subtle); }
+  .radio-card.selected {
+    border-color: var(--bpw-primary);
+    background: var(--bpw-primary-subtle);
+    box-shadow: var(--bpw-shadow-glow);
+  }
+  .radio-card .title { font-weight: 600; font-size: 14px; }
+  .radio-card .desc  { font-size: 12px; color: var(--bpw-text-sec); margin-top: 3px; line-height: 1.4; }
+
+  /* Scrape review */
+  .scrape-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .scrape-cell {
+    background: var(--bpw-white);
+    border: 1px solid var(--bpw-border);
+    border-radius: var(--bpw-radius-md);
+    padding: 14px;
+  }
+  .scrape-cell .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .scrape-cell .head .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--bpw-text-muted); font-weight: 600; }
+  .scrape-cell .value { font-size: 13px; color: var(--bpw-text); line-height: 1.45; }
+  .scrape-cell .value.italic { color: var(--bpw-text-muted); font-style: italic; }
+
+  /* Confirm summary */
+  .summary-grid {
+    background: var(--bpw-white);
+    border: 1px solid var(--bpw-border);
+    border-radius: var(--bpw-radius-lg);
+    overflow: hidden;
+  }
+  .summary-row {
+    display: grid;
+    grid-template-columns: 140px 1fr auto;
+    gap: 16px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--bpw-border);
+    align-items: center;
+  }
+  .summary-row:last-child { border-bottom: none; }
+  .summary-row .k { color: var(--bpw-text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+  .summary-row .v { font-size: 13.5px; color: var(--bpw-text); }
+  .summary-row a { font-size: 12px; }
+
+  /* Adaptive Q&A */
+  .qa-list { display: flex; flex-direction: column; gap: 14px; }
+  .qa-item {
+    background: var(--bpw-white);
+    border: 1px solid var(--bpw-border);
+    border-radius: var(--bpw-radius-md);
+    padding: 14px 16px;
+  }
+  .qa-item .q {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .qa-item .q .num {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--bpw-primary-light); color: var(--bpw-primary-dark);
+    font-size: 11px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .qa-item .q .req {
+    font-size: 10px; padding: 2px 8px; border-radius: 99px;
+    background: var(--bpw-warning-light); color: var(--bpw-warning); font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .qa-item.followup {
+    background: var(--bpw-primary-subtle);
+    border-color: var(--bpw-primary-light);
+    border-left: 3px solid var(--bpw-primary);
+  }
+  .qa-item.followup .q .req {
+    background: var(--bpw-primary-light); color: var(--bpw-primary-dark);
+  }
+
+  /* Footer nav */
+  .wiz-foot {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--bpw-white);
+    border-top: 1px solid var(--bpw-border);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 10;
+  }
+  .wiz-foot .inner {
+    max-width: 720px; margin: 0 auto;
+    width: 100%;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .wiz-foot .step-text {
+    font-size: 12px;
+    color: var(--bpw-text-muted);
+  }
+  .wiz-foot .right { margin-left: auto; display: flex; gap: 8px; }
+
+  /* Hidden steps */
+  .step-panel { display: none; }
+  .step-panel.active { display: block; animation: fade-in 0.25s ease; }
+  @keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  /* Phase-driven note */
+  .phase-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 99px;
+    background: var(--bpw-accent-light);
+    color: var(--bpw-accent);
+    font-size: 11.5px;
+    font-weight: 500;
+    margin-bottom: 14px;
+  }
+</style>
+</head>
+<body>
+
+<div class="mock-nav">
+  <a href="index.html">Index</a>
+  <a href="wizard.html" class="active">Wizard</a>
+  <a href="dashboard.html">Dashboard</a>
+  <a href="identity-page.html">Identity</a>
+</div>
+
+<div class="wiz-top">
+  <div class="logo">Brand Profile Wizard</div>
+  <div class="spacer"></div>
+  <div class="save-state"><span class="dot"></span> Auto-saved · 2s ago</div>
+  <button class="btn btn-ghost btn-sm">Exit setup</button>
+</div>
+
+<div class="wiz-rail">
+  <div class="wiz-rail-inner">
+    <div class="wiz-rail-progress"><div id="bar" style="width: 16%"></div></div>
+    <div class="wiz-rail-steps" id="rail">
+      <div class="step current" data-step="1"><span class="n">Step 1</span><span>Basics</span></div>
+      <div class="step"         data-step="2"><span class="n">Step 2</span><span>Growth phase</span></div>
+      <div class="step"         data-step="3"><span class="n">Step 3</span><span>Discovery</span></div>
+      <div class="step"         data-step="4"><span class="n">Step 4</span><span>Context</span></div>
+      <div class="step"         data-step="5"><span class="n">Step 5</span><span>Scrape review</span></div>
+      <div class="step"         data-step="6"><span class="n">Step 6</span><span>Confirm</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="wiz-stage">
+
+  <!-- STEP 1: Basics -->
+  <div class="step-panel active" data-panel="1">
+    <h1 class="wiz-headline">Let's start with the basics</h1>
+    <p class="wiz-sub">We'll use this to seed every AI prompt downstream — keep it short, you can refine later.</p>
+
+    <div class="field">
+      <label class="field-label">Brand name</label>
+      <input type="text" placeholder="e.g. Northwind Coffee Co." value="Northwind Coffee Co.">
+    </div>
+
+    <div class="field">
+      <label class="field-label">Primary website</label>
+      <input type="url" placeholder="https://example.com" value="https://northwindcoffee.com">
+      <div class="field-help">We'll fetch the homepage to pre-fill what we can. You'll review before any AI is called.</div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">What kind of brand?</label>
+      <div class="radio-cards cols-2">
+        <div class="radio-card selected">
+          <div class="title">Commercial</div>
+          <div class="desc">Sells products or services to customers</div>
+        </div>
+        <div class="radio-card">
+          <div class="title">Local business</div>
+          <div class="desc">Brick-and-mortar, location-driven</div>
+        </div>
+        <div class="radio-card">
+          <div class="title">Creator / personal</div>
+          <div class="desc">Individual creator, coach, expert</div>
+        </div>
+        <div class="radio-card">
+          <div class="title">Nonprofit / cause</div>
+          <div class="desc">Mission-led organization</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Primary language</label>
+      <select>
+        <option>English (US)</option>
+        <option>English (UK)</option>
+        <option>Spanish</option>
+        <option>French</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- STEP 2: Growth phase -->
+  <div class="step-panel" data-panel="2">
+    <h1 class="wiz-headline">Where is your brand today?</h1>
+    <p class="wiz-sub">This decides how many discovery questions we ask and what depth the AI generates. You can change it later.</p>
+
+    <div class="radio-cards">
+      <div class="radio-card">
+        <div class="title">🌱 New — just starting out</div>
+        <div class="desc">No customers yet, or only a few. We'll keep discovery short (4 questions) and generate a tight, foundational brand profile you can iterate on.</div>
+      </div>
+      <div class="radio-card selected">
+        <div class="title">🚀 Growing — established but scaling</div>
+        <div class="desc">You have customers and a website, but want sharper positioning. 7 questions, deeper voice + audience work, basic competitive lens.</div>
+      </div>
+      <div class="radio-card">
+        <div class="title">🏛 Established — mature brand</div>
+        <div class="desc">5 required questions + adaptive follow-ups based on your answers. AI produces nuanced positioning, multiple voice variants, and full competitor analysis.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: Discovery (Established / adaptive view) -->
+  <div class="step-panel" data-panel="3">
+    <span class="phase-note">✦ Adaptive Q&A for Established brands · 5 required + smart follow-ups</span>
+    <h1 class="wiz-headline">Tell us about your brand</h1>
+    <p class="wiz-sub">Answers feed every AI prompt. The clearer you are here, the less editing you'll do later.</p>
+
+    <div class="qa-list">
+      <div class="qa-item">
+        <div class="q"><span class="num">1</span> What problem does your brand solve? <span class="req">Required</span></div>
+        <textarea placeholder="In one or two sentences…">Helping busy professionals get specialty-grade coffee at home without the gear or the guesswork.</textarea>
+      </div>
+
+      <div class="qa-item">
+        <div class="q"><span class="num">2</span> Who is your ideal customer? <span class="req">Required</span></div>
+        <textarea placeholder="Demographics, role, mindset…">Knowledge workers, 28–45, urban, $80k+ household income, value craft and convenience equally.</textarea>
+      </div>
+
+      <div class="qa-item">
+        <div class="q"><span class="num">3</span> How do you make money? <span class="req">Required</span></div>
+        <input type="text" value="Direct-to-consumer subscription + one-time orders, with B2B pilot in office channel.">
+      </div>
+
+      <div class="qa-item">
+        <div class="q"><span class="num">4</span> What makes you different from competitors? <span class="req">Required</span></div>
+        <textarea>Single-origin sourcing from 3 farms, named roasters, 14-day-from-roast guarantee, recyclable packaging.</textarea>
+      </div>
+
+      <div class="qa-item">
+        <div class="q"><span class="num">5</span> What's the one thing you want every customer to feel? <span class="req">Required</span></div>
+        <input type="text" value="That morning coffee can be a small ritual worth slowing down for.">
+      </div>
+
+      <div class="qa-item followup">
+        <div class="q"><span class="num">6</span> You mentioned B2B pilot — who decides on office coffee, and what's their biggest objection? <span class="req">Follow-up</span></div>
+        <textarea placeholder="Smart follow-up triggered by your answer to Q3…"></textarea>
+      </div>
+
+      <div class="qa-item followup">
+        <div class="q"><span class="num">7</span> Recyclable packaging is sticky differentiation — who's the closest competitor on sustainability? <span class="req">Follow-up</span></div>
+        <input type="text" placeholder="Smart follow-up triggered by Q4…">
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4: Context -->
+  <div class="step-panel" data-panel="4">
+    <h1 class="wiz-headline">Anything we should know?</h1>
+    <p class="wiz-sub">Optional but powerful. These two fields are merged into every AI prompt so your brand sounds like yours, not a generic template.</p>
+
+    <div class="field">
+      <label class="field-label">Brand description (your words)</label>
+      <textarea rows="4" placeholder="Tell us in 2–4 sentences how you'd describe the brand to a friend…">We roast small batches of single-origin coffee in Portland and ship it within 14 days of roasting. We started as a Saturday-only café and now ship to subscribers in 32 states. Direct, warm, never precious.</textarea>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Custom AI instructions <span class="muted" style="font-weight:400">(applied to every generation)</span></label>
+      <textarea rows="3" placeholder="e.g. 'Avoid the word artisanal.' 'Always reference our 14-day guarantee in tagline candidates.'">Never use the words "artisanal" or "premium". Always reference the 14-day-from-roast promise when relevant. Keep sentences under 18 words.</textarea>
+      <div class="field-help">Think of this as a brand-wide style guide for the AI.</div>
+    </div>
+  </div>
+
+  <!-- STEP 5: Scrape review -->
+  <div class="step-panel" data-panel="5">
+    <span class="phase-note" style="background: var(--bpw-success-light); color: var(--bpw-success)">✓ Website fetched · 1.2s · 8 fields extracted</span>
+    <h1 class="wiz-headline">Review what we pulled from your site</h1>
+    <p class="wiz-sub">Fix anything that looks off before we run AI on it. No tokens have been spent yet.</p>
+
+    <div class="scrape-grid">
+      <div class="scrape-cell">
+        <div class="head">
+          <span class="label">Tagline</span>
+          <button class="btn-icon icon-edit" title="Edit"></button>
+        </div>
+        <div class="value">Specialty coffee, delivered fresh.</div>
+      </div>
+      <div class="scrape-cell">
+        <div class="head">
+          <span class="label">Detected tone</span>
+          <button class="btn-icon icon-edit" title="Edit"></button>
+        </div>
+        <div class="value">Warm, conversational, slightly playful</div>
+      </div>
+      <div class="scrape-cell" style="grid-column: span 2">
+        <div class="head">
+          <span class="label">Short description</span>
+          <button class="btn-icon icon-edit" title="Edit"></button>
+        </div>
+        <div class="value">Portland-roasted, single-origin coffee shipped within 14 days of roast. Subscriptions and one-time orders.</div>
+      </div>
+      <div class="scrape-cell">
+        <div class="head">
+          <span class="label">Detected offerings</span>
+          <button class="btn-icon icon-edit" title="Edit"></button>
+        </div>
+        <div class="value">
+          • Coffee subscription<br>
+          • Single-bag orders<br>
+          • Gift bundles
+        </div>
+      </div>
+      <div class="scrape-cell">
+        <div class="head">
+          <span class="label">Key messages</span>
+          <button class="btn-icon icon-edit" title="Edit"></button>
+        </div>
+        <div class="value">
+          • 14-day roast freshness<br>
+          • Named roaster on every bag<br>
+          • Recyclable packaging
+        </div>
+      </div>
+      <div class="scrape-cell" style="grid-column: span 2">
+        <div class="head">
+          <span class="label">Social profiles found</span>
+          <button class="btn-icon icon-edit" title="Edit"></button>
+        </div>
+        <div class="value">
+          Instagram <span class="muted">@northwindcoffee</span> ·
+          TikTok <span class="muted">@northwindcoffee</span> ·
+          LinkedIn <span class="muted">/company/northwind-coffee</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 6: Confirm -->
+  <div class="step-panel" data-panel="6">
+    <h1 class="wiz-headline">Ready to build your brand profile?</h1>
+    <p class="wiz-sub">Here's what we'll send to the AI. You'll be able to refine every field after.</p>
+
+    <div class="summary-grid">
+      <div class="summary-row">
+        <div class="k">Name</div>
+        <div class="v">Northwind Coffee Co.</div>
+        <a href="#" onclick="go(1);return false">Edit</a>
+      </div>
+      <div class="summary-row">
+        <div class="k">Type</div>
+        <div class="v">Commercial</div>
+        <a href="#" onclick="go(1);return false">Edit</a>
+      </div>
+      <div class="summary-row">
+        <div class="k">Growth phase</div>
+        <div class="v">🚀 Growing</div>
+        <a href="#" onclick="go(2);return false">Edit</a>
+      </div>
+      <div class="summary-row">
+        <div class="k">Website</div>
+        <div class="v">northwindcoffee.com <span class="chip chip-success" style="margin-left:8px">scraped</span></div>
+        <a href="#" onclick="go(5);return false">Review</a>
+      </div>
+      <div class="summary-row">
+        <div class="k">Discovery</div>
+        <div class="v">5 required + 2 follow-up answers</div>
+        <a href="#" onclick="go(3);return false">Edit</a>
+      </div>
+      <div class="summary-row">
+        <div class="k">Custom instructions</div>
+        <div class="v"><span class="chip chip-accent">3 rules set</span></div>
+        <a href="#" onclick="go(4);return false">Edit</a>
+      </div>
+    </div>
+
+    <div style="margin-top: 28px; padding: 16px 18px; background: var(--bpw-primary-subtle); border-radius: var(--bpw-radius-md); font-size: 13px; color: var(--bpw-primary-dark);">
+      <strong>What happens next:</strong> we'll generate identity, voice, audience, offerings, market, content,
+      SEO, and social profiles — pausing once mid-flow to let you pick a mission direction.
+      Estimated time: ~90 seconds.
+    </div>
+  </div>
+
+</div>
+
+<div class="wiz-foot">
+  <div class="inner">
+    <span class="step-text" id="stepText">Step 1 of 6 · Basics</span>
+    <div class="right">
+      <button class="btn btn-ghost" id="back" onclick="go(current-1)" disabled>← Back</button>
+      <button class="btn btn-primary" id="next" onclick="go(current+1)">Next →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let current = 1;
+  const total = 6;
+  const labels = ['', 'Basics', 'Growth phase', 'Discovery', 'Context', 'Scrape review', 'Confirm'];
+
+  function go(n) {
+    if (n < 1 || n > total) return;
+    document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+    document.querySelector(`.step-panel[data-panel="${n}"]`).classList.add('active');
+    document.querySelectorAll('#rail .step').forEach((s, i) => {
+      s.classList.remove('current', 'done');
+      if (i + 1 < n) s.classList.add('done');
+      if (i + 1 === n) s.classList.add('current');
+    });
+    document.getElementById('bar').style.width = (n / total * 100) + '%';
+    document.getElementById('stepText').textContent = `Step ${n} of ${total} · ${labels[n]}`;
+    document.getElementById('back').disabled = (n === 1);
+    document.getElementById('next').textContent = (n === total) ? 'Run Brand AI ✦' : 'Next →';
+    current = n;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  document.querySelectorAll('#rail .step').forEach(s => {
+    s.addEventListener('click', () => go(parseInt(s.dataset.step, 10)));
+  });
+
+  // radio-card toggle (within a group)
+  document.querySelectorAll('.radio-cards').forEach(group => {
+    group.addEventListener('click', e => {
+      const card = e.target.closest('.radio-card');
+      if (!card) return;
+      group.querySelectorAll('.radio-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+    });
+  });
+</script>
+
+</body>
+</html>

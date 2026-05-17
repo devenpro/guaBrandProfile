@@ -400,8 +400,8 @@
     var seed = W.seedContext || {};
     var name = (W.acceptedSections && W.acceptedSections.identity && W.acceptedSections.identity.name) || seed.name || '';
     var url = seed.url || seed.website_url || '';
-    var description = seed.description || '';
-    var customInstructions = seed.customInstructions || '';
+    var dumpFn = window._bpwAIHelpers && window._bpwAIHelpers.consolidateSeedDump;
+    var dump = dumpFn ? dumpFn(seed) : (seed.dump || '');
     var types = W.brandTypes || [];
     var awaiting = (W.setup && W.setup.awaitingReview) || null;
     // Form inputs stay editable while paused for review so the user can
@@ -438,14 +438,9 @@
     html += '</div>';
 
     html += '<div class="bpw-setup-field">';
-    html += '<label for="bpw-setup-description">What does your brand do? <span class="bpw-setup-field-hint">1–2 sentences</span></label>';
-    html += '<textarea id="bpw-setup-description" class="bpw-setup-textarea" data-field="description" rows="2" placeholder="e.g. Acme Studio designs and sells handmade ceramic homeware for small modern kitchens."' + disabled + '>' + _esc(description) + '</textarea>';
-    html += '</div>';
-
-    html += '<div class="bpw-setup-field">';
-    html += '<label for="bpw-setup-custom-instructions">Custom instructions <span class="bpw-setup-field-hint">paste anything that matters</span></label>';
-    html += '<textarea id="bpw-setup-custom-instructions" class="bpw-setup-textarea bpw-setup-textarea-tall" data-field="customInstructions" rows="6" placeholder="Anything that should anchor the AI — your About page copy, key product names, target customer, tone you want, things to avoid, competitors, awards, etc. The richer this is, the better."' + disabled + '>' + _esc(customInstructions) + '</textarea>';
-    html += '<p class="bpw-setup-help">' + _icon('lightbulb') + ' Treat this like a brief for a junior strategist — facts the AI couldn\'t know otherwise.</p>';
+    html += '<label for="bpw-setup-dump">Tell us about your brand <span class="bpw-setup-field-hint">the secret sauce</span></label>';
+    html += '<textarea id="bpw-setup-dump" class="bpw-setup-textarea bpw-setup-textarea-tall" data-field="dump" rows="8" placeholder="About page text, target customers, key offerings, what makes you different, tone preferences, things to avoid, competitor names — anything goes. The more you write here, the better every AI draft will be."' + disabled + '>' + _esc(dump) + '</textarea>';
+    html += '<p class="bpw-setup-help">' + _icon('lightbulb') + ' Single anchor field used by every downstream AI prompt. Replaces the old "description" + "custom instructions" pair.</p>';
     html += '</div>';
 
     html += '</div>'; // /bpw-setup-section
@@ -458,9 +453,11 @@
     html += '<label>Growth phase</label>';
     html += '<div class="bpw-setup-radio-group">';
     [
-      ['new', 'New', 'Just starting — basics first'],
-      ['growing', 'Growing', 'Established — refine + expand'],
-      ['deep', 'Deep dive', 'Full strategic profile']
+      ['new', 'New', 'Just starting — concise, foundational output'],
+      ['growing', 'Growing', 'Established but scaling — standard depth'],
+      // Internal value stays "deep" for back-compat with saved brand
+      // data. Label reads "Established" per the v2 mocks.
+      ['deep', 'Established', 'Mature — rich, multi-variant, deep competitive lens']
     ].forEach(function(p) {
       var checked = lvl === p[0] ? ' checked' : '';
       html += '<label class="bpw-setup-radio"><input type="radio" name="bpw-growth" value="' + p[0] + '"' + checked + disabled + '><span>' + _esc(p[1]) + '<small>' + _esc(p[2]) + '</small></span></label>';
@@ -592,6 +589,7 @@
         W.seedContext = W.seedContext || {};
         if (field === 'url')                W.seedContext.url                = $(this).val();
         if (field === 'name')               W.seedContext.name               = $(this).val();
+        if (field === 'dump')               W.seedContext.dump               = $(this).val();
         if (field === 'description')        W.seedContext.description        = $(this).val();
         if (field === 'customInstructions') W.seedContext.customInstructions = $(this).val();
         // Don't mirror into W.acceptedSections — that would trip
@@ -730,8 +728,8 @@
         // Need at least a URL or some context to re-run scrape.
         if (stageId === 'scrape') {
           var seed = W.seedContext || {};
-          if (!(seed.url || seed.description || seed.customInstructions)) {
-            if (window._bpwToast) window._bpwToast('Add a URL, description, or custom instructions before re-running.', 'warning');
+          if (!(seed.url || seed.dump || seed.description || seed.customInstructions)) {
+            if (window._bpwToast) window._bpwToast('Add a URL, brand details, or custom instructions before re-running.', 'warning');
             return;
           }
         }

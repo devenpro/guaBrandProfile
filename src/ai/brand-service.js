@@ -76,15 +76,16 @@
    * discovery answers, known competitors, and already-accepted sections
    * so each prompt sees the running brand picture.
    */
-  function getContextBlock() {
+  function getContextBlock(stageHint) {
     var ctx = getContext();
     var parts = [];
     parts.push('Brand: ' + ((ctx.seed && ctx.seed.name) || 'Unknown'));
     parts.push('Type: ' + typeLabels());
     parts.push('Level: ' + (ctx.brand_level || 'new'));
     var seed = ctx.seed || {};
-    if (seed.description)      parts.push('Description: ' + seed.description);
-    if (seed.customInstructions) parts.push('Custom instructions from brand owner:\n' + seed.customInstructions);
+    var dumpFn = window._bpwAIHelpers && window._bpwAIHelpers.consolidateSeedDump;
+    var dump = dumpFn ? dumpFn(seed) : (seed.dump || seed.description || '');
+    if (dump) parts.push('Brand details (provided by the brand owner):\n' + dump);
     if (seed.industry)         parts.push('Industry: ' + seed.industry);
     if (seed.business_model)   parts.push('Business model: ' + seed.business_model);
     if (seed.website_url)      parts.push('Website: ' + seed.website_url);
@@ -130,6 +131,15 @@
       if (acc.voice && acc.voice.primary_tone)  parts.push('Voice tone: ' + acc.voice.primary_tone);
       if (acc.messaging && acc.messaging.primary_message) parts.push('Primary message: ' + acc.messaging.primary_message);
       if (acc.market && acc.market.positioning) parts.push('Positioning: ' + acc.market.positioning);
+    }
+
+    // Append per-stage growth-phase guidance so the AI scales depth and
+    // richness without each action having to call phaseGuidance itself.
+    // stageHint comes from the caller (e.g. 'identity', 'competitors').
+    var H = window._bpwAIHelpers || {};
+    if (H.phaseGuidance && stageHint) {
+      var pg = H.phaseGuidance(ctx.brand_level || 'new', stageHint);
+      if (pg) parts.push('\n--- Phase guidance ---\n' + pg);
     }
 
     return '\n\nBrand context:\n' + parts.join('\n');

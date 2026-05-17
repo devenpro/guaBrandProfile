@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BPW Mock — Stage Review · Identity</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="_wizard.css">
+</head>
+<body>
+
+<div class="mock-nav">
+  <a href="index.html">Index</a>
+  <a href="step1-basics.html">1 · Basics</a>
+  <a href="step2-discovery.html">2 · Discovery</a>
+  <a href="step2b-followups.html">2b · Follow-ups</a>
+  <a href="stage-loading.html">3 · Loading</a>
+  <a href="stage-review.html" class="active">3 · Identity</a>
+  <a href="stage-review-competitors.html">8 · Competitors</a>
+  <a href="wizard-complete.html">9 · Done</a>
+  <a href="dashboard.html">Dashboard</a>
+</div>
+
+<div class="wiz-top">
+  <div class="logo">Brand Profile Wizard</div>
+  <div class="spacer"></div>
+  <div class="save-state"><span class="dot"></span> Auto-saved · just now</div>
+  <button class="btn btn-ghost btn-sm">Exit setup</button>
+</div>
+
+<div class="wiz-rail">
+  <div class="wiz-rail-inner">
+    <div class="wiz-rail-progress"><div style="width: 50%"></div></div>
+    <div class="wiz-rail-steps" data-current="3"></div>
+  </div>
+</div>
+
+<div class="wiz-stage wide">
+
+  <div class="review-head">
+    <h1>Review your Identity</h1>
+    <div class="review-actions">
+      <button class="btn btn-ghost btn-sm">↻ Regenerate all</button>
+      <button class="btn btn-subtle btn-sm"><span class="icon-sparkle"></span> Improve with prompt</button>
+    </div>
+  </div>
+  <p class="review-sub">
+    Drafted using your discovery answers and the Growing-phase strategy. Hover any field to edit inline, or click the sparkle for an AI rewrite menu (Improve / Shorter / Longer / Bolder). Approve to continue to <strong>Voice</strong>.
+  </p>
+
+  <span class="phase-note success">✓ AI drafted 7 fields in 11.4s · context: 5 discovery + 3 follow-ups + brand dump</span>
+
+  <!-- Mission -->
+  <div class="review-card">
+    <div class="field-head">
+      <span class="label">Mission</span>
+      <span class="ai-source">AI · from Q1 + brand dump</span>
+      <div class="row-actions">
+        <button class="btn-icon icon-edit" title="Edit" data-act="edit"></button>
+        <button class="btn-icon icon-sparkle" title="Improve"></button>
+        <button class="btn-icon" title="Regenerate">↻</button>
+      </div>
+    </div>
+    <div class="field-value">
+      To make specialty coffee a daily ritual — sourced direct, roasted small-batch, and delivered fresh enough that anyone, anywhere, can taste the difference.
+    </div>
+  </div>
+
+  <!-- Vision -->
+  <div class="review-card">
+    <div class="field-head">
+      <span class="label">Vision</span>
+      <span class="ai-source">AI · from brand dump (growth ambition)</span>
+      <div class="row-actions">
+        <button class="btn-icon icon-edit" title="Edit"></button>
+        <button class="btn-icon icon-sparkle" title="Improve"></button>
+        <button class="btn-icon" title="Regenerate">↻</button>
+      </div>
+    </div>
+    <div class="field-value">
+      A world where every kitchen has access to coffee that's better than the café around the corner — without the cost, the gear, or the wait.
+    </div>
+  </div>
+
+  <!-- Values -->
+  <div class="review-card">
+    <div class="field-head">
+      <span class="label">Values</span>
+      <span class="ai-source">AI · 4 values, derived from voice notes &amp; differentiators</span>
+      <div class="row-actions">
+        <button class="btn-icon" title="Add value">+</button>
+        <button class="btn-icon icon-sparkle" title="Improve"></button>
+        <button class="btn-icon" title="Regenerate">↻</button>
+      </div>
+    </div>
+    <div class="value-tags">
+      <span class="value-tag">Craft without snobbery</span>
+      <span class="value-tag">Freshness on a deadline</span>
+      <span class="value-tag">Named hands, not anonymous brands</span>
+      <span class="value-tag">Less waste, more story</span>
+    </div>
+  </div>
+
+  <!-- Archetype -->
+  <div class="review-card">
+    <div class="field-head">
+      <span class="label">Brand archetype</span>
+      <span class="ai-source">AI · matched to "warm, direct, never precious"</span>
+      <div class="row-actions">
+        <button class="btn-icon icon-edit" title="Edit"></button>
+        <button class="btn-icon icon-sparkle" title="Improve"></button>
+        <button class="btn-icon" title="Regenerate">↻</button>
+      </div>
+    </div>
+    <div class="field-value">
+      <strong>The Everyman, with a Maker streak.</strong> Approachable and grounded, but with the obsessive care of someone who hand-roasts in 12lb batches. Not the connoisseur, not the corporate — the friend who happens to know coffee.
+    </div>
+  </div>
+
+  <!-- Positioning -->
+  <div class="review-card">
+    <div class="field-head">
+      <span class="label">Positioning statement</span>
+      <span class="ai-source">AI · references competitors mentioned</span>
+      <div class="row-actions">
+        <button class="btn-icon icon-edit" title="Edit"></button>
+        <button class="btn-icon icon-sparkle" title="Improve"></button>
+        <button class="btn-icon" title="Regenerate">↻</button>
+      </div>
+    </div>
+    <div class="field-value">
+      For knowledge workers who care about both craft and convenience, Northwind Coffee is the subscription roaster that ships single-origin coffee within 14 days of roasting — unlike Trade (anonymous mass) or Onyx (precious premium), we put the roaster's name on every bag.
+    </div>
+  </div>
+
+  <!-- Elevator pitch -->
+  <div class="review-card">
+    <div class="field-head">
+      <span class="label">Elevator pitch</span>
+      <span class="ai-source">AI · 50-word version</span>
+      <div class="row-actions">
+        <button class="btn-icon icon-edit" title="Edit"></button>
+        <button class="btn-icon icon-sparkle" title="Improve"></button>
+        <button class="btn-icon" title="Regenerate">↻</button>
+      </div>
+    </div>
+    <div class="field-value">
+      Northwind roasts single-origin coffee in Portland and ships it to your door within 14 days. Every bag has the roaster's name on it. We sit between Trade and Onyx — craft you can taste, no snobbery you have to put up with.
+    </div>
+  </div>
+
+  <!-- Tagline (currently editing) -->
+  <div class="review-card editing">
+    <div class="field-head">
+      <span class="label">Tagline candidates</span>
+      <span class="ai-source">AI · 3 options, references 14-day promise as requested</span>
+      <div class="row-actions" style="opacity:1">
+        <button class="btn-icon icon-check" title="Save"></button>
+        <button class="btn-icon" title="Cancel" data-act="edit">✕</button>
+      </div>
+    </div>
+    <div class="field-value">
+      Fresh from the roaster. Within 14 days.<br>
+      Coffee, named. Ritual, kept.<br>
+      14 days from the roaster's hands to yours.
+    </div>
+    <textarea rows="4">Fresh from the roaster. Within 14 days.
+Coffee, named. Ritual, kept.
+14 days from the roaster's hands to yours.</textarea>
+    <div class="ai-meta" style="margin-top: 8px;">
+      <span>Editing — changes save when you click outside or press ⌘ Enter</span>
+      <a href="#"><span class="icon-sparkle"></span> Try a different angle</a>
+    </div>
+  </div>
+
+  <!-- Approve banner -->
+  <div class="approve-banner">
+    <div class="text">
+      <h3>Looks good?</h3>
+      <p>Identity locks in and feeds into the Voice stage. You can still edit any field later from the Identity page.</p>
+    </div>
+    <a href="stage-loading.html" class="btn btn-primary">Approve &amp; continue → Voice</a>
+  </div>
+</div>
+
+<div class="wiz-foot">
+  <div class="inner">
+    <span class="step-text">Step 3 of 9 · Identity</span>
+    <div class="right">
+      <a href="step2b-followups.html" class="btn btn-ghost">← Back</a>
+      <button class="btn btn-ghost">Skip stage</button>
+      <a href="stage-loading.html" class="btn btn-primary">Approve &amp; continue → Voice</a>
+    </div>
+  </div>
+</div>
+
+<script src="_wizard.js"></script>
+</body>
+</html>

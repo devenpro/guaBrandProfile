@@ -55,7 +55,7 @@
           : '');
     return {
       system: 'You are an expert audience researcher. Profile the target audience for a ' + typeDesc + ' brand.' + BrandService.getLangSuffix(),
-      user:   'Generate audience profile.' + BrandService.getContextBlock() +
+      user:   'Generate audience profile.' + BrandService.getContextBlock('audience') +
               '\n\nReturn ONLY valid JSON:\n{\n  "audience_primary": "2-3 sentence primary audience description",\n  "audience_segments": [\n    {"name":"","description":"","pain_points":[""],"goals":[""],"channels":[""]}\n  ]' + personaSchema + '\n}\n\nGenerate 2-3 segments.' + personaInstr + fieldReqs + _jsonOnly()
     };
   }
@@ -78,7 +78,7 @@
       + '- status: one of active / coming soon / sunset';
     return {
       system: 'You are a business strategist. Structure the ' + offeringsType + ' for a ' + typeDesc + ' brand.' + BrandService.getLangSuffix(),
-      user:   'Generate offerings profile.' + BrandService.getContextBlock() +
+      user:   'Generate offerings profile.' + BrandService.getContextBlock('offerings') +
               '\n\nReturn ONLY valid JSON:\n{\n  "offerings_items": [\n    {"name":"","category":"","description":"","features":[""],"benefits":[""],"target_audience":"","status":"active"}\n  ]' + creatorFields + commercFields + nonprofFields + '\n}\n\nGenerate 3-6 offerings based on available context.' + fieldReqs + _jsonOnly()
     };
   }
@@ -138,7 +138,7 @@
     var existing = (BrandService.getAudience().personas || []).map(function(p) { return p.name || ''; }).filter(Boolean);
     var prompt = {
       system: 'You are an expert audience researcher building detailed buyer personas.' + BrandService.getLangSuffix(),
-      user:   'Generate 2-3 additional detailed personas for this brand.' + BrandService.getContextBlock() +
+      user:   'Generate 2-3 additional detailed personas for this brand.' + BrandService.getContextBlock('audience') +
               (existing.length ? '\n\nDO NOT repeat these existing personas: ' + existing.join(', ') : '') +
               (customGuidance ? '\n\nUser direction: ' + customGuidance : '') +
               '\n\nReturn ONLY valid JSON:\n{\n  "personas": [\n    {"name":"","role":"","age":"","story":"","pain_points":[""],"goals":[""],"decision_criteria":[""],"journey":""}\n  ]\n}' + _jsonOnly()

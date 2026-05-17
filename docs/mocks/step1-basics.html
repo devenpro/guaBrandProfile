@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BPW Mock — Step 1 · Basics &amp; Brand Dump</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="_wizard.css">
+</head>
+<body>
+
+<div class="mock-nav">
+  <a href="index.html">Index</a>
+  <a href="step1-basics.html" class="active">1 · Basics</a>
+  <a href="step2-discovery.html">2 · Discovery</a>
+  <a href="step2b-followups.html">2b · Follow-ups</a>
+  <a href="stage-loading.html">3 · Loading</a>
+  <a href="stage-review.html">3 · Identity</a>
+  <a href="stage-review-competitors.html">8 · Competitors</a>
+  <a href="wizard-complete.html">9 · Done</a>
+  <a href="dashboard.html">Dashboard</a>
+  <a href="identity-page.html">Identity page</a>
+  <a href="settings-page.html">Settings</a>
+</div>
+
+<div class="wiz-top">
+  <div class="logo">Brand Profile Wizard</div>
+  <div class="spacer"></div>
+  <div class="save-state"><span class="dot"></span> Auto-saved · 2s ago</div>
+  <button class="btn btn-ghost btn-sm">Exit setup</button>
+</div>
+
+<div class="wiz-rail">
+  <div class="wiz-rail-inner">
+    <div class="wiz-rail-progress"><div style="width: 11%"></div></div>
+    <div class="wiz-rail-steps" data-current="1"></div>
+  </div>
+</div>
+
+<div class="wiz-stage">
+
+  <h1 class="wiz-headline">Tell us about your brand</h1>
+  <p class="wiz-sub">One quick page. We'll do the heavy lifting — drafting your identity, voice, audience, offerings and competitors — and you'll review each one before it sticks.</p>
+
+  <div class="card form-card">
+
+    <div class="form-grid">
+      <div class="field">
+        <label class="field-label">Brand name</label>
+        <input type="text" placeholder="e.g. Northwind Coffee Co." value="Northwind Coffee Co.">
+      </div>
+
+      <div class="field">
+        <label class="field-label">Website <span class="muted" style="font-weight:400">(optional, we'll scrape it)</span></label>
+        <input type="url" placeholder="https://example.com" value="https://northwindcoffee.com">
+      </div>
+
+      <div class="field">
+        <label class="field-label">Brand type</label>
+        <select>
+          <option>Commercial — sells products or services</option>
+          <option>Local business — brick-and-mortar</option>
+          <option>Creator / personal</option>
+          <option>Nonprofit / cause</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Primary language</label>
+        <select>
+          <option>English (US)</option>
+          <option>English (UK)</option>
+          <option>Spanish</option>
+          <option>French</option>
+        </select>
+      </div>
+
+      <div class="field span-2">
+        <label class="field-label">Growth phase</label>
+        <div class="phase-row">
+          <label class="phase-pill">
+            <input type="radio" name="phase" value="new">
+            <span class="phase-emoji">🌱</span>
+            <span>
+              <span class="phase-name">New</span>
+              <span class="phase-desc">Just starting · concise, foundational output</span>
+            </span>
+          </label>
+          <label class="phase-pill selected">
+            <input type="radio" name="phase" value="growing" checked>
+            <span class="phase-emoji">🚀</span>
+            <span>
+              <span class="phase-name">Growing</span>
+              <span class="phase-desc">Established but scaling · standard depth</span>
+            </span>
+          </label>
+          <label class="phase-pill">
+            <input type="radio" name="phase" value="established">
+            <span class="phase-emoji">🏛</span>
+            <span>
+              <span class="phase-name">Established</span>
+              <span class="phase-desc">Mature · rich, multi-variant, deep competitive lens</span>
+            </span>
+          </label>
+        </div>
+        <div class="field-help">You can change this later from Settings. Phase only affects how deep the AI digs — the workflow stays the same.</div>
+      </div>
+
+      <div class="field span-2">
+        <label class="field-label">Tell us anything about your brand <span class="chip chip-accent" style="margin-left:6px">the secret sauce</span></label>
+        <textarea rows="8" placeholder="About page text, target customers, key offerings, what makes you different, tone preferences, things to avoid, competitor names — anything goes. The more you write here, the better every AI draft will be.">We roast small batches of single-origin coffee in Portland and ship within 14 days of roasting. Started as a Saturday-only café, now ship to subscribers in 32 states.
+
+Customers are knowledge workers 28–45, urban, who care about craft AND convenience. Avg order $42. Subscriptions are 70% of revenue.
+
+We compete with Trade Coffee (mass) and Onyx (premium). Our edge: named roasters, 14-day freshness guarantee, recyclable packaging.
+
+Voice notes: warm, direct, never precious. Avoid "artisanal" and "premium". Always reference our 14-day promise in tagline candidates.</textarea>
+        <div class="field-help">This single field replaces the old "description" + "custom instructions" pair. Feeds every downstream prompt.</div>
+      </div>
+
+      <div class="field span-2 ai-config">
+        <details>
+          <summary><span class="icon-sparkle"></span> AI provider &amp; model <span class="muted" style="font-weight:400; margin-left:6px">(Anthropic · Claude Sonnet 4.6)</span></summary>
+          <div class="ai-config-inner">
+            <div class="field">
+              <label class="field-label">Provider</label>
+              <select><option>Anthropic</option><option>OpenAI</option><option>Google</option></select>
+            </div>
+            <div class="field">
+              <label class="field-label">Model</label>
+              <select><option>Claude Sonnet 4.6 (recommended)</option><option>Claude Opus 4.7</option><option>Claude Haiku 4.5</option></select>
+            </div>
+            <div class="field span-2">
+              <label class="field-label">API key</label>
+              <input type="password" value="sk-ant-•••••••••••••••••••">
+            </div>
+          </div>
+        </details>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="next-note">
+    <span class="icon-sparkle"></span>
+    <span>Next, we'll draft answers to a few discovery questions based on what you wrote above. You'll review and edit before any other AI runs.</span>
+  </div>
+</div>
+
+<div class="wiz-foot">
+  <div class="inner">
+    <span class="step-text">Step 1 of 9 · Basics</span>
+    <div class="right">
+      <button class="btn btn-ghost" disabled>← Back</button>
+      <a href="step2-discovery.html" class="btn btn-primary">Continue →</a>
+    </div>
+  </div>
+</div>
+
+<script src="_wizard.js"></script>
+</body>
+</html>

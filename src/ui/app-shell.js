@@ -44,7 +44,7 @@
 
   function _init() {
     W = window._bpwState;
-    W.ui = W.ui || { section: 'identity', itemId: null, activityOpen: false };
+    W.ui = W.ui || { section: 'dashboard', itemId: null, activityOpen: false };
     _wireEvents();
     renderIfReady();
   }
@@ -76,6 +76,13 @@
     W.ui = W.ui || {};
     W.ui.section = id;
     W.ui.itemId = null;
+    // Remember last non-dashboard page so the dashboard's "Resume editing"
+    // pill can deep-link back. _lastOpenedField is set by editor click
+    // handlers in views/*.js (Phase 6 polish — for now this gives the
+    // dashboard a usable resume target as soon as users navigate away).
+    if (id && id !== 'dashboard') {
+      W._lastOpenedPage = id;
+    }
     render();
   }
 
@@ -83,6 +90,7 @@
     if (!W) return;
     W.ui = W.ui || {};
     W.ui.itemId = itemId;
+    if (itemId) W._lastOpenedField = itemId;
     render();
   }
 
@@ -90,13 +98,22 @@
 
   // ── RENDER ──────────────────────────────────────────────────────────
   function _shellHTML() {
+    var section = (W.ui && W.ui.section) || 'dashboard';
+    // v2: any view that declares listMode === 'none' renders as a single
+    // page (sidebar + main). Dashboard, Identity, Voice opt into this in
+    // Phases 5–6. Other views still use the legacy 3-pane layout.
+    var view = (window._bpwUIViews || {})[section];
+    var singlePane = view && view.listMode === 'none';
+    var bodyCls = singlePane ? 'bpw-shell-body bpw-shell-body--single' : 'bpw-shell-body';
     var topbar = (window._bpwTopbar && window._bpwTopbar.render && window._bpwTopbar.render(W)) || '';
     var sidebar = (window._bpwSidebar && window._bpwSidebar.render && window._bpwSidebar.render(W)) || '';
-    var list = (window._bpwSectionList && window._bpwSectionList.render && window._bpwSectionList.render(W)) || '';
+    var list = singlePane
+      ? ''
+      : ((window._bpwSectionList && window._bpwSectionList.render && window._bpwSectionList.render(W)) || '');
     var detail = (window._bpwDetailPane && window._bpwDetailPane.render && window._bpwDetailPane.render(W)) || '';
     var drawer = (window._bpwActivityDrawer && window._bpwActivityDrawer.render && window._bpwActivityDrawer.render(W)) || '';
     return topbar +
-      '<div class="bpw-shell-body">' +
+      '<div class="' + bodyCls + '">' +
         sidebar +
         list +
         detail +
