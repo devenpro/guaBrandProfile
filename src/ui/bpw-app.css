@@ -1265,3 +1265,36 @@ body.bpw-app-shell-active { overflow: hidden; }
   .bpw-modal-backdrop { animation: none; }
   .bpw-dash-card { transition: none; }
 }
+
+/* ── Per-field menu popover ─────────────────────────────────────── */
+.bpw-field-menu {
+  z-index: 10000;
+  background: var(--bpw-white);
+  border: 1px solid var(--bpw-border);
+  border-radius: var(--bpw-radius-md);
+  box-shadow: var(--bpw-shadow-lg);
+  padding: var(--bpw-sp-1);
+  min-width: 180px;
+  display: grid;
+}
+.bpw-field-menu-item {
+  background: transparent;
+  border: 0;
+  text-align: left;
+  padding: var(--bpw-sp-2) var(--bpw-sp-3);
+  font-family: var(--bpw-font-body);
+  font-size: var(--bpw-font-sm);
+  color: var(--bpw-text);
+  cursor: pointer;
+  display: inline-flex; align-items: center; gap: var(--bpw-sp-2);
+  border-radius: var(--bpw-radius-sm);
+  transition: background var(--bpw-tr-fast);
+}
+.bpw-field-menu-item:hover { background: var(--bpw-primary-subtle); }
+.bpw-field-menu-item .fa-solid { color: var(--bpw-primary); width: 14px; text-align: center; }
+
+/* On coarse-pointer devices the sparkle button should always be
+ * visible (hover doesn't exist on touch). */
+@media (pointer: coarse) {
+  .bpw-page-field-refine { opacity: 1 !important; }
+}

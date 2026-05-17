@@ -1,4 +1,4 @@
-window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T05:21:05.204Z";try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}
+window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T05:22:35.474Z";try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}
 (() => {
   // src/ai/providers/registry.js
   (function() {
@@ -26322,9 +26322,14 @@ ${prefix}
     });
     $(document).off("click.bpw-refine-trigger", '[data-action="refine"][data-refine-path]').on("click.bpw-refine-trigger", '[data-action="refine"][data-refine-path]', function(e) {
       e.preventDefault();
+      e.stopPropagation();
       var path = $(this).attr("data-refine-path");
       var label = $(this).closest(".bpw-page-field").find(".bpw-page-field-label").text() || path;
-      openField(path, label);
+      if (window._bpwFieldMenu && window._bpwFieldMenu.openMenu) {
+        window._bpwFieldMenu.openMenu(this, path, label);
+      } else {
+        openField(path, label);
+      }
     });
     $(document).off("change.bpw-refine-provider", '.bpw-refine-modal [data-field="ai-provider-setup"]').on("change.bpw-refine-provider", '.bpw-refine-modal [data-field="ai-provider-setup"]', function() {
       var W2 = window._bpwState;
@@ -26375,6 +26380,124 @@ ${prefix}
       openSection,
       close: close2
     };
+  })();
+
+  // src/ui/field-menu.js
+  (function() {
+    "use strict";
+    var $ = window.jQuery;
+    var LOG = "[BPW-field-menu]";
+    function _icon(n) {
+      return (window._bpwIcon || function(name) {
+        if (!name) return "";
+        if (name.indexOf("fa-") === 0) return '<i class="' + name + '"></i>';
+        return '<i class="fa-solid fa-' + name + '"></i>';
+      })(n);
+    }
+    function _esc(s) {
+      return (window._bpwEsc || function(x) {
+        if (x == null) return "";
+        return String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      })(s);
+    }
+    function close2() {
+      $(".bpw-field-menu").remove();
+      $(document).off("click.bpw-field-menu-dismiss keydown.bpw-field-menu-dismiss");
+    }
+    function openMenu(buttonEl, path, label) {
+      close2();
+      if (!buttonEl || !path) return;
+      var $btn = $(buttonEl);
+      var rect = buttonEl.getBoundingClientRect();
+      var top = rect.bottom + window.scrollY + 4;
+      var left = rect.right + window.scrollX - 180;
+      if (left < 8) left = 8;
+      var html = '<div class="bpw-field-menu" role="menu" style="position:absolute;top:' + top + "px;left:" + left + 'px;"><button class="bpw-field-menu-item" data-field-menu="improve" type="button">' + _icon("wand-magic-sparkles") + ' Improve with prompt\u2026</button><button class="bpw-field-menu-item" data-field-menu="regenerate" type="button">' + _icon("rotate-right") + ' Regenerate</button><button class="bpw-field-menu-item" data-field-menu="copy" type="button">' + _icon("copy") + " Copy</button></div>";
+      $("body").append(html);
+      var $menu = $(".bpw-field-menu").last();
+      $menu.data("path", path);
+      $menu.data("label", label || path);
+      setTimeout(function() {
+        $(document).on("click.bpw-field-menu-dismiss", function(e) {
+          if ($(e.target).closest('.bpw-field-menu, [data-action="refine"]').length) return;
+          close2();
+        });
+        $(document).on("keydown.bpw-field-menu-dismiss", function(e) {
+          if (e.key === "Escape") close2();
+        });
+      }, 0);
+    }
+    function _regenerate(path, label) {
+      var refine = window._bpwRefine;
+      if (!refine || !refine.refineField) {
+        if (window._bpwToast) window._bpwToast("Refine engine not loaded.", "error");
+        return;
+      }
+      if (window._bpwToast) window._bpwToast("Regenerating " + (label || path) + "\u2026", "info");
+      refine.refineField(path, "", null, function(res) {
+        if (res && res.success) {
+          if (window._bpwToast) window._bpwToast("Regenerated " + (label || path), "success");
+        } else {
+          if (window._bpwToast) window._bpwToast("Regenerate failed: " + (res && res.error || "unknown"), "error");
+        }
+      });
+    }
+    function _copy(path, label) {
+      var store = window._bpwPathStore;
+      if (!store) return;
+      var value = store.get(path);
+      var text = "";
+      if (value == null) text = "";
+      else if (typeof value === "string") text = value;
+      else {
+        try {
+          text = JSON.stringify(value, null, 2);
+        } catch (e) {
+          text = String(value);
+        }
+      }
+      var ok = false;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function() {
+          if (window._bpwToast) window._bpwToast("Copied " + (label || path), "success");
+        }, function(err) {
+          console.warn(LOG, "clipboard write failed", err);
+          if (window._bpwToast) window._bpwToast("Copy failed: " + (err.message || err), "error");
+        });
+        ok = true;
+      }
+      if (!ok) {
+        try {
+          var ta2 = document.createElement("textarea");
+          ta2.value = text;
+          ta2.style.position = "fixed";
+          ta2.style.opacity = "0";
+          document.body.appendChild(ta2);
+          ta2.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta2);
+          if (window._bpwToast) window._bpwToast("Copied " + (label || path), "success");
+        } catch (e) {
+          if (window._bpwToast) window._bpwToast("Copy failed.", "error");
+        }
+      }
+    }
+    $(document).off("click.bpw-field-menu", ".bpw-field-menu [data-field-menu]").on("click.bpw-field-menu", ".bpw-field-menu [data-field-menu]", function(e) {
+      e.preventDefault();
+      var $menu = $(this).closest(".bpw-field-menu");
+      var path = $menu.data("path");
+      var label = $menu.data("label");
+      var action = $(this).attr("data-field-menu");
+      close2();
+      if (action === "improve") {
+        if (window._bpwRefineModal) window._bpwRefineModal.openField(path, label);
+      } else if (action === "regenerate") {
+        _regenerate(path, label);
+      } else if (action === "copy") {
+        _copy(path, label);
+      }
+    });
+    window._bpwFieldMenu = { openMenu, close: close2 };
   })();
 
   // src/ui/topbar.js
