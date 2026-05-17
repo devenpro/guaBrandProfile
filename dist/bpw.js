@@ -1,4 +1,4 @@
-window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T05:19:22.190Z";try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}
+window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T05:21:05.204Z";try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}
 (() => {
   // src/ai/providers/registry.js
   (function() {
@@ -2494,6 +2494,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T05:19:22.190Z";try{
       var m = Math.floor(s / 60), rem = s % 60;
       return (m < 10 ? "0" + m : m) + ":" + (rem < 10 ? "0" + rem : rem);
     }
+    var _tickTimer = null;
     function _render() {
       $("body").addClass("bpw-setup-open");
       var $existing = $(".bpw-setup");
@@ -2503,6 +2504,29 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T05:19:22.190Z";try{
       } else {
         $("body").append('<div class="bpw-setup" role="application" aria-label="Brand profile autopilot setup">' + html + "</div>");
       }
+      _scheduleTick();
+    }
+    function _scheduleTick() {
+      if (_tickTimer) {
+        clearInterval(_tickTimer);
+        _tickTimer = null;
+      }
+      var stage = _workflowStage();
+      if (stage !== "stage_loading" && stage !== "ai_run") return;
+      _tickTimer = setInterval(function() {
+        if (!$(".bpw-setup").length) {
+          clearInterval(_tickTimer);
+          _tickTimer = null;
+          return;
+        }
+        var s = _workflowStage();
+        if (s !== "stage_loading" && s !== "ai_run") {
+          clearInterval(_tickTimer);
+          _tickTimer = null;
+          return;
+        }
+        _render();
+      }, 1e3);
     }
     function _renderShell() {
       var running = W2.setup && W2.setup.open;
@@ -2515,6 +2539,10 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T05:19:22.190Z";try{
       if (s.awaitingReview === "scrape") return "website";
       if (s.currentStageId === "scrape" && !s.awaitingReview) return "website";
       if (s.awaitingReview) return "stage_review";
+      if (s.currentStageId) {
+        var st = (s.stageStatus[s.currentStageId] || {}).state;
+        if (st === "running") return "stage_loading";
+      }
       return "ai_run";
     }
     var WORKFLOW_STAGES = [
@@ -2564,6 +2592,8 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T05:19:22.190Z";try{
         html += _renderWebsiteStage();
       } else if (stage === "stage_review") {
         html += _renderStagePane(W2.setup.awaitingReview);
+      } else if (stage === "stage_loading") {
+        html += _renderStageLoading(W2.setup.currentStageId);
       } else {
         html += _renderAIRunStage();
       }
@@ -2639,6 +2669,42 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T05:19:22.190Z";try{
     function _phaseLabel() {
       var map2 = { new: "New brand", growing: "Growing brand", deep: "Established brand" };
       return map2[W2.brandLevel] || (W2.brandLevel || "");
+    }
+    function _renderStageLoading(stageId) {
+      var stagesMod = window._bpwSetupStages;
+      var stage = stagesMod && stagesMod.findStage(stageId);
+      if (!stage) return "";
+      var queue = W2.setup && W2.setup.stagesQueue || [];
+      var idx = queue.indexOf(stageId);
+      var remaining = [];
+      for (var i = idx + 1; i < queue.length; i++) {
+        var s = stagesMod.findStage(queue[i]);
+        if (s) remaining.push(s.label);
+      }
+      var status = W2.setup.stageStatus[stageId] || {};
+      var elapsed = status.startedAt ? _fmtElapsed(Date.now() - status.startedAt) : "";
+      var summaryLine = "";
+      try {
+        summaryLine = stage.summaryLine && stage.summaryLine(W2) || "";
+      } catch (e) {
+        summaryLine = "";
+      }
+      var html = '<section class="bpw-setup-stage-pane bpw-setup-stage-pane--loading">';
+      html += '<div class="bpw-setup-stage-loading">';
+      html += '<div class="bpw-setup-stage-loading-ring" aria-hidden="true"></div>';
+      html += '<h2 class="bpw-setup-stage-loading-title">Drafting your ' + _esc(stage.label) + "\u2026</h2>";
+      html += '<p class="bpw-setup-stage-loading-desc">' + _esc(summaryLine || "Working with the AI provider on your brand context.") + "</p>";
+      if (elapsed) {
+        html += '<p class="bpw-setup-stage-loading-elapsed">' + _icon("clock") + " " + _esc(elapsed) + " elapsed \xB7 typically 8\u201315 seconds</p>";
+      }
+      if (remaining.length) {
+        html += '<p class="bpw-setup-stage-loading-next">Up next: ' + _esc(remaining.join(" \u2192 ")) + ". You'll review each before the next starts.</p>";
+      } else {
+        html += `<p class="bpw-setup-stage-loading-next">Last stage \u2014 you'll review the output and finish setup.</p>`;
+      }
+      html += "</div>";
+      html += "</section>";
+      return html;
     }
     function _renderLeftRail(currentStageId) {
       var s = W2.setup || {};

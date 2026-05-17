@@ -149,6 +149,7 @@
   }
 
   // ── RENDER ──────────────────────────────────────────────────────────
+  var _tickTimer = null;
   function _render() {
     $('body').addClass('bpw-setup-open');
     var $existing = $('.bpw-setup');
@@ -162,6 +163,26 @@
     } else {
       $('body').append('<div class="bpw-setup" role="application" aria-label="Brand profile autopilot setup">' + html + '</div>');
     }
+    _scheduleTick();
+  }
+
+  // While a stage is loading, repaint every second so the elapsed time
+  // in the loading interlude and the topbar progress stay live. We
+  // stop the timer once we leave the loading state.
+  function _scheduleTick() {
+    if (_tickTimer) { clearInterval(_tickTimer); _tickTimer = null; }
+    var stage = _workflowStage();
+    if (stage !== 'stage_loading' && stage !== 'ai_run') return;
+    _tickTimer = setInterval(function() {
+      if (!$('.bpw-setup').length) { clearInterval(_tickTimer); _tickTimer = null; return; }
+      var s = _workflowStage();
+      if (s !== 'stage_loading' && s !== 'ai_run') {
+        clearInterval(_tickTimer);
+        _tickTimer = null;
+        return;
+      }
+      _render();
+    }, 1000);
   }
 
   function _renderShell() {
@@ -172,6 +193,7 @@
   // Derive which of the three workflow stages we're in.
   //   inputs        → user is filling in basics / hasn't started
   //   website       → scrape review pane
+  //   stage_loading → v3 full-pane "Drafting your X…" interlude
   //   stage_review  → v3 dedicated full-pane review for an AI stage
   //   ai_run        → orchestrator running, no review gate active
   //   done          → setup finished (the shell will close shortly after)
@@ -182,6 +204,10 @@
     if (s.awaitingReview === 'scrape') return 'website';
     if (s.currentStageId === 'scrape' && !s.awaitingReview) return 'website';
     if (s.awaitingReview) return 'stage_review';
+    if (s.currentStageId) {
+      var st = (s.stageStatus[s.currentStageId] || {}).state;
+      if (st === 'running') return 'stage_loading';
+    }
     return 'ai_run';
   }
 
@@ -239,6 +265,8 @@
       html += _renderWebsiteStage();
     } else if (stage === 'stage_review') {
       html += _renderStagePane(W.setup.awaitingReview);
+    } else if (stage === 'stage_loading') {
+      html += _renderStageLoading(W.setup.currentStageId);
     } else {
       // ai_run / done — AI stage rail with the form collapsed as a
       // context card so users can still see (and refine) the inputs.
@@ -323,6 +351,43 @@
   function _phaseLabel() {
     var map = { new: 'New brand', growing: 'Growing brand', deep: 'Established brand' };
     return map[W.brandLevel] || (W.brandLevel || '');
+  }
+
+  // v3 loading interlude — full-pane "Drafting your X…" while the AI
+  // works on the current stage. Replaces the bare progress bar between
+  // stages with a focused status read-out.
+  function _renderStageLoading(stageId) {
+    var stagesMod = window._bpwSetupStages;
+    var stage = stagesMod && stagesMod.findStage(stageId);
+    if (!stage) return '';
+    var queue = (W.setup && W.setup.stagesQueue) || [];
+    var idx = queue.indexOf(stageId);
+    var remaining = [];
+    for (var i = idx + 1; i < queue.length; i++) {
+      var s = stagesMod.findStage(queue[i]);
+      if (s) remaining.push(s.label);
+    }
+    var status = (W.setup.stageStatus[stageId] || {});
+    var elapsed = status.startedAt ? _fmtElapsed(Date.now() - status.startedAt) : '';
+    var summaryLine = '';
+    try { summaryLine = (stage.summaryLine && stage.summaryLine(W)) || ''; } catch (e) { summaryLine = ''; }
+
+    var html = '<section class="bpw-setup-stage-pane bpw-setup-stage-pane--loading">';
+    html += '<div class="bpw-setup-stage-loading">';
+    html += '<div class="bpw-setup-stage-loading-ring" aria-hidden="true"></div>';
+    html += '<h2 class="bpw-setup-stage-loading-title">Drafting your ' + _esc(stage.label) + '…</h2>';
+    html += '<p class="bpw-setup-stage-loading-desc">' + _esc(summaryLine || 'Working with the AI provider on your brand context.') + '</p>';
+    if (elapsed) {
+      html += '<p class="bpw-setup-stage-loading-elapsed">' + _icon('clock') + ' ' + _esc(elapsed) + ' elapsed · typically 8–15 seconds</p>';
+    }
+    if (remaining.length) {
+      html += '<p class="bpw-setup-stage-loading-next">Up next: ' + _esc(remaining.join(' → ')) + '. You\'ll review each before the next starts.</p>';
+    } else {
+      html += '<p class="bpw-setup-stage-loading-next">Last stage — you\'ll review the output and finish setup.</p>';
+    }
+    html += '</div>';
+    html += '</section>';
+    return html;
   }
 
   function _renderLeftRail(currentStageId) {

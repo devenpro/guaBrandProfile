@@ -465,6 +465,54 @@ body.bpw-setup-open #bpwApp { display: none !important; }
   .bpw-setup-stage-pane-approve-next { display: none; }
 }
 
+/* ── Loading interlude ──────────────────────────────────────────── */
+.bpw-setup-stage-pane--loading {
+  padding: var(--bpw-sp-8) var(--bpw-sp-6);
+  min-height: 380px;
+  display: flex; align-items: center; justify-content: center;
+}
+.bpw-setup-stage-loading {
+  max-width: 520px;
+  text-align: center;
+  display: grid; gap: var(--bpw-sp-3);
+  justify-items: center;
+}
+.bpw-setup-stage-loading-ring {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  border: 3px solid var(--bpw-border);
+  border-top-color: var(--bpw-primary);
+  animation: bpw-setup-spin 0.8s linear infinite;
+  margin-bottom: var(--bpw-sp-2);
+}
+@keyframes bpw-setup-spin {
+  to { transform: rotate(360deg); }
+}
+.bpw-setup-stage-loading-title {
+  margin: 0;
+  font-family: var(--bpw-font-heading);
+  font-size: var(--bpw-font-2xl);
+  font-weight: 700;
+}
+.bpw-setup-stage-loading-desc {
+  margin: 0;
+  font-size: var(--bpw-font-md);
+  color: var(--bpw-text-sec);
+  line-height: 1.5;
+}
+.bpw-setup-stage-loading-elapsed {
+  margin: 0;
+  font-size: var(--bpw-font-sm);
+  color: var(--bpw-text-muted);
+  display: inline-flex; align-items: center; gap: var(--bpw-sp-1);
+}
+.bpw-setup-stage-loading-next {
+  margin: var(--bpw-sp-3) 0 0;
+  font-size: var(--bpw-font-xs);
+  color: var(--bpw-text-muted);
+  line-height: 1.5;
+}
+
 /* Collapsed inputs form below the workflow-stage main content. */
 .bpw-setup-context-card {
   background: var(--bpw-white);
