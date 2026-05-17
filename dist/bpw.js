@@ -1,4 +1,4 @@
-window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T05:22:35.474Z";try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}
+window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T05:24:43.881Z";try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}
 (() => {
   // src/ai/providers/registry.js
   (function() {
@@ -27196,65 +27196,137 @@ ${prefix}
         return '<i class="fa-solid fa-' + name + '"></i>';
       })(n);
     }
+    function _E() {
+      return window._bpwEditors;
+    }
     function _aud(W2) {
       return W2.acceptedSections && W2.acceptedSections.audience || {};
     }
-    function renderList(W2) {
-      var a = _aud(W2);
-      var active = W2.ui && W2.ui.itemId || null;
-      var html = "";
-      var pCls = active === "primary" ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-      html += '<article class="' + pCls + '" data-item-id="primary" role="button" tabindex="0">';
-      html += '<div class="bpw-shell-card-title">' + _icon("users") + " Primary audience</div>";
-      html += '<div class="bpw-shell-card-snippet">' + (a.primary_description ? _esc(a.primary_description) : '<em class="bpw-shell-detail-value-empty">Not set yet</em>') + "</div>";
-      html += "</article>";
-      var segments = a.segments || [];
-      if (segments.length) html += '<div class="bpw-shell-card-divider">Segments</div>';
-      for (var i = 0; i < segments.length; i++) {
-        var s = segments[i];
-        var id = "segment:" + i;
-        var cls = active === id ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + cls + '" data-item-id="' + _esc(id) + '" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _esc(s.name || "Segment " + (i + 1)) + "</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(s.description || "") + "</div>";
-        html += "</article>";
+    function _fieldCard(opts) {
+      var remove = "";
+      if (opts.removeAction) {
+        remove = '<button class="bpw-page-field-remove" data-action="' + _esc(opts.removeAction) + '" data-idx="' + opts.removeIdx + '" type="button" title="Remove">' + _icon("xmark") + "</button>";
       }
-      var personas = a.personas || [];
-      if (personas.length) html += '<div class="bpw-shell-card-divider">Personas</div>';
-      for (var j = 0; j < personas.length; j++) {
-        var p = personas[j];
-        var pid = "persona:" + j;
-        var pcls = active === pid ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + pcls + '" data-item-id="' + _esc(pid) + '" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _esc(p.name || "Persona " + (j + 1)) + (p.role ? " \xB7 " + _esc(p.role) : "") + "</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(p.story || "") + "</div>";
-        html += "</article>";
+      var sparkle = "";
+      if (opts.path) {
+        sparkle = '<button class="bpw-page-field-refine" data-action="refine" data-refine-path="' + _esc(opts.path) + '" type="button" title="Improve with AI">' + _icon("sparkles") + "</button>";
       }
-      return html;
+      return '<article class="bpw-page-field"><header class="bpw-page-field-head"><h3 class="bpw-page-field-label">' + _esc(opts.label) + '</h3><div class="bpw-page-field-head-actions">' + sparkle + remove + '</div></header><div class="bpw-page-field-body">' + opts.body + "</div></article>";
     }
-    function renderDetail(W2, selectedId) {
-      if (!selectedId) return "";
+    function _renderPrimary(W2) {
       var a = _aud(W2);
-      var E = window._bpwEditors;
-      if (selectedId === "primary") {
-        return '<div class="bpw-shell-detail-card"><h3>Primary audience</h3>' + E.renderField({ type: "prose", label: "Description", path: "audience.primary_description", value: a.primary_description }) + "</div>";
-      }
-      var parts = selectedId.split(":");
-      var type = parts[0], idx = parseInt(parts[1] || "0", 10);
-      if (type === "segment") {
-        var s = (a.segments || [])[idx];
-        if (!s) return '<div class="bpw-shell-detail-empty">Segment not found.</div>';
-        var base2 = "audience.segments[" + idx + "].";
-        return '<div class="bpw-shell-detail-card"><h3>' + _esc(s.name || "Segment " + (idx + 1)) + "</h3>" + E.renderText({ label: "Name", path: base2 + "name", value: s.name }) + E.renderTextarea({ label: "Description", path: base2 + "description", value: s.description }) + E.renderChips({ label: "Pain points", path: base2 + "pain_points", value: s.pain_points, addLabel: "pain" }) + E.renderChips({ label: "Goals", path: base2 + "goals", value: s.goals, addLabel: "goal" }) + E.renderChips({ label: "Channels", path: base2 + "channels", value: s.channels, addLabel: "channel" }) + "</div>";
-      }
-      if (type === "persona") {
-        var p = (a.personas || [])[idx];
-        if (!p) return '<div class="bpw-shell-detail-empty">Persona not found.</div>';
-        var pbase = "audience.personas[" + idx + "].";
-        return '<div class="bpw-shell-detail-card"><h3>' + _esc(p.name || "Persona " + (idx + 1)) + "</h3>" + E.renderText({ label: "Name", path: pbase + "name", value: p.name }) + E.renderText({ label: "Role", path: pbase + "role", value: p.role }) + E.renderText({ label: "Age", path: pbase + "age", value: p.age }) + E.renderField({ type: "prose", label: "Story", path: pbase + "story", value: p.story }) + E.renderField({ type: "prose", label: "Journey", path: pbase + "journey", value: p.journey }) + E.renderChips({ label: "Pain points", path: pbase + "pain_points", value: p.pain_points }) + E.renderChips({ label: "Goals", path: pbase + "goals", value: p.goals }) + E.renderChips({ label: "Decision criteria", path: pbase + "decision_criteria", value: p.decision_criteria }) + "</div>";
-      }
+      var body = _E().renderField({ type: "prose", path: "audience.primary_description", value: a.primary_description });
+      return _fieldCard({ label: "Primary audience", path: "audience.primary_description", body });
+    }
+    function _renderSegment(W2, segment, idx) {
+      var base2 = "audience.segments[" + idx + "].";
+      var body = "" + _E().renderText({ label: "Name", path: base2 + "name", value: segment.name }) + _E().renderTextarea({ label: "Description", path: base2 + "description", value: segment.description }) + _E().renderChips({ label: "Pain points", path: base2 + "pain_points", value: segment.pain_points, addLabel: "pain" }) + _E().renderChips({ label: "Goals", path: base2 + "goals", value: segment.goals, addLabel: "goal" }) + _E().renderChips({ label: "Channels", path: base2 + "channels", value: segment.channels, addLabel: "channel" });
+      return _fieldCard({
+        label: segment.name || "Segment " + (idx + 1),
+        path: "audience.segments[" + idx + "]",
+        body,
+        removeAction: "audience-remove-segment",
+        removeIdx: idx
+      });
+    }
+    function _renderPersona(W2, persona, idx) {
+      var base2 = "audience.personas[" + idx + "].";
+      var body = "" + _E().renderText({ label: "Name", path: base2 + "name", value: persona.name }) + _E().renderText({ label: "Role", path: base2 + "role", value: persona.role }) + _E().renderText({ label: "Age", path: base2 + "age", value: persona.age }) + _E().renderField({ type: "prose", label: "Story", path: base2 + "story", value: persona.story }) + _E().renderField({ type: "prose", label: "Journey", path: base2 + "journey", value: persona.journey }) + _E().renderChips({ label: "Pain points", path: base2 + "pain_points", value: persona.pain_points }) + _E().renderChips({ label: "Goals", path: base2 + "goals", value: persona.goals }) + _E().renderChips({ label: "Decision criteria", path: base2 + "decision_criteria", value: persona.decision_criteria });
+      return _fieldCard({
+        label: persona.name ? persona.name + (persona.role ? " \xB7 " + persona.role : "") : "Persona " + (idx + 1),
+        path: "audience.personas[" + idx + "]",
+        body,
+        removeAction: "audience-remove-persona",
+        removeIdx: idx
+      });
+    }
+    function renderList() {
       return "";
     }
+    function renderDetail(W2) {
+      var a = _aud(W2);
+      var segments = a.segments || [];
+      var personas = a.personas || [];
+      var html = '<section class="bpw-shell-detail bpw-shell-detail--page" aria-label="Audience">';
+      html += '<header class="bpw-shell-detail-head">';
+      html += "<h1>Audience</h1>";
+      html += '<p class="bpw-shell-detail-sub">Primary description, segments, and personas. Hover any card to refine, regenerate, or copy.</p>';
+      html += "</header>";
+      html += '<div class="bpw-page-fields">';
+      html += _renderPrimary(W2);
+      html += '<div class="bpw-page-collection-head">';
+      html += '<h2 class="bpw-page-collection-title">Segments</h2>';
+      html += '<button class="bpw-page-collection-add" data-action="audience-add-segment" type="button">' + _icon("plus") + " Add segment</button>";
+      html += "</div>";
+      if (!segments.length) {
+        html += '<div class="bpw-page-collection-empty">No segments yet.</div>';
+      } else {
+        for (var i = 0; i < segments.length; i++) html += _renderSegment(W2, segments[i], i);
+      }
+      html += '<div class="bpw-page-collection-head">';
+      html += '<h2 class="bpw-page-collection-title">Personas</h2>';
+      html += '<div class="bpw-page-collection-actions">';
+      html += '<button class="bpw-page-collection-add" data-action="audience-add-persona" type="button">' + _icon("plus") + " Add persona</button>";
+      html += '<button class="bpw-page-collection-add bpw-page-collection-add--ai" data-action="generate-more-personas" type="button">' + _icon("sparkles") + " Generate more</button>";
+      html += "</div>";
+      html += "</div>";
+      if (!personas.length) {
+        html += '<div class="bpw-page-collection-empty">No personas yet.</div>';
+      } else {
+        for (var j = 0; j < personas.length; j++) html += _renderPersona(W2, personas[j], j);
+      }
+      html += "</div>";
+      html += "</section>";
+      return html;
+    }
+    function _store() {
+      return window._bpwPathStore;
+    }
+    function _refresh() {
+      if (window._bpwExportSync) window._bpwExportSync.syncAll();
+      if (window._bpwSyncToTextarea) window._bpwSyncToTextarea();
+      if (window._bpwAutoSave) window._bpwAutoSave();
+      if (window._bpwAppShell) window._bpwAppShell.render();
+      if (window._bpwSetup && window._bpwSetup.render) window._bpwSetup.render();
+    }
+    $(document).off("click.bpw-aud-add-seg").on("click.bpw-aud-add-seg", '[data-action="audience-add-segment"]', function(e) {
+      e.preventDefault();
+      var W2 = window._bpwState;
+      W2.acceptedSections = W2.acceptedSections || {};
+      W2.acceptedSections.audience = W2.acceptedSections.audience || {};
+      W2.acceptedSections.audience.segments = W2.acceptedSections.audience.segments || [];
+      W2.acceptedSections.audience.segments.push({ name: "", description: "", pain_points: [], goals: [], channels: [] });
+      _refresh();
+    });
+    $(document).off("click.bpw-aud-rm-seg").on("click.bpw-aud-rm-seg", '[data-action="audience-remove-segment"]', function(e) {
+      e.preventDefault();
+      var idx = parseInt($(this).attr("data-idx"), 10);
+      if (isNaN(idx)) return;
+      var W2 = window._bpwState;
+      var arr = W2.acceptedSections && W2.acceptedSections.audience && W2.acceptedSections.audience.segments;
+      if (!arr) return;
+      arr.splice(idx, 1);
+      _refresh();
+    });
+    $(document).off("click.bpw-aud-add-per").on("click.bpw-aud-add-per", '[data-action="audience-add-persona"]', function(e) {
+      e.preventDefault();
+      var W2 = window._bpwState;
+      W2.acceptedSections = W2.acceptedSections || {};
+      W2.acceptedSections.audience = W2.acceptedSections.audience || {};
+      W2.acceptedSections.audience.personas = W2.acceptedSections.audience.personas || [];
+      W2.acceptedSections.audience.personas.push({ name: "", role: "", age: "", story: "", journey: "", pain_points: [], goals: [], decision_criteria: [] });
+      _refresh();
+    });
+    $(document).off("click.bpw-aud-rm-per").on("click.bpw-aud-rm-per", '[data-action="audience-remove-persona"]', function(e) {
+      e.preventDefault();
+      var idx = parseInt($(this).attr("data-idx"), 10);
+      if (isNaN(idx)) return;
+      var W2 = window._bpwState;
+      var arr = W2.acceptedSections && W2.acceptedSections.audience && W2.acceptedSections.audience.personas;
+      if (!arr) return;
+      arr.splice(idx, 1);
+      _refresh();
+    });
     $(document).off("click.bpw-personas-more").on("click.bpw-personas-more", '[data-action="generate-more-personas"]', function(e) {
       e.preventDefault();
       var W2 = window._bpwState;
@@ -27265,7 +27337,7 @@ ${prefix}
       }
       var $btn = $(this).prop("disabled", true).html(_icon("spinner fa-spin") + " Generating\u2026");
       action("", function(res) {
-        $btn.prop("disabled", false).html(_icon("sparkles") + " Generate more personas");
+        $btn.prop("disabled", false).html(_icon("sparkles") + " Generate more");
         if (!res || !res.success) {
           if (window._bpwToast) window._bpwToast(res && res.error || "Failed", "error");
           return;
@@ -27274,10 +27346,7 @@ ${prefix}
         W2.acceptedSections = W2.acceptedSections || {};
         W2.acceptedSections.audience = W2.acceptedSections.audience || {};
         W2.acceptedSections.audience.personas = (W2.acceptedSections.audience.personas || []).concat(personas);
-        if (window._bpwExportSync) window._bpwExportSync.syncAll();
-        if (window._bpwSyncToTextarea) window._bpwSyncToTextarea();
-        if (window._bpwAutoSave) window._bpwAutoSave();
-        if (window._bpwAppShell) window._bpwAppShell.render();
+        _refresh();
         if (window._bpwToast) window._bpwToast("Added " + personas.length + " personas", "success");
       });
     });
@@ -27286,34 +27355,17 @@ ${prefix}
       id: "audience",
       title: "Audience",
       minLevel: "new",
-      listMode: "variable-items",
+      listMode: "none",
       renderList,
       renderDetail,
-      inlineActions: [
-        { id: "generate-more-personas", label: "Generate more personas", icon: "sparkles" },
-        {
-          type: "add-row",
-          label: "Add segment",
-          icon: "plus",
-          listPath: "audience.segments",
-          itemPrefix: "segment",
-          itemTemplate: { name: "", description: "", pain_points: [], goals: [], channels: [] }
-        },
-        {
-          type: "add-row",
-          label: "Add persona",
-          icon: "plus",
-          listPath: "audience.personas",
-          itemPrefix: "persona",
-          itemTemplate: { name: "", role: "", age: "", story: "", journey: "", pain_points: [], goals: [], decision_criteria: [] }
-        }
-      ]
+      inlineActions: []
     };
   })();
 
   // src/ui/views/offerings.js
   (function() {
     "use strict";
+    var $ = window.jQuery;
     function _esc(s) {
       return (window._bpwEsc || function(x) {
         return x == null ? "" : String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -27326,67 +27378,74 @@ ${prefix}
         return '<i class="fa-solid fa-' + name + '"></i>';
       })(n);
     }
+    function _E() {
+      return window._bpwEditors;
+    }
     function _off(W2) {
       return W2.acceptedSections && W2.acceptedSections.offerings || {};
     }
-    function renderList(W2) {
-      var o = _off(W2);
-      var active = W2.ui && W2.ui.itemId || null;
-      var html = "";
-      var items = o.items || [];
-      if (items.length) html += '<div class="bpw-shell-card-divider">Offerings</div>';
-      for (var i = 0; i < items.length; i++) {
-        var it = items[i];
-        var id = "item:" + i;
-        var cls = active === id ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + cls + '" data-item-id="' + _esc(id) + '" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _esc(it.name || "Item " + (i + 1)) + "</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(it.description || "") + "</div>";
-        html += "</article>";
-      }
-      var programs = o.programs || [];
-      if (programs.length) html += '<div class="bpw-shell-card-divider">Programs</div>';
-      for (var j = 0; j < programs.length; j++) {
-        var p = programs[j];
-        var pid = "program:" + j;
-        var pcls = active === pid ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + pcls + '" data-item-id="' + _esc(pid) + '" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _esc(p.name || "Program " + (j + 1)) + "</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(p.description || "") + "</div>";
-        html += "</article>";
-      }
-      var hasRevenue = (o.revenue_streams || []).length;
-      if (hasRevenue) {
-        var rCls = active === "revenue" ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + rCls + '" data-item-id="revenue" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _icon("coins") + " Revenue streams</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc((o.revenue_streams || []).map(function(r) {
-          return r.stream || "";
-        }).filter(Boolean).join(" \xB7 ")) + "</div>";
-        html += "</article>";
-      }
-      if (o.pricing_model) {
-        var pmCls = active === "pricing" ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + pmCls + '" data-item-id="pricing" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _icon("tag") + " Pricing model</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(o.pricing_model) + "</div>";
-        html += "</article>";
-      }
-      if (o.content_description) {
-        var cdCls = active === "content_desc" ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + cdCls + '" data-item-id="content_desc" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _icon("film") + " Content approach</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(o.content_description) + "</div>";
-        html += "</article>";
-      }
-      return html || '<div class="bpw-shell-list-empty">' + _icon("box-open") + "<p>No offerings yet \u2014 run the autopilot or add manually.</p></div>";
+    function _fieldCard(opts) {
+      var remove = opts.removeAction ? '<button class="bpw-page-field-remove" data-action="' + _esc(opts.removeAction) + '" data-idx="' + opts.removeIdx + '" type="button" title="Remove">' + _icon("xmark") + "</button>" : "";
+      var sparkle = opts.path ? '<button class="bpw-page-field-refine" data-action="refine" data-refine-path="' + _esc(opts.path) + '" type="button" title="Improve with AI">' + _icon("sparkles") + "</button>" : "";
+      return '<article class="bpw-page-field"><header class="bpw-page-field-head"><h3 class="bpw-page-field-label">' + _esc(opts.label) + '</h3><div class="bpw-page-field-head-actions">' + sparkle + remove + '</div></header><div class="bpw-page-field-body">' + opts.body + "</div></article>";
     }
-    function renderDetail(W2, selectedId) {
-      if (!selectedId) return "";
+    function _renderItem(item, idx) {
+      var base2 = "offerings.items[" + idx + "].";
+      var body = "" + _E().renderText({ label: "Name", path: base2 + "name", value: item.name }) + _E().renderText({ label: "Category", path: base2 + "category", value: item.category }) + _E().renderTextarea({ label: "Description", path: base2 + "description", value: item.description }) + _E().renderChips({ label: "Features", path: base2 + "features", value: item.features, addLabel: "feature" }) + _E().renderChips({ label: "Benefits", path: base2 + "benefits", value: item.benefits, addLabel: "benefit" }) + _E().renderText({ label: "Target audience", path: base2 + "target_audience", value: item.target_audience }) + _E().renderText({ label: "Status", path: base2 + "status", value: item.status, placeholder: "active / coming soon / sunset" });
+      return _fieldCard({
+        label: item.name || "Offering " + (idx + 1),
+        path: "offerings.items[" + idx + "]",
+        body,
+        removeAction: "offerings-remove-item",
+        removeIdx: idx
+      });
+    }
+    function _renderProgram(prog, idx) {
+      var base2 = "offerings.programs[" + idx + "].";
+      var body = "" + _E().renderText({ label: "Name", path: base2 + "name", value: prog.name }) + _E().renderText({ label: "Category", path: base2 + "category", value: prog.category }) + _E().renderTextarea({ label: "Description", path: base2 + "description", value: prog.description }) + _E().renderChips({ label: "Features", path: base2 + "features", value: prog.features }) + _E().renderText({ label: "Target audience", path: base2 + "target_audience", value: prog.target_audience });
+      return _fieldCard({
+        label: prog.name || "Program " + (idx + 1),
+        path: "offerings.programs[" + idx + "]",
+        body,
+        removeAction: "offerings-remove-program",
+        removeIdx: idx
+      });
+    }
+    function renderList() {
+      return "";
+    }
+    function renderDetail(W2) {
       var o = _off(W2);
-      var E = window._bpwEditors;
-      if (selectedId === "revenue") {
-        return '<div class="bpw-shell-detail-card"><h3>Revenue streams</h3>' + E.renderList({
+      var items = o.items || [];
+      var programs = o.programs || [];
+      var html = '<section class="bpw-shell-detail bpw-shell-detail--page" aria-label="Offerings">';
+      html += '<header class="bpw-shell-detail-head">';
+      html += "<h1>Offerings</h1>";
+      html += '<p class="bpw-shell-detail-sub">Products, services, programs, revenue, pricing, and content approach. Editable inline.</p>';
+      html += "</header>";
+      html += '<div class="bpw-page-fields">';
+      html += '<div class="bpw-page-collection-head">';
+      html += '<h2 class="bpw-page-collection-title">Offerings</h2>';
+      html += '<button class="bpw-page-collection-add" data-action="offerings-add-item" type="button">' + _icon("plus") + " Add offering</button>";
+      html += "</div>";
+      if (!items.length) {
+        html += '<div class="bpw-page-collection-empty">No offerings yet.</div>';
+      } else {
+        for (var i = 0; i < items.length; i++) html += _renderItem(items[i], i);
+      }
+      html += '<div class="bpw-page-collection-head">';
+      html += '<h2 class="bpw-page-collection-title">Programs</h2>';
+      html += '<button class="bpw-page-collection-add" data-action="offerings-add-program" type="button">' + _icon("plus") + " Add program</button>";
+      html += "</div>";
+      if (!programs.length) {
+        html += '<div class="bpw-page-collection-empty">No programs yet.</div>';
+      } else {
+        for (var j = 0; j < programs.length; j++) html += _renderProgram(programs[j], j);
+      }
+      html += _fieldCard({
+        label: "Revenue streams",
+        path: "offerings.revenue_streams",
+        body: _E().renderList({
           path: "offerings.revenue_streams",
           value: o.revenue_streams || [],
           addLabel: "stream",
@@ -27395,56 +27454,76 @@ ${prefix}
             { key: "stream", label: "Stream", type: "text" },
             { key: "description", label: "Description", type: "textarea" }
           ]
-        }) + "</div>";
-      }
-      if (selectedId === "pricing") {
-        return '<div class="bpw-shell-detail-card"><h3>Pricing model</h3>' + E.renderField({ type: "prose", label: "Description", path: "offerings.pricing_model", value: o.pricing_model }) + "</div>";
-      }
-      if (selectedId === "content_desc") {
-        return '<div class="bpw-shell-detail-card"><h3>Content approach</h3>' + E.renderField({ type: "prose", label: "Description", path: "offerings.content_description", value: o.content_description }) + "</div>";
-      }
-      var parts = selectedId.split(":");
-      var type = parts[0], idx = parseInt(parts[1] || "0", 10);
-      if (type === "item") {
-        var it = (o.items || [])[idx];
-        if (!it) return '<div class="bpw-shell-detail-empty">Item not found.</div>';
-        var base2 = "offerings.items[" + idx + "].";
-        return '<div class="bpw-shell-detail-card"><h3>' + _esc(it.name || "Offering " + (idx + 1)) + "</h3>" + E.renderText({ label: "Name", path: base2 + "name", value: it.name }) + E.renderText({ label: "Category", path: base2 + "category", value: it.category }) + E.renderTextarea({ label: "Description", path: base2 + "description", value: it.description }) + E.renderChips({ label: "Features", path: base2 + "features", value: it.features, addLabel: "feature" }) + E.renderChips({ label: "Benefits", path: base2 + "benefits", value: it.benefits, addLabel: "benefit" }) + E.renderText({ label: "Target audience", path: base2 + "target_audience", value: it.target_audience }) + E.renderText({ label: "Status", path: base2 + "status", value: it.status, placeholder: "active / coming soon / sunset" }) + "</div>";
-      }
-      if (type === "program") {
-        var p = (o.programs || [])[idx];
-        if (!p) return '<div class="bpw-shell-detail-empty">Program not found.</div>';
-        var pbase = "offerings.programs[" + idx + "].";
-        return '<div class="bpw-shell-detail-card"><h3>' + _esc(p.name || "Program " + (idx + 1)) + "</h3>" + E.renderText({ label: "Name", path: pbase + "name", value: p.name }) + E.renderText({ label: "Category", path: pbase + "category", value: p.category }) + E.renderTextarea({ label: "Description", path: pbase + "description", value: p.description }) + E.renderChips({ label: "Features", path: pbase + "features", value: p.features }) + E.renderText({ label: "Target audience", path: pbase + "target_audience", value: p.target_audience }) + "</div>";
-      }
-      return "";
+        })
+      });
+      html += _fieldCard({
+        label: "Pricing model",
+        path: "offerings.pricing_model",
+        body: _E().renderField({ type: "prose", path: "offerings.pricing_model", value: o.pricing_model })
+      });
+      html += _fieldCard({
+        label: "Content approach",
+        path: "offerings.content_description",
+        body: _E().renderField({ type: "prose", path: "offerings.content_description", value: o.content_description })
+      });
+      html += "</div>";
+      html += "</section>";
+      return html;
     }
+    function _refresh() {
+      if (window._bpwExportSync) window._bpwExportSync.syncAll();
+      if (window._bpwSyncToTextarea) window._bpwSyncToTextarea();
+      if (window._bpwAutoSave) window._bpwAutoSave();
+      if (window._bpwAppShell) window._bpwAppShell.render();
+      if (window._bpwSetup && window._bpwSetup.render) window._bpwSetup.render();
+    }
+    $(document).off("click.bpw-off-add-item").on("click.bpw-off-add-item", '[data-action="offerings-add-item"]', function(e) {
+      e.preventDefault();
+      var W2 = window._bpwState;
+      W2.acceptedSections = W2.acceptedSections || {};
+      W2.acceptedSections.offerings = W2.acceptedSections.offerings || {};
+      W2.acceptedSections.offerings.items = W2.acceptedSections.offerings.items || [];
+      W2.acceptedSections.offerings.items.push({ name: "", category: "", description: "", features: [], benefits: [], target_audience: "", status: "active" });
+      _refresh();
+    });
+    $(document).off("click.bpw-off-rm-item").on("click.bpw-off-rm-item", '[data-action="offerings-remove-item"]', function(e) {
+      e.preventDefault();
+      var idx = parseInt($(this).attr("data-idx"), 10);
+      if (isNaN(idx)) return;
+      var W2 = window._bpwState;
+      var arr = W2.acceptedSections && W2.acceptedSections.offerings && W2.acceptedSections.offerings.items;
+      if (!arr) return;
+      arr.splice(idx, 1);
+      _refresh();
+    });
+    $(document).off("click.bpw-off-add-prog").on("click.bpw-off-add-prog", '[data-action="offerings-add-program"]', function(e) {
+      e.preventDefault();
+      var W2 = window._bpwState;
+      W2.acceptedSections = W2.acceptedSections || {};
+      W2.acceptedSections.offerings = W2.acceptedSections.offerings || {};
+      W2.acceptedSections.offerings.programs = W2.acceptedSections.offerings.programs || [];
+      W2.acceptedSections.offerings.programs.push({ name: "", category: "", description: "", features: [], target_audience: "" });
+      _refresh();
+    });
+    $(document).off("click.bpw-off-rm-prog").on("click.bpw-off-rm-prog", '[data-action="offerings-remove-program"]', function(e) {
+      e.preventDefault();
+      var idx = parseInt($(this).attr("data-idx"), 10);
+      if (isNaN(idx)) return;
+      var W2 = window._bpwState;
+      var arr = W2.acceptedSections && W2.acceptedSections.offerings && W2.acceptedSections.offerings.programs;
+      if (!arr) return;
+      arr.splice(idx, 1);
+      _refresh();
+    });
     window._bpwUIViews = window._bpwUIViews || {};
     window._bpwUIViews.offerings = {
       id: "offerings",
       title: "Offerings",
       minLevel: "new",
-      listMode: "variable-items",
+      listMode: "none",
       renderList,
       renderDetail,
-      inlineActions: [
-        {
-          type: "add-row",
-          label: "Add offering",
-          icon: "plus",
-          listPath: "offerings.items",
-          itemPrefix: "item",
-          itemTemplate: { name: "", category: "", description: "", features: [], benefits: [], target_audience: "", status: "active" }
-        },
-        {
-          type: "add-row",
-          label: "Add program",
-          icon: "plus",
-          listPath: "offerings.programs",
-          itemPrefix: "program",
-          itemTemplate: { name: "", category: "", description: "", features: [], target_audience: "" }
-        }
-      ]
+      inlineActions: []
     };
   })();
 
