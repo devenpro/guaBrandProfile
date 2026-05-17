@@ -802,7 +802,7 @@ import { W } from '../core/state.js';
           tagline: id.tagline || '', mission: id.mission || '',
           vision: id.vision || '',
           industry: id.industry || '',
-          business_description: id.description || W.seedContext.description || '',
+          business_description: id.description || W.seedContext.description || W.seedContext.dump || '',
           brand_archetype: id.brand_archetype || '',
           brand_voice: [v.primary_tone || ''].concat(v.personality_traits || []).filter(Boolean).join(', '),
           elevator_pitch: id.elevator_pitch || '',

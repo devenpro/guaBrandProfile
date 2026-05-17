@@ -149,19 +149,50 @@
       if (p) {
         for (var i = 0; i < p.activeModels.length; i++) {
           if (p.activeModels[i].id === _config.default_model) {
-            return {
-              provider: p.id, model: p.activeModels[i].id, api_key: p.api_key,
-              temperature: p.activeModels[i].temperature,
-              max_tokens: p.activeModels[i].max_tokens || 8192
-            };
+            return _resolveModel(p, p.activeModels[i]);
           }
         }
       }
     }
-    var p0 = provs[0], m0 = p0.activeModels[0];
+    // Smart fallback: bias toward Gemini Flash variants (free tier +
+    // fast), then any Gemini, then any other provider's default. Mirrors
+    // the reference repo's _getDefault preference order so users with
+    // multiple keys configured land on the cheapest reasonable choice.
+    var preferred = _findPreferredFlashModel(provs);
+    if (preferred) return preferred;
+    var p0 = provs[0], m0 = _pickDefaultModel(p0) || p0.activeModels[0];
+    return _resolveModel(p0, m0);
+  }
+
+  function _findPreferredFlashModel(provs) {
+    var gemini = null;
+    for (var i = 0; i < provs.length; i++) {
+      if ((provs[i].id || '').toLowerCase() === 'gemini') { gemini = provs[i]; break; }
+    }
+    if (!gemini) return null;
+    var order = [/2\.5.*flash/i, /2\.0.*flash/i, /flash/i];
+    for (var k = 0; k < order.length; k++) {
+      for (var j = 0; j < gemini.activeModels.length; j++) {
+        var m = gemini.activeModels[j];
+        if (order[k].test(m.id) || order[k].test(m.label || '')) return _resolveModel(gemini, m);
+      }
+    }
+    return _resolveModel(gemini, _pickDefaultModel(gemini) || gemini.activeModels[0]);
+  }
+
+  function _pickDefaultModel(p) {
+    if (!p || !p.activeModels) return null;
+    for (var i = 0; i < p.activeModels.length; i++) {
+      if (p.activeModels[i].is_default) return p.activeModels[i];
+    }
+    return null;
+  }
+
+  function _resolveModel(p, m) {
     return {
-      provider: p0.id, model: m0.id, api_key: p0.api_key,
-      temperature: m0.temperature, max_tokens: m0.max_tokens || 8192
+      provider: p.id, model: m.id, api_key: p.api_key,
+      temperature: m.temperature !== undefined ? m.temperature : 1.0,
+      max_tokens: m.max_tokens || 8192
     };
   }
 

@@ -83,8 +83,9 @@
     parts.push('Type: ' + typeLabels());
     parts.push('Level: ' + (ctx.brand_level || 'new'));
     var seed = ctx.seed || {};
-    if (seed.description)      parts.push('Description: ' + seed.description);
-    if (seed.customInstructions) parts.push('Custom instructions from brand owner:\n' + seed.customInstructions);
+    var dumpFn = window._bpwAIHelpers && window._bpwAIHelpers.consolidateSeedDump;
+    var dump = dumpFn ? dumpFn(seed) : (seed.dump || seed.description || '');
+    if (dump) parts.push('Brand details (provided by the brand owner):\n' + dump);
     if (seed.industry)         parts.push('Industry: ' + seed.industry);
     if (seed.business_model)   parts.push('Business model: ' + seed.business_model);
     if (seed.website_url)      parts.push('Website: ' + seed.website_url);

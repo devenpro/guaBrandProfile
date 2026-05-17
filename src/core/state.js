@@ -21,5 +21,13 @@ export const W = {
   // Autopilot setup state — populated by src/setup/. Shape:
   //   { open, mode, currentStageId, stagesQueue[], stageStatus{},
   //     totalElapsedMs, paused, startedAt, finishedAt? }
-  setup: null
+  setup: null,
+  // v2 wizard state — populated by src/wizard/ on entry (Phase 2+).
+  // Shape: { currentStep, stageQueue[], stageResults{}, lastApprovedStage,
+  //          startedAt, source: 'setup' | 'phase-upgrade' }
+  _wizardV2: null,
+  // Resume-editing affordance for the new dashboard. Written by the
+  // app shell on navigation; read by the dashboard hero pill.
+  _lastOpenedPage: null,
+  _lastOpenedField: null
 };

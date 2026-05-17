@@ -1,4 +1,4 @@
-window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}
+window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T02:43:13.154Z";try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}
 (() => {
   // src/ai/providers/registry.js
   (function() {
@@ -362,24 +362,48 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
         if (p) {
           for (var i = 0; i < p.activeModels.length; i++) {
             if (p.activeModels[i].id === _config.default_model) {
-              return {
-                provider: p.id,
-                model: p.activeModels[i].id,
-                api_key: p.api_key,
-                temperature: p.activeModels[i].temperature,
-                max_tokens: p.activeModels[i].max_tokens || 8192
-              };
+              return _resolveModel(p, p.activeModels[i]);
             }
           }
         }
       }
-      var p0 = provs[0], m0 = p0.activeModels[0];
+      var preferred = _findPreferredFlashModel(provs);
+      if (preferred) return preferred;
+      var p0 = provs[0], m0 = _pickDefaultModel(p0) || p0.activeModels[0];
+      return _resolveModel(p0, m0);
+    }
+    function _findPreferredFlashModel(provs) {
+      var gemini = null;
+      for (var i = 0; i < provs.length; i++) {
+        if ((provs[i].id || "").toLowerCase() === "gemini") {
+          gemini = provs[i];
+          break;
+        }
+      }
+      if (!gemini) return null;
+      var order = [/2\.5.*flash/i, /2\.0.*flash/i, /flash/i];
+      for (var k = 0; k < order.length; k++) {
+        for (var j = 0; j < gemini.activeModels.length; j++) {
+          var m = gemini.activeModels[j];
+          if (order[k].test(m.id) || order[k].test(m.label || "")) return _resolveModel(gemini, m);
+        }
+      }
+      return _resolveModel(gemini, _pickDefaultModel(gemini) || gemini.activeModels[0]);
+    }
+    function _pickDefaultModel(p) {
+      if (!p || !p.activeModels) return null;
+      for (var i = 0; i < p.activeModels.length; i++) {
+        if (p.activeModels[i].is_default) return p.activeModels[i];
+      }
+      return null;
+    }
+    function _resolveModel(p, m) {
       return {
-        provider: p0.id,
-        model: m0.id,
-        api_key: p0.api_key,
-        temperature: m0.temperature,
-        max_tokens: m0.max_tokens || 8192
+        provider: p.id,
+        model: m.id,
+        api_key: p.api_key,
+        temperature: m.temperature !== void 0 ? m.temperature : 1,
+        max_tokens: m.max_tokens || 8192
       };
     }
     function _getSelection() {
@@ -562,8 +586,9 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
       parts.push("Type: " + typeLabels());
       parts.push("Level: " + (ctx.brand_level || "new"));
       var seed = ctx.seed || {};
-      if (seed.description) parts.push("Description: " + seed.description);
-      if (seed.customInstructions) parts.push("Custom instructions from brand owner:\n" + seed.customInstructions);
+      var dumpFn = window._bpwAIHelpers && window._bpwAIHelpers.consolidateSeedDump;
+      var dump = dumpFn ? dumpFn(seed) : seed.dump || seed.description || "";
+      if (dump) parts.push("Brand details (provided by the brand owner):\n" + dump);
       if (seed.industry) parts.push("Industry: " + seed.industry);
       if (seed.business_model) parts.push("Business model: " + seed.business_model);
       if (seed.website_url) parts.push("Website: " + seed.website_url);
@@ -738,6 +763,59 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
       }
       return null;
     }
+    function consolidateSeedDump(seed) {
+      seed = seed || {};
+      var dump = (seed.dump || "").trim();
+      if (dump) return dump;
+      var d = (seed.description || "").trim();
+      var c = (seed.customInstructions || "").trim();
+      if (d && c) return d + "\n\n" + c;
+      return d || c || "";
+    }
+    function phaseGuidance(level, stage) {
+      var lvl = (level || "new").toLowerCase();
+      var key = (stage || "").toLowerCase();
+      var generic = {
+        "new": "Brand phase: NEW. Keep output tight and foundational. Single variant per field. Prefer plain language over nuance \u2014 this brand is still finding its voice.",
+        "growing": "Brand phase: GROWING. Standard depth. One primary variant per field, plus 1\u20132 alternates only where they meaningfully diverge. Sharp positioning, no fluff.",
+        "established": "Brand phase: ESTABLISHED. Rich, multi-variant output. Where it helps, offer 2\u20133 alternatives reflecting different strategic emphases. Nuanced positioning. Reference category trends and competitive context."
+      };
+      var perStage = {
+        "identity": {
+          "new": "\nIdentity rules: one mission, one vision, 3 core values, one tagline candidate.",
+          "growing": "\nIdentity rules: one mission, one vision, 4 values, 2 tagline candidates, 1 positioning statement.",
+          "established": "\nIdentity rules: 3 mission alternatives (different strategic emphases), one vision, 4\u20135 values, 3 tagline candidates, nuanced positioning vs named competitors."
+        },
+        "audience": {
+          "new": "\nAudience rules: primary description only. No segments, no personas.",
+          "growing": "\nAudience rules: primary + 2 segments + 1 detailed persona.",
+          "established": "\nAudience rules: primary + 3 segments + 2\u20133 detailed personas covering buyer + user + influencer where distinct."
+        },
+        "competitors": {
+          "new": "\nCompetitor rules: 0\u20132 lite cards (name + one-line positioning). Skip if the brand mentioned none.",
+          "growing": "\nCompetitor rules: 3\u20134 cards with positioning + strengths + weaknesses.",
+          "established": '\nCompetitor rules: 4\u20135 cards with positioning + strengths + weaknesses + explicit "vs. you" delta. Include adjacent/indirect competitors.'
+        },
+        "market": {
+          "new": "\nMarket rules: category + one-line positioning only.",
+          "growing": "\nMarket rules: category + positioning + 3 differentiators.",
+          "established": "\nMarket rules: category + positioning + 3 differentiators + trends + 2 opportunity gaps."
+        },
+        "voice": {
+          "new": "\nVoice rules: primary tone + 3 personality traits + 5 dos/donts.",
+          "growing": "\nVoice rules: primary tone + 5 personality traits + dos/donts + preferred vocabulary + 1 sample paragraph.",
+          "established": "\nVoice rules: primary tone + 5 personality traits + tone-by-context (email/social/support/sales/PR) + vocabulary + 2 sample paragraphs (long + short form)."
+        },
+        "offerings": {
+          "new": "\nOfferings rules: list items the brand mentioned. Skip pricing detail if absent.",
+          "growing": "\nOfferings rules: items + pricing model summary + per-item target audience.",
+          "established": "\nOfferings rules: items + pricing model + plans/tiers when discernible + per-item differentiators."
+        }
+      };
+      var base2 = generic[lvl] || generic["new"];
+      var stageRule = perStage[key] && perStage[key][lvl] || "";
+      return base2 + stageRule;
+    }
     function brandSnippet(type) {
       var BrandService = window.BrandService;
       if (!BrandService || !BrandService.isConfigured()) return "";
@@ -825,7 +903,9 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
       extractBraceBlock,
       brandSnippet,
       callAIWithRetry,
-      aiActionLoading
+      aiActionLoading,
+      consolidateSeedDump,
+      phaseGuidance
     };
   })();
 
@@ -850,8 +930,13 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
     }
     function _seedContext() {
       var seed = W2 && W2.seedContext || {};
+      var dumpFn = window._bpwAIHelpers && window._bpwAIHelpers.consolidateSeedDump;
       return {
         name: (seed.name || "").trim(),
+        dump: dumpFn ? dumpFn(seed) : (seed.dump || seed.description || "").trim(),
+        // Legacy fields kept on the returned shape so any older caller
+        // that destructures `description` / `customInstructions` keeps
+        // working until the Phase-2 wizard rewrite removes those reads.
         description: (seed.description || "").trim(),
         customInstructions: (seed.customInstructions || "").trim()
       };
@@ -862,8 +947,9 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-16T12:34:44.012Z";try{
       var socialSchema = platformType === "website" ? ',\n  "social_profiles": [\n    {"platform": "youtube|instagram|linkedin|twitter_x|facebook|tiktok|google_business|other", "url": "full profile URL", "handle": "@handle or name"}\n  ]' : "";
       var contextLines = [];
       if (ctx.name) contextLines.push("Brand name: " + ctx.name);
-      if (ctx.description) contextLines.push("Brand description (provided by the brand owner): " + ctx.description);
-      if (ctx.customInstructions) contextLines.push("Custom instructions from the brand owner:\n" + ctx.customInstructions);
+      if (ctx.dump) contextLines.push("Brand details (provided by the brand owner):\n" + ctx.dump);
+      else if (ctx.description) contextLines.push("Brand description (provided by the brand owner): " + ctx.description);
+      if (!ctx.dump && ctx.customInstructions) contextLines.push("Custom instructions from the brand owner:\n" + ctx.customInstructions);
       var contextBlock = contextLines.length ? "\n\n--- BRAND CONTEXT (authoritative \u2014 anchor your analysis on this) ---\n" + contextLines.join("\n") + "\n--- END BRAND CONTEXT ---" : "";
       var fetchNote = '\n\nIMPORTANT: If your environment cannot actually retrieve this URL (no live web access), DO NOT invent details. Set "fetched" to false and only fill fields that are clearly supported by the BRAND CONTEXT above. Leave the other fields as empty strings or empty arrays. If you can retrieve the URL, set "fetched" to true and extract real data from the page contents.';
       return {
@@ -28039,7 +28125,15 @@ ${prefix}
     // Autopilot setup state — populated by src/setup/. Shape:
     //   { open, mode, currentStageId, stagesQueue[], stageStatus{},
     //     totalElapsedMs, paused, startedAt, finishedAt? }
-    setup: null
+    setup: null,
+    // v2 wizard state — populated by src/wizard/ on entry (Phase 2+).
+    // Shape: { currentStep, stageQueue[], stageResults{}, lastApprovedStage,
+    //          startedAt, source: 'setup' | 'phase-upgrade' }
+    _wizardV2: null,
+    // Resume-editing affordance for the new dashboard. Written by the
+    // app shell on navigation; read by the dashboard hero pill.
+    _lastOpenedPage: null,
+    _lastOpenedField: null
   };
 
   // src/legacy/bpw-app.js
@@ -28694,7 +28788,7 @@ ${prefix}
             mission: id.mission || "",
             vision: id.vision || "",
             industry: id.industry || "",
-            business_description: id.description || W.seedContext.description || "",
+            business_description: id.description || W.seedContext.description || W.seedContext.dump || "",
             brand_archetype: id.brand_archetype || "",
             brand_voice: [v.primary_tone || ""].concat(v.personality_traits || []).filter(Boolean).join(", "),
             elevator_pitch: id.elevator_pitch || "",
