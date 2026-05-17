@@ -102,6 +102,10 @@ body.bpw-app-shell-active { overflow: hidden; }
   min-height: 0;
   overflow: hidden;
 }
+/* v2 single-pane (used by the dashboard view): sidebar + main only. */
+.bpw-shell-body--single {
+  grid-template-columns: 210px 1fr;
+}
 
 /* ── Sidebar ────────────────────────────────────────────────────── */
 .bpw-shell-sidebar {
@@ -833,4 +837,148 @@ body.bpw-app-shell-active { overflow: hidden; }
   .bpw-shell-sidebar,
   .bpw-shell-list { display: none; }
   /* Mobile UX is a follow-up — for now show the detail pane only. */
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   v2 Dashboard view (single-pane landing after autopilot finishes).
+   Hero + completion grid styled to match docs/mocks/dashboard.html.
+   ──────────────────────────────────────────────────────────────── */
+.bpw-shell-detail--dashboard {
+  padding: var(--bpw-sp-6);
+  overflow-y: auto;
+  max-width: 1200px;
+}
+.bpw-dash-hero {
+  background: linear-gradient(135deg, #1a73e8, #7c3aed);
+  color: white;
+  border-radius: var(--bpw-radius-xl, 16px);
+  padding: var(--bpw-sp-6) var(--bpw-sp-7);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: var(--bpw-sp-6);
+  box-shadow: 0 4px 6px rgba(60,64,67,0.1), 0 2px 4px rgba(60,64,67,0.06);
+}
+.bpw-dash-hero::after {
+  content: ''; position: absolute; right: -60px; top: -60px;
+  width: 240px; height: 240px; background: rgba(255,255,255,0.08);
+  border-radius: 50%;
+}
+.bpw-dash-hero-chips {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  margin-bottom: var(--bpw-sp-4);
+}
+.bpw-dash-chip {
+  background: rgba(255,255,255,0.18);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.25);
+  padding: 3px 10px; border-radius: 99px;
+  font-size: 12px; font-weight: 500;
+}
+.bpw-dash-chip-phase {
+  background: rgba(255,255,255,0.95);
+  color: var(--bpw-primary-dark, #174ea6);
+  border-color: transparent;
+  font-weight: 600;
+}
+.bpw-dash-hero-title { font-size: 30px; line-height: 1.1; margin: 0 0 6px; letter-spacing: -0.02em; }
+.bpw-dash-hero-tagline { font-size: 15px; opacity: 0.92; margin: 0 0 var(--bpw-sp-4); }
+.bpw-dash-hero-resume { margin-top: var(--bpw-sp-3); }
+.bpw-dash-resume {
+  background: white; color: var(--bpw-primary-dark, #174ea6);
+  padding: 8px 16px; border-radius: 10px;
+  border: 0; font-weight: 600; font-size: 13px;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+}
+.bpw-dash-resume:hover { box-shadow: 0 4px 6px rgba(0,0,0,0.15); }
+.bpw-dash-hero-stats {
+  display: flex; gap: var(--bpw-sp-7);
+  margin-top: var(--bpw-sp-5);
+  padding-top: var(--bpw-sp-4);
+  border-top: 1px solid rgba(255,255,255,0.2);
+}
+.bpw-dash-stat .n { font-size: 22px; font-weight: 700; }
+.bpw-dash-stat .l { font-size: 11px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.bpw-dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--bpw-sp-3);
+}
+.bpw-dash-card {
+  background: var(--bpw-white);
+  border: 1px solid var(--bpw-border);
+  border-radius: var(--bpw-radius-lg, 12px);
+  padding: var(--bpw-sp-4);
+  text-align: left; cursor: pointer;
+  display: flex; flex-direction: column; gap: var(--bpw-sp-3);
+  transition: transform 0.15s, box-shadow 0.15s;
+  font-family: inherit;
+}
+.bpw-dash-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(60,64,67,0.1), 0 2px 4px rgba(60,64,67,0.06);
+}
+.bpw-dash-card--todo { border-style: dashed; }
+.bpw-dash-card-head { display: flex; align-items: center; gap: 10px; }
+.bpw-dash-card-ic {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+.ic-identity   { background: #e8f0fe; color: #174ea6; }
+.ic-voice      { background: #f3f0ff; color: #7c3aed; }
+.ic-audience   { background: #fdecef; color: #d6336c; }
+.ic-offerings  { background: #e9f9ee; color: #0d904f; }
+.ic-market     { background: #fff3e0; color: #e37400; }
+.ic-competitors{ background: #fce8e6; color: #d93025; }
+.ic-content    { background: #ede7f6; color: #5e35b1; }
+.ic-seo        { background: #e0f7fa; color: #00838f; }
+.ic-social     { background: #fff1f0; color: #d4380d; }
+.bpw-dash-card-title { flex: 1; font-size: 15px; font-weight: 600; color: var(--bpw-text); }
+.bpw-dash-card-status {
+  font-size: 11px; padding: 2px 10px; border-radius: 99px;
+  background: var(--bpw-gray-100, #f1f3f4); color: var(--bpw-text-sec, #5f6368);
+  font-weight: 500;
+}
+.bpw-dash-card--done .bpw-dash-card-status { background: #e6f4ea; color: #0d904f; }
+.bpw-dash-card-preview {
+  font-size: 13px; color: var(--bpw-text-sec, #5f6368);
+  line-height: 1.45;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.bpw-dash-card-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  border-top: 1px solid var(--bpw-border);
+  padding-top: var(--bpw-sp-2);
+  font-size: 12px;
+}
+.bpw-dash-card-bar { width: 60%; height: 4px; background: var(--bpw-gray-200, #e8eaed); border-radius: 99px; overflow: hidden; }
+.bpw-dash-card-bar > div { height: 100%; background: #0d904f; transition: width 0.3s; }
+.bpw-dash-card--todo .bpw-dash-card-bar > div { background: #e37400; }
+.bpw-dash-card-pct { color: var(--bpw-text-sec, #5f6368); font-weight: 600; }
+
+/* ──────────────────────────────────────────────────────────────────
+   v2 Competitors view — grid of cards, matches mock style.
+   ──────────────────────────────────────────────────────────────── */
+.bpw-comp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--bpw-sp-3);
+  padding: 0 var(--bpw-sp-5);
+}
+.bpw-comp-card {
+  background: var(--bpw-white);
+  border: 1px solid var(--bpw-border);
+  border-radius: var(--bpw-radius-lg, 12px);
+  padding: var(--bpw-sp-4);
+}
+.bpw-comp-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--bpw-sp-2); }
+.bpw-comp-card-name { font-size: 16px; font-weight: 700; margin: 0; }
+.bpw-comp-card-link { color: var(--bpw-text-sec, #5f6368); }
+.bpw-comp-card-desc { font-size: 12.5px; color: var(--bpw-text-sec, #5f6368); font-style: italic; margin: 0 0 var(--bpw-sp-2); }
+.bpw-comp-card-row { font-size: 13px; margin-bottom: var(--bpw-sp-2); line-height: 1.4; }
+.bpw-comp-card-k {
+  text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.05em;
+  color: var(--bpw-text-muted, #9aa0a6); font-weight: 700; margin-right: 6px;
 }

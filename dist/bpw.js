@@ -1,4 +1,4 @@
-window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T03:03:23.021Z";try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}
+window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T03:07:34.214Z";try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}
 (() => {
   // src/ai/providers/registry.js
   (function() {
@@ -26297,23 +26297,21 @@ ${prefix}
       })(n);
     }
     var SECTIONS = [
+      { id: "dashboard", label: "Dashboard", icon: "gauge-high", minLevel: "new", isDefault: true },
       { id: "identity", label: "Identity", icon: "fingerprint", minLevel: "new" },
       { id: "voice", label: "Voice", icon: "comment-dots", minLevel: "new" },
       { id: "audience", label: "Audience", icon: "users", minLevel: "new" },
       { id: "offerings", label: "Offerings", icon: "box-open", minLevel: "new", brandTypes: ["commercial", "local", "nonprofit"] },
-      { id: "market", label: "Market", icon: "chart-line", minLevel: "growing", brandTypes: ["commercial", "local"] },
-      { id: "content", label: "Content", icon: "pen-nib", minLevel: "new", brandTypes: ["creator", "commercial"] },
-      { id: "seo", label: "SEO", icon: "magnifying-glass", minLevel: "growing" },
+      { id: "market", label: "Market", icon: "chart-line", minLevel: "new" },
+      { id: "competitors", label: "Competitors", icon: "crosshairs", minLevel: "new" },
+      { id: "content", label: "Content", icon: "pen-nib", minLevel: "new" },
+      { id: "seo", label: "SEO", icon: "magnifying-glass", minLevel: "new" },
       { id: "social", label: "Social", icon: "share-nodes", minLevel: "new" },
       { id: "settings", label: "Settings", icon: "gear", minLevel: "new", isMeta: true }
     ];
     function _visibleSections(W2) {
-      var levelOrder = window._bpwConstants && window._bpwConstants.LEVEL_ORDER || { "new": 0, "growing": 1, "deep": 2 };
-      var currentRank = levelOrder[W2.brandLevel || "new"] || 0;
       var types = W2.brandTypes || [];
       return SECTIONS.filter(function(s) {
-        var rank = levelOrder[s.minLevel] || 0;
-        if (rank > currentRank) return false;
         if (s.brandTypes) {
           var matches2 = false;
           for (var i = 0; i < s.brandTypes.length; i++) {
@@ -26328,7 +26326,7 @@ ${prefix}
       });
     }
     function render(W2) {
-      var active = W2.ui && W2.ui.section || "identity";
+      var active = W2.ui && W2.ui.section || "dashboard";
       var visible = _visibleSections(W2);
       var html = '<aside class="bpw-shell-sidebar" role="navigation" aria-label="Brand sections">';
       html += '<div class="bpw-shell-sidebar-group">';
@@ -26655,6 +26653,186 @@ ${prefix}
       renderList,
       renderDetail,
       inlineActions: []
+    };
+  })();
+
+  // src/ui/views/dashboard.js
+  (function() {
+    "use strict";
+    function _esc(s) {
+      return (window._bpwEsc || function(x) {
+        return x == null ? "" : String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      })(s);
+    }
+    function _icon(n) {
+      return (window._bpwIcon || function(name) {
+        if (!name) return "";
+        if (name.indexOf("fa-") === 0) return '<i class="' + name + '"></i>';
+        return '<i class="fa-solid fa-' + name + '"></i>';
+      })(n);
+    }
+    function _truncate(s, n) {
+      if (!s) return "";
+      s = String(s);
+      return s.length > n ? s.substring(0, n - 1) + "\u2026" : s;
+    }
+    function _sectionStat(W2, id) {
+      var acc = W2.acceptedSections || {};
+      var s = acc[id] || {};
+      var pct = 0;
+      var preview = "";
+      if (id === "identity") {
+        var have = 0, total = 6;
+        if (s.mission) have++;
+        if (s.vision) have++;
+        if (s.values && s.values.length) have++;
+        if (s.brand_archetype) have++;
+        if (s.positioning_statement) have++;
+        if (s.tagline || s.elevator_pitch) have++;
+        pct = Math.round(have / total * 100);
+        preview = s.mission || s.tagline || s.elevator_pitch || "";
+      } else if (id === "voice") {
+        var v = 0, vt = 4;
+        if (s.primary_tone) v++;
+        if (s.personality_traits && s.personality_traits.length) v++;
+        if (s.dos && s.dos.length) v++;
+        if (s.donts && s.donts.length) v++;
+        pct = Math.round(v / vt * 100);
+        preview = s.primary_tone || (s.personality_traits || []).slice(0, 3).join(", ");
+      } else if (id === "audience") {
+        var a = 0, at = 3;
+        if (s.primary_description) a++;
+        if (s.segments && s.segments.length) a++;
+        if (s.personas && s.personas.length) a++;
+        pct = Math.round(a / at * 100);
+        preview = s.primary_description || (s.segments || []).length + " segments, " + (s.personas || []).length + " personas";
+      } else if (id === "offerings") {
+        var items = s.items || [];
+        pct = items.length ? 100 : 0;
+        preview = items.length ? items.map(function(it) {
+          return it.name || it.title || "";
+        }).filter(Boolean).slice(0, 3).join(", ") : "";
+      } else if (id === "market") {
+        var m = 0, mt = 3;
+        if (s.category) m++;
+        if (s.positioning) m++;
+        if (s.differentiators && s.differentiators.length) m++;
+        pct = Math.round(m / mt * 100);
+        preview = s.category ? "Category: " + s.category : "";
+      } else if (id === "competitors") {
+        var comps = (acc.market || {}).competitors || [];
+        pct = comps.length ? Math.min(100, comps.length * 25) : 0;
+        preview = comps.length ? comps.slice(0, 3).map(function(c2) {
+          return c2.name || "";
+        }).filter(Boolean).join(", ") : "";
+      } else if (id === "content") {
+        var cs = acc.content_strategy || s;
+        var c = 0, ct = 3;
+        if (cs.pillars && cs.pillars.length) c++;
+        if (cs.channels && cs.channels.length) c++;
+        if (cs.hashtags && cs.hashtags.length) c++;
+        pct = Math.round(c / ct * 100);
+        preview = (cs.pillars || []).slice(0, 3).join(", ");
+      } else if (id === "seo") {
+        var seo = s;
+        var sok = seo.keywords && seo.keywords.length ? 50 : 0;
+        sok += seo.metadata && Object.keys(seo.metadata).length ? 50 : 0;
+        pct = sok;
+        preview = (seo.keywords || []).slice(0, 5).join(", ");
+      } else if (id === "social") {
+        var profiles = s.profiles || [];
+        pct = profiles.length ? Math.min(100, profiles.length * 25) : 0;
+        preview = profiles.length + " profile" + (profiles.length === 1 ? "" : "s");
+      }
+      return { pct, preview };
+    }
+    var CARDS = [
+      { id: "identity", label: "Identity", icon: "fingerprint", iconCls: "ic-identity" },
+      { id: "voice", label: "Voice", icon: "comment-dots", iconCls: "ic-voice" },
+      { id: "audience", label: "Audience", icon: "users", iconCls: "ic-audience" },
+      { id: "offerings", label: "Offerings", icon: "box-open", iconCls: "ic-offerings" },
+      { id: "market", label: "Market", icon: "chart-line", iconCls: "ic-market" },
+      { id: "competitors", label: "Competitors", icon: "crosshairs", iconCls: "ic-competitors" },
+      { id: "content", label: "Content", icon: "pen-nib", iconCls: "ic-content" },
+      { id: "seo", label: "SEO", icon: "magnifying-glass", iconCls: "ic-seo" },
+      { id: "social", label: "Social", icon: "share-nodes", iconCls: "ic-social" }
+    ];
+    function _heroHtml(W2) {
+      var BrandService = window.BrandService;
+      var ident = BrandService ? BrandService.getIdentity() : (W2.acceptedSections || {}).identity || {};
+      var seed = W2.seedContext || {};
+      var brand = ident.name || seed.name || "Your brand";
+      var tagline = ident.tagline || ident.elevator_pitch || seed.dump ? (seed.dump || "").split("\n")[0] : "";
+      var levelLabels = { "new": "\u{1F331} New", "growing": "\u{1F680} Growing", "deep": "\u{1F3DB} Established" };
+      var phaseChip = levelLabels[W2.brandLevel || "new"] || "Setup pending";
+      var typeChips = (W2.brandTypes || []).slice(0, 2);
+      var totalPct = 0, totalCount = 0;
+      for (var i = 0; i < CARDS.length; i++) {
+        var st = _sectionStat(W2, CARDS[i].id);
+        totalPct += st.pct;
+        totalCount++;
+      }
+      var avgPct = totalCount ? Math.round(totalPct / totalCount) : 0;
+      var resumePage = W2._lastOpenedPage;
+      var resumeField = W2._lastOpenedField;
+      var resumeChip = "";
+      if (resumePage && resumePage !== "dashboard") {
+        resumeChip = '<button class="bpw-dash-resume" data-section="' + _esc(resumePage) + '" type="button">' + _icon("forward") + " Resume editing \u2192 " + _esc(resumePage) + (resumeField ? " \u2192 " + _esc(resumeField) : "") + "</button>";
+      }
+      var html = '<header class="bpw-dash-hero">';
+      html += '<div class="bpw-dash-hero-chips">';
+      typeChips.forEach(function(t) {
+        html += '<span class="bpw-dash-chip">' + _esc(t) + "</span>";
+      });
+      html += '<span class="bpw-dash-chip bpw-dash-chip-phase">' + _esc(phaseChip) + "</span>";
+      html += "</div>";
+      html += '<h1 class="bpw-dash-hero-title">' + _esc(brand) + "</h1>";
+      if (tagline) html += '<p class="bpw-dash-hero-tagline">' + _esc(_truncate(tagline, 160)) + "</p>";
+      if (resumeChip) html += '<div class="bpw-dash-hero-resume">' + resumeChip + "</div>";
+      html += '<div class="bpw-dash-hero-stats">';
+      html += '<div class="bpw-dash-stat"><div class="n">' + avgPct + '%</div><div class="l">Profile completion</div></div>';
+      html += '<div class="bpw-dash-stat"><div class="n">' + CARDS.length + '</div><div class="l">Sections</div></div>';
+      html += "</div>";
+      html += "</header>";
+      return html;
+    }
+    function _cardHtml(W2, card) {
+      var st = _sectionStat(W2, card.id);
+      var status = st.pct >= 100 ? "Complete" : st.pct > 0 ? st.pct + "%" : "Empty";
+      var pctClass = st.pct >= 100 ? "done" : st.pct > 0 ? "partial" : "todo";
+      var html = '<button class="bpw-dash-card bpw-dash-card--' + pctClass + '" data-section="' + _esc(card.id) + '" type="button">';
+      html += '<div class="bpw-dash-card-head">';
+      html += '<span class="bpw-dash-card-ic ' + card.iconCls + '">' + _icon(card.icon) + "</span>";
+      html += '<span class="bpw-dash-card-title">' + _esc(card.label) + "</span>";
+      html += '<span class="bpw-dash-card-status">' + _esc(status) + "</span>";
+      html += "</div>";
+      if (st.preview) html += '<div class="bpw-dash-card-preview">' + _esc(_truncate(st.preview, 140)) + "</div>";
+      html += '<div class="bpw-dash-card-foot">';
+      html += '<div class="bpw-dash-card-bar"><div style="width:' + st.pct + '%"></div></div>';
+      html += '<span class="bpw-dash-card-pct">' + st.pct + "%</span>";
+      html += "</div>";
+      html += "</button>";
+      return html;
+    }
+    function renderDetail(W2) {
+      var html = '<section class="bpw-shell-detail bpw-shell-detail--dashboard" aria-label="Dashboard">';
+      html += _heroHtml(W2);
+      html += '<div class="bpw-dash-grid">';
+      for (var i = 0; i < CARDS.length; i++) {
+        html += _cardHtml(W2, CARDS[i]);
+      }
+      html += "</div>";
+      html += "</section>";
+      return html;
+    }
+    function renderList() {
+      return "";
+    }
+    window._bpwUIViews = window._bpwUIViews || {};
+    window._bpwUIViews.dashboard = {
+      renderList,
+      renderDetail,
+      listMode: "none"
     };
   })();
 
@@ -27178,6 +27356,94 @@ ${prefix}
           itemTemplate: { point: "", evidence: "" }
         }
       ]
+    };
+  })();
+
+  // src/ui/views/competitors.js
+  (function() {
+    "use strict";
+    function _esc(s) {
+      return (window._bpwEsc || function(x) {
+        return x == null ? "" : String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      })(s);
+    }
+    function _icon(n) {
+      return (window._bpwIcon || function(name) {
+        if (!name) return "";
+        if (name.indexOf("fa-") === 0) return '<i class="' + name + '"></i>';
+        return '<i class="fa-solid fa-' + name + '"></i>';
+      })(n);
+    }
+    function _competitors(W2) {
+      var market = (W2.acceptedSections || {}).market || {};
+      return Array.isArray(market.competitors) ? market.competitors : [];
+    }
+    function renderList(W2) {
+      var comps = _competitors(W2);
+      var html = '<aside class="bpw-shell-list" aria-label="Competitors list">';
+      html += '<header class="bpw-shell-list-head"><h3>Competitors</h3><button class="bpw-shell-list-action" data-action="ai-find-more-competitors" type="button">' + _icon("plus") + " Find more</button></header>";
+      if (!comps.length) {
+        html += '<div class="bpw-shell-list-empty">' + _icon("crosshairs") + '<p>No competitors yet.</p><button class="bpw-btn bpw-btn-primary" data-action="ai-find-more-competitors" type="button">' + _icon("sparkles") + " Research competitors</button></div>";
+      } else {
+        html += '<ul class="bpw-shell-list-items">';
+        for (var i = 0; i < comps.length; i++) {
+          var c = comps[i] || {};
+          html += '<li class="bpw-shell-list-item" data-item-id="' + _esc("comp-" + i) + '">';
+          html += '<div class="bpw-shell-list-item-title">' + _esc(c.name || "Untitled") + "</div>";
+          if (c.description) html += '<div class="bpw-shell-list-item-sub">' + _esc(c.description) + "</div>";
+          html += "</li>";
+        }
+        html += "</ul>";
+      }
+      html += "</aside>";
+      return html;
+    }
+    function _renderCard(c, idx) {
+      var html = '<article class="bpw-comp-card" data-idx="' + idx + '">';
+      html += '<header class="bpw-comp-card-head">';
+      html += '<h3 class="bpw-comp-card-name">' + _esc(c.name || "Untitled") + "</h3>";
+      if (c.url) html += '<a class="bpw-comp-card-link" href="' + _esc(c.url) + '" target="_blank" rel="noopener">' + _icon("arrow-up-right-from-square") + "</a>";
+      html += "</header>";
+      if (c.description) html += '<p class="bpw-comp-card-desc">' + _esc(c.description) + "</p>";
+      var rows = [
+        ["Strengths", Array.isArray(c.strengths) ? c.strengths.join("; ") : c.strengths || ""],
+        ["Weaknesses", Array.isArray(c.weaknesses) ? c.weaknesses.join("; ") : c.weaknesses || ""],
+        ["vs. you", c.comparison || ""]
+      ];
+      for (var r = 0; r < rows.length; r++) {
+        if (!rows[r][1]) continue;
+        html += '<div class="bpw-comp-card-row">';
+        html += '<span class="bpw-comp-card-k">' + _esc(rows[r][0]) + "</span>";
+        html += '<span class="bpw-comp-card-v">' + _esc(rows[r][1]) + "</span>";
+        html += "</div>";
+      }
+      html += "</article>";
+      return html;
+    }
+    function renderDetail(W2) {
+      var comps = _competitors(W2);
+      var html = '<section class="bpw-shell-detail" aria-label="Competitors">';
+      html += '<header class="bpw-shell-detail-head">';
+      html += "<h1>Competitors</h1>";
+      html += '<button class="bpw-btn bpw-btn-ghost" data-action="ai-find-more-competitors" type="button">' + _icon("sparkles") + " Find more competitors</button>";
+      html += "</header>";
+      if (!comps.length) {
+        html += '<div class="bpw-shell-detail-empty">' + _icon("crosshairs") + '<h3>No competitors logged</h3><p>Run the Competitors stage from setup, or click "Find more" to research now.</p></div>';
+      } else {
+        html += '<div class="bpw-comp-grid">';
+        for (var i = 0; i < comps.length; i++) {
+          html += _renderCard(comps[i] || {}, i);
+        }
+        html += "</div>";
+      }
+      html += "</section>";
+      return html;
+    }
+    window._bpwUIViews = window._bpwUIViews || {};
+    window._bpwUIViews.competitors = {
+      renderList,
+      renderDetail,
+      listMode: "variable-items"
     };
   })();
 
@@ -27783,7 +28049,7 @@ ${prefix}
     }, 100);
     function _init() {
       W2 = window._bpwState;
-      W2.ui = W2.ui || { section: "identity", itemId: null, activityOpen: false };
+      W2.ui = W2.ui || { section: "dashboard", itemId: null, activityOpen: false };
       _wireEvents();
       renderIfReady();
     }
@@ -27809,24 +28075,30 @@ ${prefix}
       W2.ui = W2.ui || {};
       W2.ui.section = id;
       W2.ui.itemId = null;
+      if (id && id !== "dashboard") {
+        W2._lastOpenedPage = id;
+      }
       render();
     }
     function setActiveItem(itemId) {
       if (!W2) return;
       W2.ui = W2.ui || {};
       W2.ui.itemId = itemId;
+      if (itemId) W2._lastOpenedField = itemId;
       render();
     }
     function state() {
       return W2 && W2.ui;
     }
     function _shellHTML() {
+      var section = W2.ui && W2.ui.section || "dashboard";
+      var bodyCls = section === "dashboard" ? "bpw-shell-body bpw-shell-body--single" : "bpw-shell-body";
       var topbar = window._bpwTopbar && window._bpwTopbar.render && window._bpwTopbar.render(W2) || "";
       var sidebar = window._bpwSidebar && window._bpwSidebar.render && window._bpwSidebar.render(W2) || "";
-      var list = window._bpwSectionList && window._bpwSectionList.render && window._bpwSectionList.render(W2) || "";
+      var list = section === "dashboard" ? "" : window._bpwSectionList && window._bpwSectionList.render && window._bpwSectionList.render(W2) || "";
       var detail = window._bpwDetailPane && window._bpwDetailPane.render && window._bpwDetailPane.render(W2) || "";
       var drawer = window._bpwActivityDrawer && window._bpwActivityDrawer.render && window._bpwActivityDrawer.render(W2) || "";
-      return topbar + '<div class="bpw-shell-body">' + sidebar + list + detail + "</div>" + drawer;
+      return topbar + '<div class="' + bodyCls + '">' + sidebar + list + detail + "</div>" + drawer;
     }
     function _wireEvents() {
       var ns = ".bpw-shell";

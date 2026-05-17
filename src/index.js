@@ -65,10 +65,12 @@ import './ui/activity-drawer.js';
 
 // Per-section views.
 import './ui/views/identity.js';
+import './ui/views/dashboard.js';
 import './ui/views/voice.js';
 import './ui/views/audience.js';
 import './ui/views/offerings.js';
 import './ui/views/market.js';
+import './ui/views/competitors.js';
 import './ui/views/content.js';
 import './ui/views/seo.js';
 import './ui/views/social.js';

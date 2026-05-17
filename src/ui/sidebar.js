@@ -23,25 +23,31 @@
     })(n);
   }
 
+  // v2: uniform UI for all growth phases — sidebar shows the same
+  // sections regardless of brandLevel. Phase only affects prompt depth,
+  // not which screens exist. The minLevel keys are preserved for the
+  // old _visibleSections filter (still callable by external code) but
+  // the default render path uses _allSections so nothing is hidden.
   var SECTIONS = [
-    { id: 'identity',  label: 'Identity',  icon: 'fingerprint',    minLevel: 'new' },
-    { id: 'voice',     label: 'Voice',     icon: 'comment-dots',   minLevel: 'new' },
-    { id: 'audience',  label: 'Audience',  icon: 'users',          minLevel: 'new' },
-    { id: 'offerings', label: 'Offerings', icon: 'box-open',       minLevel: 'new', brandTypes: ['commercial', 'local', 'nonprofit'] },
-    { id: 'market',    label: 'Market',    icon: 'chart-line',     minLevel: 'growing', brandTypes: ['commercial', 'local'] },
-    { id: 'content',   label: 'Content',   icon: 'pen-nib',        minLevel: 'new',  brandTypes: ['creator', 'commercial'] },
-    { id: 'seo',       label: 'SEO',       icon: 'magnifying-glass', minLevel: 'growing' },
-    { id: 'social',    label: 'Social',    icon: 'share-nodes',    minLevel: 'new' },
-    { id: 'settings',  label: 'Settings',  icon: 'gear',           minLevel: 'new', isMeta: true }
+    { id: 'dashboard',   label: 'Dashboard',   icon: 'gauge-high',        minLevel: 'new', isDefault: true },
+    { id: 'identity',    label: 'Identity',    icon: 'fingerprint',       minLevel: 'new' },
+    { id: 'voice',       label: 'Voice',       icon: 'comment-dots',      minLevel: 'new' },
+    { id: 'audience',    label: 'Audience',    icon: 'users',             minLevel: 'new' },
+    { id: 'offerings',   label: 'Offerings',   icon: 'box-open',          minLevel: 'new', brandTypes: ['commercial', 'local', 'nonprofit'] },
+    { id: 'market',      label: 'Market',      icon: 'chart-line',        minLevel: 'new' },
+    { id: 'competitors', label: 'Competitors', icon: 'crosshairs',        minLevel: 'new' },
+    { id: 'content',     label: 'Content',     icon: 'pen-nib',           minLevel: 'new' },
+    { id: 'seo',         label: 'SEO',         icon: 'magnifying-glass',  minLevel: 'new' },
+    { id: 'social',      label: 'Social',      icon: 'share-nodes',       minLevel: 'new' },
+    { id: 'settings',    label: 'Settings',    icon: 'gear',              minLevel: 'new', isMeta: true }
   ];
 
+  // v2 uniform-UI default: surface every section for every phase. Brand-
+  // type gating is preserved (e.g. Offerings hidden for pure Creator
+  // brands) since it's a content-relevance signal, not a phase signal.
   function _visibleSections(W) {
-    var levelOrder = (window._bpwConstants && window._bpwConstants.LEVEL_ORDER) || { 'new': 0, 'growing': 1, 'deep': 2 };
-    var currentRank = levelOrder[W.brandLevel || 'new'] || 0;
     var types = W.brandTypes || [];
     return SECTIONS.filter(function(s) {
-      var rank = levelOrder[s.minLevel] || 0;
-      if (rank > currentRank) return false;
       if (s.brandTypes) {
         var matches = false;
         for (var i = 0; i < s.brandTypes.length; i++) {
@@ -54,7 +60,7 @@
   }
 
   function render(W) {
-    var active = (W.ui && W.ui.section) || 'identity';
+    var active = (W.ui && W.ui.section) || 'dashboard';
     var visible = _visibleSections(W);
     var html = '<aside class="bpw-shell-sidebar" role="navigation" aria-label="Brand sections">';
     html += '<div class="bpw-shell-sidebar-group">';
