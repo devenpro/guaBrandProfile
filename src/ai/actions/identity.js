@@ -50,7 +50,7 @@
     var typeDesc = BrandService.typeLabels();
     return {
       system: 'You are an expert brand strategist. Generate 3 compelling, distinct mission statement options for a ' + typeDesc + ' brand. Each should capture a different strategic angle or emphasis.' + BrandService.getLangSuffix(),
-      user:   'Generate 3 mission statement options for this brand. Each should be unique in angle, tone, or strategic emphasis.' + BrandService.getContextBlock() +
+      user:   'Generate 3 mission statement options for this brand. Each should be unique in angle, tone, or strategic emphasis.' + BrandService.getContextBlock('identity') +
               '\n\nReturn ONLY valid JSON:\n{\n  "identity_mission_options": ["mission option 1 — clear and concise", "mission option 2 — different angle", "mission option 3 — different emphasis"]\n}' + _jsonOnly()
     };
   }
@@ -80,7 +80,7 @@
               (selectedMission ? ' The mission is already decided — build everything else around it.'
                                : ' Generate multiple alternatives for mission so the user can choose.') +
               BrandService.getLangSuffix(),
-      user:   'Generate brand identity elements.' + missionNote + BrandService.getContextBlock() +
+      user:   'Generate brand identity elements.' + missionNote + BrandService.getContextBlock('identity') +
               '\n\nReturn ONLY valid JSON:\n{' + missionFields +
               '\n  "identity_vision": "vision statement aligned with the mission",\n  "identity_values": [\n    {"value":"","description":""}\n  ],\n  "identity_archetype": "string — one of the 12 brand archetypes with brief explanation",\n  "identity_pitch": "30-second elevator pitch"\n}' + _jsonOnly()
     };
@@ -90,7 +90,7 @@
     var typeDesc = BrandService.typeLabels();
     return {
       system: 'You are an expert brand voice strategist. Define the complete voice, tone, and messaging framework for a ' + typeDesc + ' brand.' + BrandService.getLangSuffix(),
-      user:   'Generate voice and messaging framework.' + BrandService.getContextBlock() +
+      user:   'Generate voice and messaging framework.' + BrandService.getContextBlock('voice') +
               '\n\nReturn ONLY valid JSON:\n{\n  "voice_tone": "primary tone description — 2-3 sentences",\n  "voice_personality": ["trait1", "trait2", "trait3", "trait4", "trait5"],\n  "voice_dos": ["rule1", "rule2", "rule3", "rule4", "rule5"],\n  "voice_donts": ["rule1", "rule2", "rule3", "rule4", "rule5"],\n  "voice_preferred": ["term1", "term2", "term3"],\n  "voice_avoided": ["term1", "term2", "term3"],\n  "messaging_primary": "primary brand message — one powerful sentence",\n  "messaging_supporting": ["supporting message 1", "supporting message 2", "supporting message 3"],\n  "messaging_headlines": [\n    {"context":"landing page","headline":""},\n    {"context":"social media bio","headline":""},\n    {"context":"email subject","headline":""}\n  ],\n  "voice_sample": "A 3-4 sentence sample text written IN the brand voice — a product announcement or content piece"\n}' + _jsonOnly()
     };
   }

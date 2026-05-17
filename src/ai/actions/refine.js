@@ -87,7 +87,11 @@
 
     var currentValue = store.get(path);
     var shapeHint = _shapeHint(currentValue);
-    var ctxBlock = brandSvc.getContextBlock();
+    // Refine works on any field; derive the stage from the path's first
+    // segment (identity.mission -> 'identity') so phaseGuidance can scale
+    // depth of the rewrite to match the surrounding stage.
+    var stageHint = (path || '').split('.')[0] || '';
+    var ctxBlock = brandSvc.getContextBlock(stageHint);
 
     var system = 'You are a senior brand strategist refining one specific element of a brand profile. Stay strictly within the requested scope — do not rewrite adjacent fields. Match the existing voice and brand context. Output valid JSON only.';
     var userPrompt = 'Refine the following brand-profile field.\n\n'

@@ -31,7 +31,7 @@
       + '- Hashtags include the # prefix';
     return {
       system: 'You are a content strategist. Build a content and channel strategy for a ' + typeDesc + ' brand.' + BrandService.getLangSuffix(),
-      user:   'Generate content strategy.' + BrandService.getContextBlock() +
+      user:   'Generate content strategy.' + BrandService.getContextBlock('content') +
               '\n\nReturn ONLY valid JSON:\n{\n  "content_pillars": [\n    {"pillar":"","description":"","topics":[""]}\n  ],\n  "content_channels": [\n    {"channel":"","purpose":"","frequency":"","format":""}\n  ],\n  "content_seo": ["keyword1", "keyword2", "keyword3"],\n  "content_hashtags": ["#hashtag1", "#hashtag2"]\n}\n\nGenerate 3-5 pillars, 3-5 channels, 8-12 SEO keywords, and 5-8 hashtags.' + fieldReqs + _jsonOnly()
     };
   }

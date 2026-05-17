@@ -44,7 +44,7 @@
       + '- status: active / coming soon / sunset';
     return {
       system: 'You are a business strategist. Structure the ' + offeringsType + ' for a ' + typeDesc + ' brand.' + BrandService.getLangSuffix(),
-      user:   'Generate offerings profile.' + BrandService.getContextBlock() +
+      user:   'Generate offerings profile.' + BrandService.getContextBlock('offerings') +
               '\n\nReturn ONLY valid JSON:\n{\n  "offerings_items": [\n    {"name":"","category":"","description":"","features":[""],"benefits":[""],"target_audience":"","status":"active"}\n  ]' + creatorFields + commercFields + nonprofFields + '\n}\n\nGenerate 3-6 offerings based on available context.' + fieldReqs + _jsonOnly()
     };
   }

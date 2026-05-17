@@ -1,4 +1,4 @@
-window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T02:59:29.524Z";try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}
+window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T03:01:49.471Z";try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}
 (() => {
   // src/ai/providers/registry.js
   (function() {
@@ -579,7 +579,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T02:59:29.524Z";try{
         return (BT[t] || {}).label || t;
       }).join(" + ");
     }
-    function getContextBlock() {
+    function getContextBlock(stageHint) {
       var ctx = getContext();
       var parts = [];
       parts.push("Brand: " + (ctx.seed && ctx.seed.name || "Unknown"));
@@ -630,6 +630,11 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T02:59:29.524Z";try{
         if (acc.voice && acc.voice.primary_tone) parts.push("Voice tone: " + acc.voice.primary_tone);
         if (acc.messaging && acc.messaging.primary_message) parts.push("Primary message: " + acc.messaging.primary_message);
         if (acc.market && acc.market.positioning) parts.push("Positioning: " + acc.market.positioning);
+      }
+      var H = window._bpwAIHelpers || {};
+      if (H.phaseGuidance && stageHint) {
+        var pg = H.phaseGuidance(ctx.brand_level || "new", stageHint);
+        if (pg) parts.push("\n--- Phase guidance ---\n" + pg);
       }
       return "\n\nBrand context:\n" + parts.join("\n");
     }
@@ -1006,7 +1011,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T02:59:29.524Z";try{
     function getPrompt() {
       var depth = _isDeep() ? "comprehensive" : "brief";
       var typeDesc = BrandService.typeLabels();
-      var ctx = BrandService.getContextBlock();
+      var ctx = BrandService.getContextBlock("market");
       var lang = BrandService.getLangSuffix();
       var deepKeys = _isDeep() ? ',\n  "market_trends": ["string"],\n  "market_opportunities": ["string"]' : "";
       var fieldReqs = "\n\nFIELD REQUIREMENTS:\n- Every competitor MUST include: name, url (full URL \u2014 no placeholders), strengths (>= 2), weaknesses (>= 2), comparison (1-2 sentences on how the brand differs)\n- Every differentiator MUST include: point (short claim) AND evidence (concrete proof)\n- 3-5 competitors total, 3-5 differentiators total";
@@ -1041,7 +1046,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T02:59:29.524Z";try{
       var guidance = customGuidance ? "\n\nUser direction: " + customGuidance : "";
       var prompt = {
         system: "You are a competitive intelligence analyst. Find competitors not already in the brand profile." + BrandService.getLangSuffix(),
-        user: "Find 3-5 additional competitors for this brand." + BrandService.getContextBlock() + (existing.length ? "\n\nDO NOT repeat these already-tracked competitors: " + existing.join(", ") : "") + guidance + '\n\nReturn ONLY valid JSON:\n{\n  "competitors": [\n    {"name":"","description":"","url":"","strengths":[""],"weaknesses":[""],"comparison":""}\n  ]\n}' + _jsonOnly()
+        user: "Find 3-5 additional competitors for this brand." + BrandService.getContextBlock("competitors") + (existing.length ? "\n\nDO NOT repeat these already-tracked competitors: " + existing.join(", ") : "") + guidance + '\n\nReturn ONLY valid JSON:\n{\n  "competitors": [\n    {"name":"","description":"","url":"","strengths":[""],"weaknesses":[""],"comparison":""}\n  ]\n}' + _jsonOnly()
       };
       callAIWithRetry(prompt.user, function(rawText) {
         var parsed = parseJSON(rawText);
@@ -1077,7 +1082,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T02:59:29.524Z";try{
       var typeDesc = BrandService.typeLabels();
       return {
         system: "You are an expert brand strategist. Generate 3 compelling, distinct mission statement options for a " + typeDesc + " brand. Each should capture a different strategic angle or emphasis." + BrandService.getLangSuffix(),
-        user: "Generate 3 mission statement options for this brand. Each should be unique in angle, tone, or strategic emphasis." + BrandService.getContextBlock() + '\n\nReturn ONLY valid JSON:\n{\n  "identity_mission_options": ["mission option 1 \u2014 clear and concise", "mission option 2 \u2014 different angle", "mission option 3 \u2014 different emphasis"]\n}' + _jsonOnly()
+        user: "Generate 3 mission statement options for this brand. Each should be unique in angle, tone, or strategic emphasis." + BrandService.getContextBlock("identity") + '\n\nReturn ONLY valid JSON:\n{\n  "identity_mission_options": ["mission option 1 \u2014 clear and concise", "mission option 2 \u2014 different angle", "mission option 3 \u2014 different emphasis"]\n}' + _jsonOnly()
       };
     }
     function getIdentityPrompt() {
@@ -1094,14 +1099,14 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T02:59:29.524Z";try{
       var missionFields = selectedMission ? "" : '\n  "identity_mission_options": ["mission option 1", "mission option 2", "mission option 3"],\n  "identity_mission": "the recommended mission statement",';
       return {
         system: "You are an expert brand strategist. Create brand identity elements for a " + typeDesc + " brand." + (selectedMission ? " The mission is already decided \u2014 build everything else around it." : " Generate multiple alternatives for mission so the user can choose.") + BrandService.getLangSuffix(),
-        user: "Generate brand identity elements." + missionNote + BrandService.getContextBlock() + "\n\nReturn ONLY valid JSON:\n{" + missionFields + '\n  "identity_vision": "vision statement aligned with the mission",\n  "identity_values": [\n    {"value":"","description":""}\n  ],\n  "identity_archetype": "string \u2014 one of the 12 brand archetypes with brief explanation",\n  "identity_pitch": "30-second elevator pitch"\n}' + _jsonOnly()
+        user: "Generate brand identity elements." + missionNote + BrandService.getContextBlock("identity") + "\n\nReturn ONLY valid JSON:\n{" + missionFields + '\n  "identity_vision": "vision statement aligned with the mission",\n  "identity_values": [\n    {"value":"","description":""}\n  ],\n  "identity_archetype": "string \u2014 one of the 12 brand archetypes with brief explanation",\n  "identity_pitch": "30-second elevator pitch"\n}' + _jsonOnly()
       };
     }
     function getVoicePrompt() {
       var typeDesc = BrandService.typeLabels();
       return {
         system: "You are an expert brand voice strategist. Define the complete voice, tone, and messaging framework for a " + typeDesc + " brand." + BrandService.getLangSuffix(),
-        user: "Generate voice and messaging framework." + BrandService.getContextBlock() + '\n\nReturn ONLY valid JSON:\n{\n  "voice_tone": "primary tone description \u2014 2-3 sentences",\n  "voice_personality": ["trait1", "trait2", "trait3", "trait4", "trait5"],\n  "voice_dos": ["rule1", "rule2", "rule3", "rule4", "rule5"],\n  "voice_donts": ["rule1", "rule2", "rule3", "rule4", "rule5"],\n  "voice_preferred": ["term1", "term2", "term3"],\n  "voice_avoided": ["term1", "term2", "term3"],\n  "messaging_primary": "primary brand message \u2014 one powerful sentence",\n  "messaging_supporting": ["supporting message 1", "supporting message 2", "supporting message 3"],\n  "messaging_headlines": [\n    {"context":"landing page","headline":""},\n    {"context":"social media bio","headline":""},\n    {"context":"email subject","headline":""}\n  ],\n  "voice_sample": "A 3-4 sentence sample text written IN the brand voice \u2014 a product announcement or content piece"\n}' + _jsonOnly()
+        user: "Generate voice and messaging framework." + BrandService.getContextBlock("voice") + '\n\nReturn ONLY valid JSON:\n{\n  "voice_tone": "primary tone description \u2014 2-3 sentences",\n  "voice_personality": ["trait1", "trait2", "trait3", "trait4", "trait5"],\n  "voice_dos": ["rule1", "rule2", "rule3", "rule4", "rule5"],\n  "voice_donts": ["rule1", "rule2", "rule3", "rule4", "rule5"],\n  "voice_preferred": ["term1", "term2", "term3"],\n  "voice_avoided": ["term1", "term2", "term3"],\n  "messaging_primary": "primary brand message \u2014 one powerful sentence",\n  "messaging_supporting": ["supporting message 1", "supporting message 2", "supporting message 3"],\n  "messaging_headlines": [\n    {"context":"landing page","headline":""},\n    {"context":"social media bio","headline":""},\n    {"context":"email subject","headline":""}\n  ],\n  "voice_sample": "A 3-4 sentence sample text written IN the brand voice \u2014 a product announcement or content piece"\n}' + _jsonOnly()
       };
     }
     function _callPrompt(prompt, actionId, callback) {
@@ -1182,7 +1187,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T02:59:29.524Z";try{
       var typeDesc = BrandService.typeLabels();
       return {
         system: "You are an expert brand voice strategist. Define the complete voice, tone, and messaging framework for a " + typeDesc + " brand." + BrandService.getLangSuffix(),
-        user: "Generate voice and messaging framework." + BrandService.getContextBlock() + '\n\nReturn ONLY valid JSON:\n{\n  "voice_tone": "primary tone description \u2014 2-3 sentences",\n  "voice_personality": ["trait1", "trait2", "trait3", "trait4", "trait5"],\n  "voice_dos": ["rule1", "rule2", "rule3", "rule4", "rule5"],\n  "voice_donts": ["rule1", "rule2", "rule3", "rule4", "rule5"],\n  "voice_preferred": ["term1", "term2", "term3"],\n  "voice_avoided": ["term1", "term2", "term3"],\n  "messaging_primary": "primary brand message \u2014 one powerful sentence",\n  "messaging_supporting": ["supporting message 1", "supporting message 2", "supporting message 3"],\n  "messaging_headlines": [\n    {"context":"landing page","headline":""},\n    {"context":"social media bio","headline":""},\n    {"context":"email subject","headline":""}\n  ],\n  "voice_sample": "A 3-4 sentence sample text written IN the brand voice \u2014 a product announcement or content piece"\n}' + _jsonOnly()
+        user: "Generate voice and messaging framework." + BrandService.getContextBlock("voice") + '\n\nReturn ONLY valid JSON:\n{\n  "voice_tone": "primary tone description \u2014 2-3 sentences",\n  "voice_personality": ["trait1", "trait2", "trait3", "trait4", "trait5"],\n  "voice_dos": ["rule1", "rule2", "rule3", "rule4", "rule5"],\n  "voice_donts": ["rule1", "rule2", "rule3", "rule4", "rule5"],\n  "voice_preferred": ["term1", "term2", "term3"],\n  "voice_avoided": ["term1", "term2", "term3"],\n  "messaging_primary": "primary brand message \u2014 one powerful sentence",\n  "messaging_supporting": ["supporting message 1", "supporting message 2", "supporting message 3"],\n  "messaging_headlines": [\n    {"context":"landing page","headline":""},\n    {"context":"social media bio","headline":""},\n    {"context":"email subject","headline":""}\n  ],\n  "voice_sample": "A 3-4 sentence sample text written IN the brand voice \u2014 a product announcement or content piece"\n}' + _jsonOnly()
       };
     }
     function run4(callback) {
@@ -1215,7 +1220,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T02:59:29.524Z";try{
       };
       var prompt = {
         system: "You are a brand copywriter. Write content in the exact voice and tone defined for this brand. Match the personality, vocabulary, and style rules precisely." + BrandService.getLangSuffix(),
-        user: "Write " + (formatDesc[format] || formatDesc.custom) + " for this brand." + BrandService.getContextBlock() + "\n\nReturn ONLY the text content. No JSON wrapper, no quotes, no explanation. Just the raw text in brand voice."
+        user: "Write " + (formatDesc[format] || formatDesc.custom) + " for this brand." + BrandService.getContextBlock("voice") + "\n\nReturn ONLY the text content. No JSON wrapper, no quotes, no explanation. Just the raw text in brand voice."
       };
       LLMService.callAI(prompt.user, function(rawText) {
         var clean = rawText.replace(/```[a-z]*\s*/gi, "").replace(/```\s*/gi, "").trim();
@@ -1260,7 +1265,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T02:59:29.524Z";try{
       var fieldReqs = "\n\nFIELD REQUIREMENTS (every item):\n- segment.pain_points: at least 3 specific pains (no empty array)\n- segment.goals: at least 2 concrete goals\n- segment.channels: at least 2 channels where this segment lives\n" + (personaCount > 0 ? "- persona.age: a realistic age or age range\n- persona.journey: 1-2 sentences on how they discover, evaluate, decide\n- persona.decision_criteria: at least 3 concrete criteria\n- persona.pain_points: at least 3 specific pains\n- persona.goals: at least 2 concrete goals\n" : "");
       return {
         system: "You are an expert audience researcher. Profile the target audience for a " + typeDesc + " brand." + BrandService.getLangSuffix(),
-        user: "Generate audience profile." + BrandService.getContextBlock() + '\n\nReturn ONLY valid JSON:\n{\n  "audience_primary": "2-3 sentence primary audience description",\n  "audience_segments": [\n    {"name":"","description":"","pain_points":[""],"goals":[""],"channels":[""]}\n  ]' + personaSchema + "\n}\n\nGenerate 2-3 segments." + personaInstr + fieldReqs + _jsonOnly()
+        user: "Generate audience profile." + BrandService.getContextBlock("audience") + '\n\nReturn ONLY valid JSON:\n{\n  "audience_primary": "2-3 sentence primary audience description",\n  "audience_segments": [\n    {"name":"","description":"","pain_points":[""],"goals":[""],"channels":[""]}\n  ]' + personaSchema + "\n}\n\nGenerate 2-3 segments." + personaInstr + fieldReqs + _jsonOnly()
       };
     }
     function _offeringsPrompt() {
@@ -1272,7 +1277,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T02:59:29.524Z";try{
       var fieldReqs = "\n\nFIELD REQUIREMENTS (every offering and program):\n- name: short distinctive name\n- category: classification (product / service / course / consulting / etc.)\n- features: at least 2 concrete features\n- benefits: at least 2 outcomes the customer experiences\n- target_audience: who this is specifically for (1 sentence)\n- status: one of active / coming soon / sunset";
       return {
         system: "You are a business strategist. Structure the " + offeringsType + " for a " + typeDesc + " brand." + BrandService.getLangSuffix(),
-        user: "Generate offerings profile." + BrandService.getContextBlock() + '\n\nReturn ONLY valid JSON:\n{\n  "offerings_items": [\n    {"name":"","category":"","description":"","features":[""],"benefits":[""],"target_audience":"","status":"active"}\n  ]' + creatorFields + commercFields + nonprofFields + "\n}\n\nGenerate 3-6 offerings based on available context." + fieldReqs + _jsonOnly()
+        user: "Generate offerings profile." + BrandService.getContextBlock("offerings") + '\n\nReturn ONLY valid JSON:\n{\n  "offerings_items": [\n    {"name":"","category":"","description":"","features":[""],"benefits":[""],"target_audience":"","status":"active"}\n  ]' + creatorFields + commercFields + nonprofFields + "\n}\n\nGenerate 3-6 offerings based on available context." + fieldReqs + _jsonOnly()
       };
     }
     function _callPrompt(prompt, actionId, callback) {
@@ -1327,7 +1332,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T02:59:29.524Z";try{
       }).filter(Boolean);
       var prompt = {
         system: "You are an expert audience researcher building detailed buyer personas." + BrandService.getLangSuffix(),
-        user: "Generate 2-3 additional detailed personas for this brand." + BrandService.getContextBlock() + (existing.length ? "\n\nDO NOT repeat these existing personas: " + existing.join(", ") : "") + (customGuidance ? "\n\nUser direction: " + customGuidance : "") + '\n\nReturn ONLY valid JSON:\n{\n  "personas": [\n    {"name":"","role":"","age":"","story":"","pain_points":[""],"goals":[""],"decision_criteria":[""],"journey":""}\n  ]\n}' + _jsonOnly()
+        user: "Generate 2-3 additional detailed personas for this brand." + BrandService.getContextBlock("audience") + (existing.length ? "\n\nDO NOT repeat these existing personas: " + existing.join(", ") : "") + (customGuidance ? "\n\nUser direction: " + customGuidance : "") + '\n\nReturn ONLY valid JSON:\n{\n  "personas": [\n    {"name":"","role":"","age":"","story":"","pain_points":[""],"goals":[""],"decision_criteria":[""],"journey":""}\n  ]\n}' + _jsonOnly()
       };
       callAIWithRetry(prompt.user, function(rawText) {
         var parsed = parseJSON(rawText);
@@ -1372,7 +1377,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T02:59:29.524Z";try{
       var fieldReqs = "\n\nFIELD REQUIREMENTS (every offering and program):\n- name: short distinctive name\n- category: classification\n- description: 1-2 sentences\n- features: at least 2 concrete features (never empty)\n- benefits: at least 2 outcomes (never empty)\n- target_audience: 1 sentence on who this is for\n- status: active / coming soon / sunset";
       return {
         system: "You are a business strategist. Structure the " + offeringsType + " for a " + typeDesc + " brand." + BrandService.getLangSuffix(),
-        user: "Generate offerings profile." + BrandService.getContextBlock() + '\n\nReturn ONLY valid JSON:\n{\n  "offerings_items": [\n    {"name":"","category":"","description":"","features":[""],"benefits":[""],"target_audience":"","status":"active"}\n  ]' + creatorFields + commercFields + nonprofFields + "\n}\n\nGenerate 3-6 offerings based on available context." + fieldReqs + _jsonOnly()
+        user: "Generate offerings profile." + BrandService.getContextBlock("offerings") + '\n\nReturn ONLY valid JSON:\n{\n  "offerings_items": [\n    {"name":"","category":"","description":"","features":[""],"benefits":[""],"target_audience":"","status":"active"}\n  ]' + creatorFields + commercFields + nonprofFields + "\n}\n\nGenerate 3-6 offerings based on available context." + fieldReqs + _jsonOnly()
       };
     }
     function run4(callback) {
@@ -1413,7 +1418,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T02:59:29.524Z";try{
       var fieldReqs = '\n\nFIELD REQUIREMENTS:\n- Every pillar MUST include: pillar (short name), description (1-2 sentences), topics (>= 3 concrete topics)\n- Every channel MUST include: channel (e.g. Instagram, YouTube, Newsletter), purpose, frequency, format (e.g. "short-form vertical video", "long-form essay") \u2014 never leave format empty\n- SEO keywords are 2-5-word phrases a real user would search\n- Hashtags include the # prefix';
       return {
         system: "You are a content strategist. Build a content and channel strategy for a " + typeDesc + " brand." + BrandService.getLangSuffix(),
-        user: "Generate content strategy." + BrandService.getContextBlock() + '\n\nReturn ONLY valid JSON:\n{\n  "content_pillars": [\n    {"pillar":"","description":"","topics":[""]}\n  ],\n  "content_channels": [\n    {"channel":"","purpose":"","frequency":"","format":""}\n  ],\n  "content_seo": ["keyword1", "keyword2", "keyword3"],\n  "content_hashtags": ["#hashtag1", "#hashtag2"]\n}\n\nGenerate 3-5 pillars, 3-5 channels, 8-12 SEO keywords, and 5-8 hashtags.' + fieldReqs + _jsonOnly()
+        user: "Generate content strategy." + BrandService.getContextBlock("content") + '\n\nReturn ONLY valid JSON:\n{\n  "content_pillars": [\n    {"pillar":"","description":"","topics":[""]}\n  ],\n  "content_channels": [\n    {"channel":"","purpose":"","frequency":"","format":""}\n  ],\n  "content_seo": ["keyword1", "keyword2", "keyword3"],\n  "content_hashtags": ["#hashtag1", "#hashtag2"]\n}\n\nGenerate 3-5 pillars, 3-5 channels, 8-12 SEO keywords, and 5-8 hashtags.' + fieldReqs + _jsonOnly()
       };
     }
     function run4(callback) {
@@ -1454,7 +1459,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T02:59:29.524Z";try{
       var focusLine = focus2 ? "\n\nFocus area: " + focus2 : "";
       return {
         system: "You are an SEO strategist. Run a structured audit for a " + typeDesc + " brand." + BrandService.getLangSuffix(),
-        user: "Run an SEO audit for this brand." + BrandService.getContextBlock() + focusLine + '\n\nReturn ONLY valid JSON:\n{\n  "keyword_clusters": [\n    {"cluster":"","seed_keyword":"","intent":"informational|commercial|transactional","keywords":[""],"difficulty":"low|medium|high"}\n  ],\n  "competitor_analysis": [\n    {"name":"","strengths":[""],"weaknesses":[""],"opportunities":[""]}\n  ],\n  "content_gaps": [\n    {"topic":"","why_it_matters":"","suggested_angle":""}\n  ],\n  "quick_wins": [\n    {"action":"","impact":"low|medium|high","effort":"low|medium|high"}\n  ]\n}\n\nGenerate 4-6 keyword clusters, up to 4 competitors, 3-5 content gaps, and 3-5 quick wins.' + _jsonOnly()
+        user: "Run an SEO audit for this brand." + BrandService.getContextBlock("seo") + focusLine + '\n\nReturn ONLY valid JSON:\n{\n  "keyword_clusters": [\n    {"cluster":"","seed_keyword":"","intent":"informational|commercial|transactional","keywords":[""],"difficulty":"low|medium|high"}\n  ],\n  "competitor_analysis": [\n    {"name":"","strengths":[""],"weaknesses":[""],"opportunities":[""]}\n  ],\n  "content_gaps": [\n    {"topic":"","why_it_matters":"","suggested_angle":""}\n  ],\n  "quick_wins": [\n    {"action":"","impact":"low|medium|high","effort":"low|medium|high"}\n  ]\n}\n\nGenerate 4-6 keyword clusters, up to 4 competitors, 3-5 content gaps, and 3-5 quick wins.' + _jsonOnly()
       };
     }
     function audit(focus2, callback) {
@@ -1478,6 +1483,43 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T02:59:29.524Z";try{
   // src/ai/actions/competitors.js
   (function() {
     "use strict";
+    var W2, LLMService, BrandService, parseJSON, callAIWithRetry;
+    function _resolveHelpers() {
+      W2 = window._bpwState;
+      LLMService = window.LLMService;
+      BrandService = window.BrandService;
+      var H = window._bpwAIHelpers || {};
+      parseJSON = H.parseJSON;
+      callAIWithRetry = H.callAIWithRetry;
+    }
+    function _jsonOnly() {
+      return "\n\nRESPOND WITH VALID JSON ONLY. No markdown, no preamble.";
+    }
+    function getPrompt() {
+      _resolveHelpers();
+      var typeDesc = BrandService.typeLabels();
+      var ctx = BrandService.getContextBlock("competitors");
+      var lang = BrandService.getLangSuffix();
+      return {
+        system: "You are a competitive intelligence analyst researching the competitive landscape for a " + typeDesc + " brand. Focus exclusively on competitors \u2014 do not propose positioning or differentiators here, the Market stage already covers those." + lang,
+        user: "Research competitors for this brand. Use the brand context and phase guidance to choose how many cards and how much depth." + ctx + '\n\nFIELD REQUIREMENTS:\n- Every competitor MUST include: name, url (full URL \u2014 no placeholders), description (1 line), strengths (>= 2), weaknesses (>= 2), comparison (1-2 sentences on how this brand differs).\n- Prefer real, identifiable competitors over generic categories. If the brand mentions specific competitor names in the dump, include those by name first.\n\nReturn ONLY valid JSON:\n{\n  "competitors": [\n    {"name":"","description":"","url":"","strengths":[""],"weaknesses":[""],"comparison":""}\n  ]\n}' + _jsonOnly()
+      };
+    }
+    function run4(callback) {
+      _resolveHelpers();
+      if (!LLMService || !LLMService.isConfigured()) {
+        if (callback) callback({ success: false, error: "No AI providers configured" });
+        return;
+      }
+      var prompt = getPrompt();
+      callAIWithRetry(prompt.user, function(rawText) {
+        var parsed = parseJSON(rawText);
+        var competitors = parsed.competitors || parsed.market_competitors || [];
+        if (callback) callback({ success: true, data: { competitors } });
+      }, function(err) {
+        if (callback) callback({ success: false, error: err });
+      }, "ai-competitors", prompt.system);
+    }
     function findMore(customGuidance, callback) {
       var market = window._bpwAIActions && window._bpwAIActions.market;
       if (!market || !market.findMoreCompetitors) {
@@ -1487,7 +1529,11 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T02:59:29.524Z";try{
       return market.findMoreCompetitors(customGuidance, callback);
     }
     window._bpwAIActions = window._bpwAIActions || {};
-    window._bpwAIActions.competitors = { findMore };
+    window._bpwAIActions.competitors = {
+      run: run4,
+      getPrompt,
+      findMore
+    };
   })();
 
   // src/ai/actions/personas.js
@@ -1559,7 +1605,8 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T02:59:29.524Z";try{
       }
       var currentValue = store.get(path);
       var shapeHint = _shapeHint(currentValue);
-      var ctxBlock = brandSvc.getContextBlock();
+      var stageHint = (path || "").split(".")[0] || "";
+      var ctxBlock = brandSvc.getContextBlock(stageHint);
       var system = "You are a senior brand strategist refining one specific element of a brand profile. Stay strictly within the requested scope \u2014 do not rewrite adjacent fields. Match the existing voice and brand context. Output valid JSON only.";
       var userPrompt = "Refine the following brand-profile field.\n\nField path: " + path + "\nField shape: " + shapeHint.label + "\n\nCurrent value:\n" + _stringify(currentValue) + "\n\nUser instructions for this refine:\n" + (instructions || "(none \u2014 improve generally while keeping the same shape)") + "\n" + ctxBlock + "\n\nReturn ONLY valid JSON in this exact shape:\n" + shapeHint.outputSchema + "\nNo markdown, no commentary \u2014 JSON object only.";
       helpers.callAIWithRetry(userPrompt, function(rawText) {
