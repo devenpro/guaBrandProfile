@@ -982,3 +982,78 @@ body.bpw-app-shell-active { overflow: hidden; }
   text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.05em;
   color: var(--bpw-text-muted, #9aa0a6); font-weight: 700; margin-right: 6px;
 }
+
+/* ──────────────────────────────────────────────────────────────────
+   v2 Page-style category views (Identity, Voice).
+   All fields rendered inline on a single scrollable page.
+   ──────────────────────────────────────────────────────────────── */
+.bpw-shell-detail--page {
+  padding: var(--bpw-sp-6);
+  overflow-y: auto;
+  max-width: 920px;
+}
+.bpw-shell-detail-head { margin-bottom: var(--bpw-sp-5); }
+.bpw-shell-detail-head h1 {
+  font-family: var(--bpw-font-heading);
+  font-size: 28px;
+  margin: 0 0 var(--bpw-sp-2);
+  letter-spacing: -0.01em;
+}
+.bpw-shell-detail-sub {
+  color: var(--bpw-text-sec);
+  font-size: 14px;
+  margin: 0;
+  line-height: 1.5;
+}
+.bpw-page-fields {
+  display: flex; flex-direction: column;
+  gap: var(--bpw-sp-3);
+}
+.bpw-page-field {
+  background: var(--bpw-white);
+  border: 1px solid var(--bpw-border);
+  border-radius: var(--bpw-radius-lg);
+  padding: var(--bpw-sp-4) var(--bpw-sp-5);
+  transition: border-color var(--bpw-tr-fast), box-shadow var(--bpw-tr-fast);
+}
+.bpw-page-field:hover { border-color: var(--bpw-border-dark); }
+.bpw-page-field:focus-within {
+  border-color: var(--bpw-primary);
+  box-shadow: var(--bpw-shadow-glow);
+}
+.bpw-page-field-head {
+  display: flex; align-items: center; gap: var(--bpw-sp-2);
+  margin-bottom: var(--bpw-sp-3);
+}
+.bpw-page-field-label {
+  flex: 1; margin: 0;
+  font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.07em; font-weight: 700;
+  color: var(--bpw-text-muted);
+}
+.bpw-page-field-refine {
+  width: 28px; height: 28px;
+  border: 1px solid var(--bpw-border);
+  background: var(--bpw-white);
+  border-radius: var(--bpw-radius-md);
+  color: var(--bpw-primary);
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  opacity: 0;
+  transition: opacity var(--bpw-tr-fast), background var(--bpw-tr-fast);
+}
+.bpw-page-field:hover .bpw-page-field-refine,
+.bpw-page-field:focus-within .bpw-page-field-refine { opacity: 1; }
+.bpw-page-field-refine:hover { background: var(--bpw-primary-subtle); }
+.bpw-page-field-body input,
+.bpw-page-field-body textarea {
+  border-color: transparent;
+  background: transparent;
+  padding-left: 0; padding-right: 0;
+}
+.bpw-page-field-body input:focus,
+.bpw-page-field-body textarea:focus {
+  border-color: var(--bpw-primary);
+  background: var(--bpw-white);
+  padding-left: 10px; padding-right: 10px;
+}

@@ -99,12 +99,15 @@
   // ── RENDER ──────────────────────────────────────────────────────────
   function _shellHTML() {
     var section = (W.ui && W.ui.section) || 'dashboard';
-    // v2: dashboard is a single-pane view (no middle list). Use a body
-    // class so CSS can collapse the grid and hide the section-list slot.
-    var bodyCls = section === 'dashboard' ? 'bpw-shell-body bpw-shell-body--single' : 'bpw-shell-body';
+    // v2: any view that declares listMode === 'none' renders as a single
+    // page (sidebar + main). Dashboard, Identity, Voice opt into this in
+    // Phases 5–6. Other views still use the legacy 3-pane layout.
+    var view = (window._bpwUIViews || {})[section];
+    var singlePane = view && view.listMode === 'none';
+    var bodyCls = singlePane ? 'bpw-shell-body bpw-shell-body--single' : 'bpw-shell-body';
     var topbar = (window._bpwTopbar && window._bpwTopbar.render && window._bpwTopbar.render(W)) || '';
     var sidebar = (window._bpwSidebar && window._bpwSidebar.render && window._bpwSidebar.render(W)) || '';
-    var list = section === 'dashboard'
+    var list = singlePane
       ? ''
       : ((window._bpwSectionList && window._bpwSectionList.render && window._bpwSectionList.render(W)) || '');
     var detail = (window._bpwDetailPane && window._bpwDetailPane.render && window._bpwDetailPane.render(W)) || '';
