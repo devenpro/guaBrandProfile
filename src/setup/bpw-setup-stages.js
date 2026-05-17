@@ -18,9 +18,12 @@
  *              W.acceptedSections, W.generatedSections),
  *              window._bpwConstants.LEVEL_ORDER
  *
- * Replaces buildSteps() in bpw-app.js:434-467. The "merged identity_voice"
- * and "merged audience_offerings" stages preserve the legacy phased
- * behaviour for New/Growing levels; Deep substitutes split stages.
+ * Replaces buildSteps() in bpw-app.js:434-467. v3: every growth phase
+ * uses the same split stages (identity, voice, audience, offerings).
+ * The legacy merged actions in identity.js / audience.js are no longer
+ * referenced by this registry; diffStages still emits split deltas for
+ * brands whose saved state predates v3 in case anyone walks the
+ * upgrade path mid-flight.
  */
 (function() {
   'use strict';
@@ -148,40 +151,14 @@
       }
     },
 
-    // Merged stage for New/Growing levels: runs mission options first,
-    // then full identity + voice once user picks a mission. The action
-    // module (identity.runMergedIdentityVoice) handles the phase machine.
-    {
-      id: 'identity_voice',
-      label: 'Identity & voice',
-      group: 'identity',
-      gate: { growthPhase: ['new', 'growing'] },
-      dependsOn: ['scrape'],
-      aiActionRef: 'identity.runMergedIdentityVoice',
-      needsReview: true,
-      summaryLine: function() { return 'Generating mission, voice, and tone…'; },
-      summary: function(state) {
-        var mission = _flat(state, 'identity_mission');
-        var tone = _flat(state, 'voice_tone');
-        return [
-          mission ? 'Mission: ' + _truncate(mission, 70) : '',
-          tone ? 'Voice: ' + _truncate(tone, 70) : ''
-        ].filter(Boolean).join(' · ') || 'Identity drafted.';
-      },
-      expandRenderer: function(state) {
-        return '<div class="bpw-setup-stage-detail">'
-          + '<div class="bpw-setup-field"><label>Mission</label><div class="bpw-setup-readonly">' + _esc(_flat(state, 'identity_mission') || '—') + '</div></div>'
-          + '<div class="bpw-setup-field"><label>Voice tone</label><div class="bpw-setup-readonly">' + _esc(_flat(state, 'voice_tone') || '—') + '</div></div>'
-          + '</div>';
-      }
-    },
-
-    // Deep level: split identity from voice.
+    // Identity runs for every growth phase. The action accepts
+    // phaseGuidance via the shared context so the prompt adapts
+    // automatically per level.
     {
       id: 'identity',
       label: 'Identity',
       group: 'identity',
-      gate: { growthPhase: ['deep'] },
+      gate: { growthPhase: ['new', 'growing', 'deep'] },
       dependsOn: ['scrape'],
       aiActionRef: 'identity.runIdentity',
       needsReview: true,
@@ -207,7 +184,7 @@
       id: 'voice',
       label: 'Voice & messaging',
       group: 'identity',
-      gate: { growthPhase: ['deep'] },
+      gate: { growthPhase: ['new', 'growing', 'deep'] },
       dependsOn: ['identity'],
       aiActionRef: 'voice.run',
       needsReview: true,
@@ -229,34 +206,10 @@
     },
 
     {
-      id: 'audience_offerings',
-      label: 'Audience & offerings',
-      group: 'audience',
-      gate: { growthPhase: ['new', 'growing'] },
-      dependsOn: ['identity_voice'],
-      aiActionRef: 'audience.runMergedAudienceOfferings',
-      needsReview: true,
-      summaryLine: function() { return 'Profiling audience and structuring offerings…'; },
-      summary: function(state) {
-        var aud = _flat(state, 'audience_primary');
-        var off = _list(state, 'offerings_items', 3);
-        return [
-          aud ? 'Audience: ' + _truncate(aud, 60) : '',
-          off.length ? 'Offerings: ' + off.map(function(o) { return o.name || o; }).filter(Boolean).join(', ') : ''
-        ].filter(Boolean).join(' · ') || 'Audience drafted.';
-      },
-      expandRenderer: function(state) {
-        return '<div class="bpw-setup-stage-detail">'
-          + '<div class="bpw-setup-field"><label>Primary audience</label><div class="bpw-setup-readonly">' + _esc(_flat(state, 'audience_primary') || '—') + '</div></div>'
-          + '</div>';
-      }
-    },
-
-    {
       id: 'audience',
       label: 'Audience',
       group: 'audience',
-      gate: { growthPhase: ['deep'] },
+      gate: { growthPhase: ['new', 'growing', 'deep'] },
       dependsOn: ['voice'],
       aiActionRef: 'audience.run',
       needsReview: true,
@@ -280,7 +233,7 @@
       id: 'offerings',
       label: 'Offerings',
       group: 'audience',
-      gate: { growthPhase: ['deep'], brandTypes: ['commercial', 'local', 'nonprofit'] },
+      gate: { growthPhase: ['new', 'growing', 'deep'], brandTypes: ['commercial', 'local', 'nonprofit'] },
       dependsOn: ['audience'],
       aiActionRef: 'offerings.run',
       needsReview: true,

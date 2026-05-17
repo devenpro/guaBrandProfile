@@ -1,4 +1,4 @@
-window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T03:12:27.911Z";try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}
+window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T05:14:39.287Z";try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}
 (() => {
   // src/ai/providers/registry.js
   (function() {
@@ -1833,38 +1833,14 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T03:12:27.911Z";try{
           return '<div class="bpw-setup-stage-detail"><div class="bpw-setup-field"><label>Market category</label><div class="bpw-setup-readonly">' + _esc(_flat(state, "market_category") || "\u2014") + '</div></div><div class="bpw-setup-field"><label>Positioning</label><div class="bpw-setup-readonly">' + _esc(_flat(state, "market_positioning") || "\u2014") + "</div></div></div>";
         }
       },
-      // Merged stage for New/Growing levels: runs mission options first,
-      // then full identity + voice once user picks a mission. The action
-      // module (identity.runMergedIdentityVoice) handles the phase machine.
-      {
-        id: "identity_voice",
-        label: "Identity & voice",
-        group: "identity",
-        gate: { growthPhase: ["new", "growing"] },
-        dependsOn: ["scrape"],
-        aiActionRef: "identity.runMergedIdentityVoice",
-        needsReview: true,
-        summaryLine: function() {
-          return "Generating mission, voice, and tone\u2026";
-        },
-        summary: function(state) {
-          var mission = _flat(state, "identity_mission");
-          var tone = _flat(state, "voice_tone");
-          return [
-            mission ? "Mission: " + _truncate(mission, 70) : "",
-            tone ? "Voice: " + _truncate(tone, 70) : ""
-          ].filter(Boolean).join(" \xB7 ") || "Identity drafted.";
-        },
-        expandRenderer: function(state) {
-          return '<div class="bpw-setup-stage-detail"><div class="bpw-setup-field"><label>Mission</label><div class="bpw-setup-readonly">' + _esc(_flat(state, "identity_mission") || "\u2014") + '</div></div><div class="bpw-setup-field"><label>Voice tone</label><div class="bpw-setup-readonly">' + _esc(_flat(state, "voice_tone") || "\u2014") + "</div></div></div>";
-        }
-      },
-      // Deep level: split identity from voice.
+      // Identity runs for every growth phase. The action accepts
+      // phaseGuidance via the shared context so the prompt adapts
+      // automatically per level.
       {
         id: "identity",
         label: "Identity",
         group: "identity",
-        gate: { growthPhase: ["deep"] },
+        gate: { growthPhase: ["new", "growing", "deep"] },
         dependsOn: ["scrape"],
         aiActionRef: "identity.runIdentity",
         needsReview: true,
@@ -1887,7 +1863,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T03:12:27.911Z";try{
         id: "voice",
         label: "Voice & messaging",
         group: "identity",
-        gate: { growthPhase: ["deep"] },
+        gate: { growthPhase: ["new", "growing", "deep"] },
         dependsOn: ["identity"],
         aiActionRef: "voice.run",
         needsReview: true,
@@ -1907,35 +1883,10 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T03:12:27.911Z";try{
         }
       },
       {
-        id: "audience_offerings",
-        label: "Audience & offerings",
-        group: "audience",
-        gate: { growthPhase: ["new", "growing"] },
-        dependsOn: ["identity_voice"],
-        aiActionRef: "audience.runMergedAudienceOfferings",
-        needsReview: true,
-        summaryLine: function() {
-          return "Profiling audience and structuring offerings\u2026";
-        },
-        summary: function(state) {
-          var aud = _flat(state, "audience_primary");
-          var off = _list(state, "offerings_items", 3);
-          return [
-            aud ? "Audience: " + _truncate(aud, 60) : "",
-            off.length ? "Offerings: " + off.map(function(o) {
-              return o.name || o;
-            }).filter(Boolean).join(", ") : ""
-          ].filter(Boolean).join(" \xB7 ") || "Audience drafted.";
-        },
-        expandRenderer: function(state) {
-          return '<div class="bpw-setup-stage-detail"><div class="bpw-setup-field"><label>Primary audience</label><div class="bpw-setup-readonly">' + _esc(_flat(state, "audience_primary") || "\u2014") + "</div></div></div>";
-        }
-      },
-      {
         id: "audience",
         label: "Audience",
         group: "audience",
-        gate: { growthPhase: ["deep"] },
+        gate: { growthPhase: ["new", "growing", "deep"] },
         dependsOn: ["voice"],
         aiActionRef: "audience.run",
         needsReview: true,
@@ -1958,7 +1909,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T03:12:27.911Z";try{
         id: "offerings",
         label: "Offerings",
         group: "audience",
-        gate: { growthPhase: ["deep"], brandTypes: ["commercial", "local", "nonprofit"] },
+        gate: { growthPhase: ["new", "growing", "deep"], brandTypes: ["commercial", "local", "nonprofit"] },
         dependsOn: ["audience"],
         aiActionRef: "offerings.run",
         needsReview: true,
