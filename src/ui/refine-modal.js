@@ -128,6 +128,24 @@
       close();
     });
 
+  // Page-style sparkle button (used by identity/voice/etc. views and
+  // by the wizard's review pane). v3: opens the field menu popover
+  // (window._bpwFieldMenu) which offers Improve / Regenerate / Copy.
+  // If the menu module hasn't loaded yet, fall back to the legacy
+  // direct-open behavior.
+  $(document).off('click.bpw-refine-trigger', '[data-action="refine"][data-refine-path]')
+    .on('click.bpw-refine-trigger', '[data-action="refine"][data-refine-path]', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var path = $(this).attr('data-refine-path');
+      var label = $(this).closest('.bpw-page-field').find('.bpw-page-field-label').text() || path;
+      if (window._bpwFieldMenu && window._bpwFieldMenu.openMenu) {
+        window._bpwFieldMenu.openMenu(this, path, label);
+      } else {
+        openField(path, label);
+      }
+    });
+
   // Provider change inside the modal — re-render the model select so
   // the options match the chosen provider. LLMService already wires
   // the data-field="ai-provider-setup" change globally to mutate

@@ -1,4 +1,4 @@
-window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T03:12:27.911Z";try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}
+window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T18:43:36.261Z";try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}
 (() => {
   // src/ai/providers/registry.js
   (function() {
@@ -1833,38 +1833,14 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T03:12:27.911Z";try{
           return '<div class="bpw-setup-stage-detail"><div class="bpw-setup-field"><label>Market category</label><div class="bpw-setup-readonly">' + _esc(_flat(state, "market_category") || "\u2014") + '</div></div><div class="bpw-setup-field"><label>Positioning</label><div class="bpw-setup-readonly">' + _esc(_flat(state, "market_positioning") || "\u2014") + "</div></div></div>";
         }
       },
-      // Merged stage for New/Growing levels: runs mission options first,
-      // then full identity + voice once user picks a mission. The action
-      // module (identity.runMergedIdentityVoice) handles the phase machine.
-      {
-        id: "identity_voice",
-        label: "Identity & voice",
-        group: "identity",
-        gate: { growthPhase: ["new", "growing"] },
-        dependsOn: ["scrape"],
-        aiActionRef: "identity.runMergedIdentityVoice",
-        needsReview: true,
-        summaryLine: function() {
-          return "Generating mission, voice, and tone\u2026";
-        },
-        summary: function(state) {
-          var mission = _flat(state, "identity_mission");
-          var tone = _flat(state, "voice_tone");
-          return [
-            mission ? "Mission: " + _truncate(mission, 70) : "",
-            tone ? "Voice: " + _truncate(tone, 70) : ""
-          ].filter(Boolean).join(" \xB7 ") || "Identity drafted.";
-        },
-        expandRenderer: function(state) {
-          return '<div class="bpw-setup-stage-detail"><div class="bpw-setup-field"><label>Mission</label><div class="bpw-setup-readonly">' + _esc(_flat(state, "identity_mission") || "\u2014") + '</div></div><div class="bpw-setup-field"><label>Voice tone</label><div class="bpw-setup-readonly">' + _esc(_flat(state, "voice_tone") || "\u2014") + "</div></div></div>";
-        }
-      },
-      // Deep level: split identity from voice.
+      // Identity runs for every growth phase. The action accepts
+      // phaseGuidance via the shared context so the prompt adapts
+      // automatically per level.
       {
         id: "identity",
         label: "Identity",
         group: "identity",
-        gate: { growthPhase: ["deep"] },
+        gate: { growthPhase: ["new", "growing", "deep"] },
         dependsOn: ["scrape"],
         aiActionRef: "identity.runIdentity",
         needsReview: true,
@@ -1887,7 +1863,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T03:12:27.911Z";try{
         id: "voice",
         label: "Voice & messaging",
         group: "identity",
-        gate: { growthPhase: ["deep"] },
+        gate: { growthPhase: ["new", "growing", "deep"] },
         dependsOn: ["identity"],
         aiActionRef: "voice.run",
         needsReview: true,
@@ -1907,35 +1883,10 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T03:12:27.911Z";try{
         }
       },
       {
-        id: "audience_offerings",
-        label: "Audience & offerings",
-        group: "audience",
-        gate: { growthPhase: ["new", "growing"] },
-        dependsOn: ["identity_voice"],
-        aiActionRef: "audience.runMergedAudienceOfferings",
-        needsReview: true,
-        summaryLine: function() {
-          return "Profiling audience and structuring offerings\u2026";
-        },
-        summary: function(state) {
-          var aud = _flat(state, "audience_primary");
-          var off = _list(state, "offerings_items", 3);
-          return [
-            aud ? "Audience: " + _truncate(aud, 60) : "",
-            off.length ? "Offerings: " + off.map(function(o) {
-              return o.name || o;
-            }).filter(Boolean).join(", ") : ""
-          ].filter(Boolean).join(" \xB7 ") || "Audience drafted.";
-        },
-        expandRenderer: function(state) {
-          return '<div class="bpw-setup-stage-detail"><div class="bpw-setup-field"><label>Primary audience</label><div class="bpw-setup-readonly">' + _esc(_flat(state, "audience_primary") || "\u2014") + "</div></div></div>";
-        }
-      },
-      {
         id: "audience",
         label: "Audience",
         group: "audience",
-        gate: { growthPhase: ["deep"] },
+        gate: { growthPhase: ["new", "growing", "deep"] },
         dependsOn: ["voice"],
         aiActionRef: "audience.run",
         needsReview: true,
@@ -1958,7 +1909,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T03:12:27.911Z";try{
         id: "offerings",
         label: "Offerings",
         group: "audience",
-        gate: { growthPhase: ["deep"], brandTypes: ["commercial", "local", "nonprofit"] },
+        gate: { growthPhase: ["new", "growing", "deep"], brandTypes: ["commercial", "local", "nonprofit"] },
         dependsOn: ["audience"],
         aiActionRef: "offerings.run",
         needsReview: true,
@@ -2229,7 +2180,34 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T03:12:27.911Z";try{
       var W2 = _W();
       if (!W2 || !W2.setup || !W2.setup.awaitingReview) return;
       W2.setup.awaitingReview = null;
+      if (W2.setup.resumeAt) {
+        var resumeId = W2.setup.resumeAt;
+        W2.setup.resumeAt = null;
+        W2.setup.awaitingReview = resumeId;
+        W2.setup.currentStageId = resumeId;
+        return;
+      }
       _advance();
+    }
+    function goBack() {
+      var W2 = _W();
+      if (!W2 || !W2.setup) return;
+      var queue = W2.setup.stagesQueue || [];
+      var currentId = W2.setup.awaitingReview || W2.setup.currentStageId;
+      var idx = queue.indexOf(currentId);
+      if (idx <= 0) return;
+      var prevId = null;
+      for (var i = idx - 1; i >= 0; i--) {
+        var s = (W2.setup.stageStatus[queue[i]] || {}).state;
+        if (s === "done") {
+          prevId = queue[i];
+          break;
+        }
+      }
+      if (!prevId) return;
+      W2.setup.resumeAt = currentId;
+      W2.setup.awaitingReview = prevId;
+      W2.setup.currentStageId = prevId;
     }
     function rerunStage(stageId) {
       var W2 = _W();
@@ -2324,6 +2302,19 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T03:12:27.911Z";try{
           }
           _setStatus(id, statusPatch);
           if (stage.needsReview) {
+            if (id !== "scrape") {
+              var accept = window._bpwAcceptSection;
+              if (accept && res.data) {
+                for (var fk in res.data) {
+                  if (!res.data.hasOwnProperty(fk)) continue;
+                  try {
+                    accept(fk, res.data[fk]);
+                  } catch (acceptErr) {
+                    console.warn(LOG, "accept-on-review failed for", fk, acceptErr);
+                  }
+                }
+              }
+            }
             W2.setup.awaitingReview = id;
             becameReview = true;
           }
@@ -2382,6 +2373,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T03:12:27.911Z";try{
       skipCurrent,
       continueReview,
       rerunStage,
+      goBack,
       state
     };
   })();
@@ -2502,6 +2494,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T03:12:27.911Z";try{
       var m = Math.floor(s / 60), rem = s % 60;
       return (m < 10 ? "0" + m : m) + ":" + (rem < 10 ? "0" + rem : rem);
     }
+    var _tickTimer = null;
     function _render() {
       $("body").addClass("bpw-setup-open");
       var $existing = $(".bpw-setup");
@@ -2511,6 +2504,29 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T03:12:27.911Z";try{
       } else {
         $("body").append('<div class="bpw-setup" role="application" aria-label="Brand profile autopilot setup">' + html + "</div>");
       }
+      _scheduleTick();
+    }
+    function _scheduleTick() {
+      if (_tickTimer) {
+        clearInterval(_tickTimer);
+        _tickTimer = null;
+      }
+      var stage = _workflowStage();
+      if (stage !== "stage_loading" && stage !== "ai_run") return;
+      _tickTimer = setInterval(function() {
+        if (!$(".bpw-setup").length) {
+          clearInterval(_tickTimer);
+          _tickTimer = null;
+          return;
+        }
+        var s = _workflowStage();
+        if (s !== "stage_loading" && s !== "ai_run") {
+          clearInterval(_tickTimer);
+          _tickTimer = null;
+          return;
+        }
+        _render();
+      }, 1e3);
     }
     function _renderShell() {
       var running = W2.setup && W2.setup.open;
@@ -2521,7 +2537,12 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T03:12:27.911Z";try{
       if (s.finishedAt) return "done";
       if (!s.open) return "inputs";
       if (s.awaitingReview === "scrape") return "website";
-      if (s.currentStageId === "scrape") return "website";
+      if (s.currentStageId === "scrape" && !s.awaitingReview) return "website";
+      if (s.awaitingReview) return "stage_review";
+      if (s.currentStageId) {
+        var st = (s.stageStatus[s.currentStageId] || {}).state;
+        if (st === "running") return "stage_loading";
+      }
       return "ai_run";
     }
     var WORKFLOW_STAGES = [
@@ -2569,10 +2590,120 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T03:12:27.911Z";try{
         html += _renderForm(running);
       } else if (stage === "website") {
         html += _renderWebsiteStage();
+      } else if (stage === "stage_review") {
+        html += _renderStagePane(W2.setup.awaitingReview);
+      } else if (stage === "stage_loading") {
+        html += _renderStageLoading(W2.setup.currentStageId);
       } else {
         html += _renderAIRunStage();
       }
       html += "</div></div>";
+      return html;
+    }
+    function _renderStagePane(stageId) {
+      var stagesMod = window._bpwSetupStages;
+      var stage = stagesMod && stagesMod.findStage(stageId);
+      if (!stage) return "";
+      var queue = W2.setup && W2.setup.stagesQueue || [];
+      var idx = queue.indexOf(stageId);
+      var prevId = null, nextId = null;
+      for (var i = idx - 1; i >= 0; i--) {
+        var prevState = (W2.setup.stageStatus[queue[i]] || {}).state;
+        if (prevState === "done") {
+          prevId = queue[i];
+          break;
+        }
+      }
+      for (var j = idx + 1; j < queue.length; j++) {
+        nextId = queue[j];
+        break;
+      }
+      var prevStage = prevId ? stagesMod.findStage(prevId) : null;
+      var nextStage = nextId ? stagesMod.findStage(nextId) : null;
+      var views = window._bpwUIViews || {};
+      var view = views[stageId];
+      var body = "";
+      if (view && view.listMode === "none" && typeof view.renderDetail === "function") {
+        try {
+          body = view.renderDetail(W2);
+        } catch (e) {
+          body = '<div class="bpw-setup-stage-pane-fallback">Failed to render: ' + _esc(e.message) + "</div>";
+        }
+      } else {
+        var fallback = "";
+        try {
+          fallback = stage.expandRenderer && stage.expandRenderer(W2) || "";
+        } catch (eRender) {
+          fallback = "";
+        }
+        body = '<section class="bpw-shell-detail bpw-shell-detail--page"><header class="bpw-shell-detail-head"><h1>' + _esc(stage.label) + '</h1><p class="bpw-shell-detail-sub">Page-style editing for this section is coming soon. For now, review the AI draft below and continue.</p></header>' + (fallback || '<div class="bpw-setup-stage-pane-fallback">No draft data.</div>') + "</section>";
+      }
+      var html = '<section class="bpw-setup-stage-pane bpw-setup-stage-pane--review" data-stage-id="' + _esc(stageId) + '">';
+      html += '<header class="bpw-setup-stage-pane-header">';
+      html += '<div class="bpw-setup-stage-pane-titles">';
+      html += '<div class="bpw-setup-stage-pane-eyebrow">' + _icon("sparkles") + " Drafted by AI \xB7 " + _esc(_phaseLabel()) + "</div>";
+      html += '<h2 class="bpw-setup-stage-pane-title">Review your ' + _esc(stage.label) + "</h2>";
+      html += '<p class="bpw-setup-stage-pane-desc">Edit any field inline, regenerate the whole stage, or approve to continue.</p>';
+      html += "</div>";
+      html += '<div class="bpw-setup-stage-pane-actions">';
+      html += '<button class="bpw-setup-stage-pane-regen" data-action="bpw-setup-rerun-stage" data-stage-id="' + _esc(stageId) + '" type="button">' + _icon("rotate-right") + " Regenerate all</button>";
+      if (nextStage) {
+        html += '<button class="bpw-setup-stage-pane-approve" data-action="bpw-setup-continue-review" type="button">' + _icon("circle-check") + ' Approve &amp; continue <span class="bpw-setup-stage-pane-approve-next">\u2192 ' + _esc(nextStage.label) + "</span></button>";
+      } else {
+        html += '<button class="bpw-setup-stage-pane-approve" data-action="bpw-setup-continue-review" type="button">' + _icon("circle-check") + " Approve &amp; finish</button>";
+      }
+      html += "</div>";
+      html += "</header>";
+      html += '<div class="bpw-setup-stage-pane-body">' + body + "</div>";
+      html += '<footer class="bpw-setup-stage-pane-footer">';
+      if (prevStage) {
+        html += '<button class="bpw-setup-stage-pane-back" data-action="bpw-setup-go-back" type="button">' + _icon("arrow-left") + " Back to " + _esc(prevStage.label) + "</button>";
+      } else {
+        html += "<span></span>";
+      }
+      html += '<button class="bpw-setup-stage-pane-skip" data-action="bpw-setup-skip-review" data-stage-id="' + _esc(stageId) + '" type="button">' + _icon("forward") + " Skip stage</button>";
+      html += "</footer>";
+      html += "</section>";
+      return html;
+    }
+    function _phaseLabel() {
+      var map2 = { new: "New brand", growing: "Growing brand", deep: "Established brand" };
+      return map2[W2.brandLevel] || (W2.brandLevel || "");
+    }
+    function _renderStageLoading(stageId) {
+      var stagesMod = window._bpwSetupStages;
+      var stage = stagesMod && stagesMod.findStage(stageId);
+      if (!stage) return "";
+      var queue = W2.setup && W2.setup.stagesQueue || [];
+      var idx = queue.indexOf(stageId);
+      var remaining = [];
+      for (var i = idx + 1; i < queue.length; i++) {
+        var s = stagesMod.findStage(queue[i]);
+        if (s) remaining.push(s.label);
+      }
+      var status = W2.setup.stageStatus[stageId] || {};
+      var elapsed = status.startedAt ? _fmtElapsed(Date.now() - status.startedAt) : "";
+      var summaryLine = "";
+      try {
+        summaryLine = stage.summaryLine && stage.summaryLine(W2) || "";
+      } catch (e) {
+        summaryLine = "";
+      }
+      var html = '<section class="bpw-setup-stage-pane bpw-setup-stage-pane--loading">';
+      html += '<div class="bpw-setup-stage-loading">';
+      html += '<div class="bpw-setup-stage-loading-ring" aria-hidden="true"></div>';
+      html += '<h2 class="bpw-setup-stage-loading-title">Drafting your ' + _esc(stage.label) + "\u2026</h2>";
+      html += '<p class="bpw-setup-stage-loading-desc">' + _esc(summaryLine || "Working with the AI provider on your brand context.") + "</p>";
+      if (elapsed) {
+        html += '<p class="bpw-setup-stage-loading-elapsed">' + _icon("clock") + " " + _esc(elapsed) + " elapsed \xB7 typically 8\u201315 seconds</p>";
+      }
+      if (remaining.length) {
+        html += '<p class="bpw-setup-stage-loading-next">Up next: ' + _esc(remaining.join(" \u2192 ")) + ". You'll review each before the next starts.</p>";
+      } else {
+        html += `<p class="bpw-setup-stage-loading-next">Last stage \u2014 you'll review the output and finish setup.</p>`;
+      }
+      html += "</div>";
+      html += "</section>";
       return html;
     }
     function _renderLeftRail(currentStageId) {
@@ -2991,6 +3122,13 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T03:12:27.911Z";try{
         var orch = window._bpwSetupOrchestrator;
         if (!orch) return;
         orch.skipCurrent();
+        _render();
+      });
+      $(document).off("click" + ns, '.bpw-setup [data-action="bpw-setup-go-back"]').on("click" + ns, '.bpw-setup [data-action="bpw-setup-go-back"]', function(e) {
+        e.preventDefault();
+        var orch = window._bpwSetupOrchestrator;
+        if (!orch || !orch.goBack) return;
+        orch.goBack();
         _render();
       });
       function _ensureSocialsSlot() {
@@ -26182,6 +26320,17 @@ ${prefix}
       e.preventDefault();
       close2();
     });
+    $(document).off("click.bpw-refine-trigger", '[data-action="refine"][data-refine-path]').on("click.bpw-refine-trigger", '[data-action="refine"][data-refine-path]', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var path = $(this).attr("data-refine-path");
+      var label = $(this).closest(".bpw-page-field").find(".bpw-page-field-label").text() || path;
+      if (window._bpwFieldMenu && window._bpwFieldMenu.openMenu) {
+        window._bpwFieldMenu.openMenu(this, path, label);
+      } else {
+        openField(path, label);
+      }
+    });
     $(document).off("change.bpw-refine-provider", '.bpw-refine-modal [data-field="ai-provider-setup"]').on("change.bpw-refine-provider", '.bpw-refine-modal [data-field="ai-provider-setup"]', function() {
       var W2 = window._bpwState;
       W2.aiProvider = $(this).val();
@@ -26231,6 +26380,124 @@ ${prefix}
       openSection,
       close: close2
     };
+  })();
+
+  // src/ui/field-menu.js
+  (function() {
+    "use strict";
+    var $ = window.jQuery;
+    var LOG = "[BPW-field-menu]";
+    function _icon(n) {
+      return (window._bpwIcon || function(name) {
+        if (!name) return "";
+        if (name.indexOf("fa-") === 0) return '<i class="' + name + '"></i>';
+        return '<i class="fa-solid fa-' + name + '"></i>';
+      })(n);
+    }
+    function _esc(s) {
+      return (window._bpwEsc || function(x) {
+        if (x == null) return "";
+        return String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      })(s);
+    }
+    function close2() {
+      $(".bpw-field-menu").remove();
+      $(document).off("click.bpw-field-menu-dismiss keydown.bpw-field-menu-dismiss");
+    }
+    function openMenu(buttonEl, path, label) {
+      close2();
+      if (!buttonEl || !path) return;
+      var $btn = $(buttonEl);
+      var rect = buttonEl.getBoundingClientRect();
+      var top = rect.bottom + window.scrollY + 4;
+      var left = rect.right + window.scrollX - 180;
+      if (left < 8) left = 8;
+      var html = '<div class="bpw-field-menu" role="menu" style="position:absolute;top:' + top + "px;left:" + left + 'px;"><button class="bpw-field-menu-item" data-field-menu="improve" type="button">' + _icon("wand-magic-sparkles") + ' Improve with prompt\u2026</button><button class="bpw-field-menu-item" data-field-menu="regenerate" type="button">' + _icon("rotate-right") + ' Regenerate</button><button class="bpw-field-menu-item" data-field-menu="copy" type="button">' + _icon("copy") + " Copy</button></div>";
+      $("body").append(html);
+      var $menu = $(".bpw-field-menu").last();
+      $menu.data("path", path);
+      $menu.data("label", label || path);
+      setTimeout(function() {
+        $(document).on("click.bpw-field-menu-dismiss", function(e) {
+          if ($(e.target).closest('.bpw-field-menu, [data-action="refine"]').length) return;
+          close2();
+        });
+        $(document).on("keydown.bpw-field-menu-dismiss", function(e) {
+          if (e.key === "Escape") close2();
+        });
+      }, 0);
+    }
+    function _regenerate(path, label) {
+      var refine = window._bpwRefine;
+      if (!refine || !refine.refineField) {
+        if (window._bpwToast) window._bpwToast("Refine engine not loaded.", "error");
+        return;
+      }
+      if (window._bpwToast) window._bpwToast("Regenerating " + (label || path) + "\u2026", "info");
+      refine.refineField(path, "", null, function(res) {
+        if (res && res.success) {
+          if (window._bpwToast) window._bpwToast("Regenerated " + (label || path), "success");
+        } else {
+          if (window._bpwToast) window._bpwToast("Regenerate failed: " + (res && res.error || "unknown"), "error");
+        }
+      });
+    }
+    function _copy(path, label) {
+      var store = window._bpwPathStore;
+      if (!store) return;
+      var value = store.get(path);
+      var text = "";
+      if (value == null) text = "";
+      else if (typeof value === "string") text = value;
+      else {
+        try {
+          text = JSON.stringify(value, null, 2);
+        } catch (e) {
+          text = String(value);
+        }
+      }
+      var ok = false;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function() {
+          if (window._bpwToast) window._bpwToast("Copied " + (label || path), "success");
+        }, function(err) {
+          console.warn(LOG, "clipboard write failed", err);
+          if (window._bpwToast) window._bpwToast("Copy failed: " + (err.message || err), "error");
+        });
+        ok = true;
+      }
+      if (!ok) {
+        try {
+          var ta2 = document.createElement("textarea");
+          ta2.value = text;
+          ta2.style.position = "fixed";
+          ta2.style.opacity = "0";
+          document.body.appendChild(ta2);
+          ta2.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta2);
+          if (window._bpwToast) window._bpwToast("Copied " + (label || path), "success");
+        } catch (e) {
+          if (window._bpwToast) window._bpwToast("Copy failed.", "error");
+        }
+      }
+    }
+    $(document).off("click.bpw-field-menu", ".bpw-field-menu [data-field-menu]").on("click.bpw-field-menu", ".bpw-field-menu [data-field-menu]", function(e) {
+      e.preventDefault();
+      var $menu = $(this).closest(".bpw-field-menu");
+      var path = $menu.data("path");
+      var label = $menu.data("label");
+      var action = $(this).attr("data-field-menu");
+      close2();
+      if (action === "improve") {
+        if (window._bpwRefineModal) window._bpwRefineModal.openField(path, label);
+      } else if (action === "regenerate") {
+        _regenerate(path, label);
+      } else if (action === "copy") {
+        _copy(path, label);
+      }
+    });
+    window._bpwFieldMenu = { openMenu, close: close2 };
   })();
 
   // src/ui/topbar.js
@@ -26355,139 +26622,6 @@ ${prefix}
       return html;
     }
     window._bpwSidebar = { render, SECTIONS };
-  })();
-
-  // src/ui/section-list.js
-  (function() {
-    "use strict";
-    function _esc(s) {
-      return (window._bpwEsc || function(x) {
-        return x == null ? "" : String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-      })(s);
-    }
-    function _icon(n) {
-      return (window._bpwIcon || function(name) {
-        if (!name) return "";
-        if (name.indexOf("fa-") === 0) return '<i class="' + name + '"></i>';
-        return '<i class="fa-solid fa-' + name + '"></i>';
-      })(n);
-    }
-    function render(W2) {
-      var sectionId = W2.ui && W2.ui.section || "identity";
-      var views = window._bpwUIViews || {};
-      var view = views[sectionId];
-      var REFINEABLE_SECTIONS = { identity: 1, voice: 1, audience: 1, offerings: 1, market: 1, content: 1, seo: 1 };
-      var canRefine = !!REFINEABLE_SECTIONS[sectionId];
-      var html = '<section class="bpw-shell-list" aria-label="Section items">';
-      html += '<header class="bpw-shell-list-header">';
-      html += "<h2>" + _esc(view ? view.title : sectionId) + "</h2>";
-      if (canRefine) {
-        html += '<button class="bpw-shell-list-regenerate" data-action="bpw-section-regenerate" data-section-id="' + _esc(sectionId) + '" data-section-label="' + _esc(view ? view.title : sectionId) + '" type="button" title="Regenerate this section with AI">' + _icon("arrows-rotate") + "</button>";
-      }
-      html += "</header>";
-      if (!view) {
-        html += '<div class="bpw-shell-list-empty">' + _icon("flask") + "<p>View module not loaded.</p></div>";
-        html += "</section>";
-        return html;
-      }
-      if (view.inlineActions && view.inlineActions.length) {
-        html += '<div class="bpw-shell-list-actions">';
-        for (var i = 0; i < view.inlineActions.length; i++) {
-          var a = view.inlineActions[i];
-          if (a.type === "add-row") {
-            html += '<button class="bpw-shell-action-btn" data-action="bpw-section-add-row" data-list-path="' + _esc(a.listPath) + `" data-item-template='` + _esc(JSON.stringify(a.itemTemplate || {})) + `' data-item-prefix="` + _esc(a.itemPrefix || "") + '" type="button">' + _icon(a.icon || "plus") + " " + _esc(a.label) + "</button>";
-          } else {
-            html += '<button class="bpw-shell-action-btn" data-action="' + _esc(a.id) + '" type="button">' + _icon(a.icon || "sparkles") + " " + _esc(a.label) + "</button>";
-          }
-        }
-        html += "</div>";
-      }
-      var body = "";
-      try {
-        body = view.renderList ? view.renderList(W2) : "";
-      } catch (e) {
-        console.warn("[BPW-ui] renderList threw for", sectionId, e);
-        body = '<div class="bpw-shell-list-empty">' + _icon("triangle-exclamation") + "<p>Failed to render list.</p></div>";
-      }
-      html += '<div class="bpw-shell-list-body">' + body + "</div>";
-      html += "</section>";
-      return html;
-    }
-    if (window.jQuery) {
-      var $ = window.jQuery;
-      $(document).off("click.bpw-section-regen").on("click.bpw-section-regen", '[data-action="bpw-section-regenerate"]', function(e) {
-        e.preventDefault();
-        var sectionId = $(this).attr("data-section-id");
-        var label = $(this).attr("data-section-label") || sectionId;
-        if (window._bpwRefineModal) window._bpwRefineModal.openSection(sectionId, label);
-      });
-      $(document).off("click.bpw-section-add-row").on("click.bpw-section-add-row", '[data-action="bpw-section-add-row"]', function(e) {
-        e.preventDefault();
-        var path = $(this).attr("data-list-path");
-        var prefix = $(this).attr("data-item-prefix") || "";
-        if (!path) return;
-        var tmpl = {};
-        try {
-          tmpl = JSON.parse($(this).attr("data-item-template") || "{}");
-        } catch (err) {
-        }
-        var store = window._bpwPathStore;
-        if (!store) return;
-        var arr = store.get(path) || [];
-        var idx = arr.length;
-        store.push(path, JSON.parse(JSON.stringify(tmpl)));
-        store.persist();
-        if (window._bpwAppShell && prefix) {
-          window._bpwAppShell.setActiveItem(prefix + ":" + idx);
-        } else if (window._bpwAppShell) {
-          window._bpwAppShell.render();
-        }
-      });
-    }
-    window._bpwSectionList = { render };
-  })();
-
-  // src/ui/detail-pane.js
-  (function() {
-    "use strict";
-    function _esc(s) {
-      return (window._bpwEsc || function(x) {
-        return x == null ? "" : String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-      })(s);
-    }
-    function _icon(n) {
-      return (window._bpwIcon || function(name) {
-        if (!name) return "";
-        if (name.indexOf("fa-") === 0) return '<i class="' + name + '"></i>';
-        return '<i class="fa-solid fa-' + name + '"></i>';
-      })(n);
-    }
-    function render(W2) {
-      var sectionId = W2.ui && W2.ui.section || "identity";
-      var itemId = W2.ui && W2.ui.itemId;
-      var views = window._bpwUIViews || {};
-      var view = views[sectionId];
-      var html = '<section class="bpw-shell-detail" aria-label="Detail editor">';
-      if (!view) {
-        html += '<div class="bpw-shell-detail-empty">' + _icon("flask") + "<h3>View module not loaded</h3><p>Section: " + _esc(sectionId) + "</p></div>";
-        html += "</section>";
-        return html;
-      }
-      var body = "";
-      try {
-        body = view.renderDetail ? view.renderDetail(W2, itemId) : "";
-      } catch (e) {
-        console.warn("[BPW-ui] renderDetail threw for", sectionId, e);
-        body = '<div class="bpw-shell-detail-empty">' + _icon("triangle-exclamation") + "<h3>Failed to render</h3><p>" + _esc(e.message || String(e)) + "</p></div>";
-      }
-      if (!body) {
-        body = '<div class="bpw-shell-detail-empty">' + _icon("hand-pointer") + "<h3>Select an item</h3><p>Pick a card from the list to view or edit it here.</p></div>";
-      }
-      html += body;
-      html += "</section>";
-      return html;
-    }
-    window._bpwDetailPane = { render };
   })();
 
   // src/ui/activity-drawer.js
@@ -26929,65 +27063,137 @@ ${prefix}
         return '<i class="fa-solid fa-' + name + '"></i>';
       })(n);
     }
+    function _E() {
+      return window._bpwEditors;
+    }
     function _aud(W2) {
       return W2.acceptedSections && W2.acceptedSections.audience || {};
     }
-    function renderList(W2) {
-      var a = _aud(W2);
-      var active = W2.ui && W2.ui.itemId || null;
-      var html = "";
-      var pCls = active === "primary" ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-      html += '<article class="' + pCls + '" data-item-id="primary" role="button" tabindex="0">';
-      html += '<div class="bpw-shell-card-title">' + _icon("users") + " Primary audience</div>";
-      html += '<div class="bpw-shell-card-snippet">' + (a.primary_description ? _esc(a.primary_description) : '<em class="bpw-shell-detail-value-empty">Not set yet</em>') + "</div>";
-      html += "</article>";
-      var segments = a.segments || [];
-      if (segments.length) html += '<div class="bpw-shell-card-divider">Segments</div>';
-      for (var i = 0; i < segments.length; i++) {
-        var s = segments[i];
-        var id = "segment:" + i;
-        var cls = active === id ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + cls + '" data-item-id="' + _esc(id) + '" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _esc(s.name || "Segment " + (i + 1)) + "</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(s.description || "") + "</div>";
-        html += "</article>";
+    function _fieldCard(opts) {
+      var remove = "";
+      if (opts.removeAction) {
+        remove = '<button class="bpw-page-field-remove" data-action="' + _esc(opts.removeAction) + '" data-idx="' + opts.removeIdx + '" type="button" title="Remove">' + _icon("xmark") + "</button>";
       }
-      var personas = a.personas || [];
-      if (personas.length) html += '<div class="bpw-shell-card-divider">Personas</div>';
-      for (var j = 0; j < personas.length; j++) {
-        var p = personas[j];
-        var pid = "persona:" + j;
-        var pcls = active === pid ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + pcls + '" data-item-id="' + _esc(pid) + '" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _esc(p.name || "Persona " + (j + 1)) + (p.role ? " \xB7 " + _esc(p.role) : "") + "</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(p.story || "") + "</div>";
-        html += "</article>";
+      var sparkle = "";
+      if (opts.path) {
+        sparkle = '<button class="bpw-page-field-refine" data-action="refine" data-refine-path="' + _esc(opts.path) + '" type="button" title="Improve with AI">' + _icon("sparkles") + "</button>";
       }
-      return html;
+      return '<article class="bpw-page-field"><header class="bpw-page-field-head"><h3 class="bpw-page-field-label">' + _esc(opts.label) + '</h3><div class="bpw-page-field-head-actions">' + sparkle + remove + '</div></header><div class="bpw-page-field-body">' + opts.body + "</div></article>";
     }
-    function renderDetail(W2, selectedId) {
-      if (!selectedId) return "";
+    function _renderPrimary(W2) {
       var a = _aud(W2);
-      var E = window._bpwEditors;
-      if (selectedId === "primary") {
-        return '<div class="bpw-shell-detail-card"><h3>Primary audience</h3>' + E.renderField({ type: "prose", label: "Description", path: "audience.primary_description", value: a.primary_description }) + "</div>";
-      }
-      var parts = selectedId.split(":");
-      var type = parts[0], idx = parseInt(parts[1] || "0", 10);
-      if (type === "segment") {
-        var s = (a.segments || [])[idx];
-        if (!s) return '<div class="bpw-shell-detail-empty">Segment not found.</div>';
-        var base2 = "audience.segments[" + idx + "].";
-        return '<div class="bpw-shell-detail-card"><h3>' + _esc(s.name || "Segment " + (idx + 1)) + "</h3>" + E.renderText({ label: "Name", path: base2 + "name", value: s.name }) + E.renderTextarea({ label: "Description", path: base2 + "description", value: s.description }) + E.renderChips({ label: "Pain points", path: base2 + "pain_points", value: s.pain_points, addLabel: "pain" }) + E.renderChips({ label: "Goals", path: base2 + "goals", value: s.goals, addLabel: "goal" }) + E.renderChips({ label: "Channels", path: base2 + "channels", value: s.channels, addLabel: "channel" }) + "</div>";
-      }
-      if (type === "persona") {
-        var p = (a.personas || [])[idx];
-        if (!p) return '<div class="bpw-shell-detail-empty">Persona not found.</div>';
-        var pbase = "audience.personas[" + idx + "].";
-        return '<div class="bpw-shell-detail-card"><h3>' + _esc(p.name || "Persona " + (idx + 1)) + "</h3>" + E.renderText({ label: "Name", path: pbase + "name", value: p.name }) + E.renderText({ label: "Role", path: pbase + "role", value: p.role }) + E.renderText({ label: "Age", path: pbase + "age", value: p.age }) + E.renderField({ type: "prose", label: "Story", path: pbase + "story", value: p.story }) + E.renderField({ type: "prose", label: "Journey", path: pbase + "journey", value: p.journey }) + E.renderChips({ label: "Pain points", path: pbase + "pain_points", value: p.pain_points }) + E.renderChips({ label: "Goals", path: pbase + "goals", value: p.goals }) + E.renderChips({ label: "Decision criteria", path: pbase + "decision_criteria", value: p.decision_criteria }) + "</div>";
-      }
+      var body = _E().renderField({ type: "prose", path: "audience.primary_description", value: a.primary_description });
+      return _fieldCard({ label: "Primary audience", path: "audience.primary_description", body });
+    }
+    function _renderSegment(W2, segment, idx) {
+      var base2 = "audience.segments[" + idx + "].";
+      var body = "" + _E().renderText({ label: "Name", path: base2 + "name", value: segment.name }) + _E().renderTextarea({ label: "Description", path: base2 + "description", value: segment.description }) + _E().renderChips({ label: "Pain points", path: base2 + "pain_points", value: segment.pain_points, addLabel: "pain" }) + _E().renderChips({ label: "Goals", path: base2 + "goals", value: segment.goals, addLabel: "goal" }) + _E().renderChips({ label: "Channels", path: base2 + "channels", value: segment.channels, addLabel: "channel" });
+      return _fieldCard({
+        label: segment.name || "Segment " + (idx + 1),
+        path: "audience.segments[" + idx + "]",
+        body,
+        removeAction: "audience-remove-segment",
+        removeIdx: idx
+      });
+    }
+    function _renderPersona(W2, persona, idx) {
+      var base2 = "audience.personas[" + idx + "].";
+      var body = "" + _E().renderText({ label: "Name", path: base2 + "name", value: persona.name }) + _E().renderText({ label: "Role", path: base2 + "role", value: persona.role }) + _E().renderText({ label: "Age", path: base2 + "age", value: persona.age }) + _E().renderField({ type: "prose", label: "Story", path: base2 + "story", value: persona.story }) + _E().renderField({ type: "prose", label: "Journey", path: base2 + "journey", value: persona.journey }) + _E().renderChips({ label: "Pain points", path: base2 + "pain_points", value: persona.pain_points }) + _E().renderChips({ label: "Goals", path: base2 + "goals", value: persona.goals }) + _E().renderChips({ label: "Decision criteria", path: base2 + "decision_criteria", value: persona.decision_criteria });
+      return _fieldCard({
+        label: persona.name ? persona.name + (persona.role ? " \xB7 " + persona.role : "") : "Persona " + (idx + 1),
+        path: "audience.personas[" + idx + "]",
+        body,
+        removeAction: "audience-remove-persona",
+        removeIdx: idx
+      });
+    }
+    function renderList() {
       return "";
     }
+    function renderDetail(W2) {
+      var a = _aud(W2);
+      var segments = a.segments || [];
+      var personas = a.personas || [];
+      var html = '<section class="bpw-shell-detail bpw-shell-detail--page" aria-label="Audience">';
+      html += '<header class="bpw-shell-detail-head">';
+      html += "<h1>Audience</h1>";
+      html += '<p class="bpw-shell-detail-sub">Primary description, segments, and personas. Hover any card to refine, regenerate, or copy.</p>';
+      html += "</header>";
+      html += '<div class="bpw-page-fields">';
+      html += _renderPrimary(W2);
+      html += '<div class="bpw-page-collection-head">';
+      html += '<h2 class="bpw-page-collection-title">Segments</h2>';
+      html += '<button class="bpw-page-collection-add" data-action="audience-add-segment" type="button">' + _icon("plus") + " Add segment</button>";
+      html += "</div>";
+      if (!segments.length) {
+        html += '<div class="bpw-page-collection-empty">No segments yet.</div>';
+      } else {
+        for (var i = 0; i < segments.length; i++) html += _renderSegment(W2, segments[i], i);
+      }
+      html += '<div class="bpw-page-collection-head">';
+      html += '<h2 class="bpw-page-collection-title">Personas</h2>';
+      html += '<div class="bpw-page-collection-actions">';
+      html += '<button class="bpw-page-collection-add" data-action="audience-add-persona" type="button">' + _icon("plus") + " Add persona</button>";
+      html += '<button class="bpw-page-collection-add bpw-page-collection-add--ai" data-action="generate-more-personas" type="button">' + _icon("sparkles") + " Generate more</button>";
+      html += "</div>";
+      html += "</div>";
+      if (!personas.length) {
+        html += '<div class="bpw-page-collection-empty">No personas yet.</div>';
+      } else {
+        for (var j = 0; j < personas.length; j++) html += _renderPersona(W2, personas[j], j);
+      }
+      html += "</div>";
+      html += "</section>";
+      return html;
+    }
+    function _store() {
+      return window._bpwPathStore;
+    }
+    function _refresh() {
+      if (window._bpwExportSync) window._bpwExportSync.syncAll();
+      if (window._bpwSyncToTextarea) window._bpwSyncToTextarea();
+      if (window._bpwAutoSave) window._bpwAutoSave();
+      if (window._bpwAppShell) window._bpwAppShell.render();
+      if (window._bpwSetup && window._bpwSetup.render) window._bpwSetup.render();
+    }
+    $(document).off("click.bpw-aud-add-seg").on("click.bpw-aud-add-seg", '[data-action="audience-add-segment"]', function(e) {
+      e.preventDefault();
+      var W2 = window._bpwState;
+      W2.acceptedSections = W2.acceptedSections || {};
+      W2.acceptedSections.audience = W2.acceptedSections.audience || {};
+      W2.acceptedSections.audience.segments = W2.acceptedSections.audience.segments || [];
+      W2.acceptedSections.audience.segments.push({ name: "", description: "", pain_points: [], goals: [], channels: [] });
+      _refresh();
+    });
+    $(document).off("click.bpw-aud-rm-seg").on("click.bpw-aud-rm-seg", '[data-action="audience-remove-segment"]', function(e) {
+      e.preventDefault();
+      var idx = parseInt($(this).attr("data-idx"), 10);
+      if (isNaN(idx)) return;
+      var W2 = window._bpwState;
+      var arr = W2.acceptedSections && W2.acceptedSections.audience && W2.acceptedSections.audience.segments;
+      if (!arr) return;
+      arr.splice(idx, 1);
+      _refresh();
+    });
+    $(document).off("click.bpw-aud-add-per").on("click.bpw-aud-add-per", '[data-action="audience-add-persona"]', function(e) {
+      e.preventDefault();
+      var W2 = window._bpwState;
+      W2.acceptedSections = W2.acceptedSections || {};
+      W2.acceptedSections.audience = W2.acceptedSections.audience || {};
+      W2.acceptedSections.audience.personas = W2.acceptedSections.audience.personas || [];
+      W2.acceptedSections.audience.personas.push({ name: "", role: "", age: "", story: "", journey: "", pain_points: [], goals: [], decision_criteria: [] });
+      _refresh();
+    });
+    $(document).off("click.bpw-aud-rm-per").on("click.bpw-aud-rm-per", '[data-action="audience-remove-persona"]', function(e) {
+      e.preventDefault();
+      var idx = parseInt($(this).attr("data-idx"), 10);
+      if (isNaN(idx)) return;
+      var W2 = window._bpwState;
+      var arr = W2.acceptedSections && W2.acceptedSections.audience && W2.acceptedSections.audience.personas;
+      if (!arr) return;
+      arr.splice(idx, 1);
+      _refresh();
+    });
     $(document).off("click.bpw-personas-more").on("click.bpw-personas-more", '[data-action="generate-more-personas"]', function(e) {
       e.preventDefault();
       var W2 = window._bpwState;
@@ -26998,7 +27204,7 @@ ${prefix}
       }
       var $btn = $(this).prop("disabled", true).html(_icon("spinner fa-spin") + " Generating\u2026");
       action("", function(res) {
-        $btn.prop("disabled", false).html(_icon("sparkles") + " Generate more personas");
+        $btn.prop("disabled", false).html(_icon("sparkles") + " Generate more");
         if (!res || !res.success) {
           if (window._bpwToast) window._bpwToast(res && res.error || "Failed", "error");
           return;
@@ -27007,10 +27213,7 @@ ${prefix}
         W2.acceptedSections = W2.acceptedSections || {};
         W2.acceptedSections.audience = W2.acceptedSections.audience || {};
         W2.acceptedSections.audience.personas = (W2.acceptedSections.audience.personas || []).concat(personas);
-        if (window._bpwExportSync) window._bpwExportSync.syncAll();
-        if (window._bpwSyncToTextarea) window._bpwSyncToTextarea();
-        if (window._bpwAutoSave) window._bpwAutoSave();
-        if (window._bpwAppShell) window._bpwAppShell.render();
+        _refresh();
         if (window._bpwToast) window._bpwToast("Added " + personas.length + " personas", "success");
       });
     });
@@ -27019,34 +27222,17 @@ ${prefix}
       id: "audience",
       title: "Audience",
       minLevel: "new",
-      listMode: "variable-items",
+      listMode: "none",
       renderList,
       renderDetail,
-      inlineActions: [
-        { id: "generate-more-personas", label: "Generate more personas", icon: "sparkles" },
-        {
-          type: "add-row",
-          label: "Add segment",
-          icon: "plus",
-          listPath: "audience.segments",
-          itemPrefix: "segment",
-          itemTemplate: { name: "", description: "", pain_points: [], goals: [], channels: [] }
-        },
-        {
-          type: "add-row",
-          label: "Add persona",
-          icon: "plus",
-          listPath: "audience.personas",
-          itemPrefix: "persona",
-          itemTemplate: { name: "", role: "", age: "", story: "", journey: "", pain_points: [], goals: [], decision_criteria: [] }
-        }
-      ]
+      inlineActions: []
     };
   })();
 
   // src/ui/views/offerings.js
   (function() {
     "use strict";
+    var $ = window.jQuery;
     function _esc(s) {
       return (window._bpwEsc || function(x) {
         return x == null ? "" : String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -27059,67 +27245,74 @@ ${prefix}
         return '<i class="fa-solid fa-' + name + '"></i>';
       })(n);
     }
+    function _E() {
+      return window._bpwEditors;
+    }
     function _off(W2) {
       return W2.acceptedSections && W2.acceptedSections.offerings || {};
     }
-    function renderList(W2) {
-      var o = _off(W2);
-      var active = W2.ui && W2.ui.itemId || null;
-      var html = "";
-      var items = o.items || [];
-      if (items.length) html += '<div class="bpw-shell-card-divider">Offerings</div>';
-      for (var i = 0; i < items.length; i++) {
-        var it = items[i];
-        var id = "item:" + i;
-        var cls = active === id ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + cls + '" data-item-id="' + _esc(id) + '" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _esc(it.name || "Item " + (i + 1)) + "</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(it.description || "") + "</div>";
-        html += "</article>";
-      }
-      var programs = o.programs || [];
-      if (programs.length) html += '<div class="bpw-shell-card-divider">Programs</div>';
-      for (var j = 0; j < programs.length; j++) {
-        var p = programs[j];
-        var pid = "program:" + j;
-        var pcls = active === pid ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + pcls + '" data-item-id="' + _esc(pid) + '" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _esc(p.name || "Program " + (j + 1)) + "</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(p.description || "") + "</div>";
-        html += "</article>";
-      }
-      var hasRevenue = (o.revenue_streams || []).length;
-      if (hasRevenue) {
-        var rCls = active === "revenue" ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + rCls + '" data-item-id="revenue" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _icon("coins") + " Revenue streams</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc((o.revenue_streams || []).map(function(r) {
-          return r.stream || "";
-        }).filter(Boolean).join(" \xB7 ")) + "</div>";
-        html += "</article>";
-      }
-      if (o.pricing_model) {
-        var pmCls = active === "pricing" ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + pmCls + '" data-item-id="pricing" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _icon("tag") + " Pricing model</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(o.pricing_model) + "</div>";
-        html += "</article>";
-      }
-      if (o.content_description) {
-        var cdCls = active === "content_desc" ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + cdCls + '" data-item-id="content_desc" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _icon("film") + " Content approach</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(o.content_description) + "</div>";
-        html += "</article>";
-      }
-      return html || '<div class="bpw-shell-list-empty">' + _icon("box-open") + "<p>No offerings yet \u2014 run the autopilot or add manually.</p></div>";
+    function _fieldCard(opts) {
+      var remove = opts.removeAction ? '<button class="bpw-page-field-remove" data-action="' + _esc(opts.removeAction) + '" data-idx="' + opts.removeIdx + '" type="button" title="Remove">' + _icon("xmark") + "</button>" : "";
+      var sparkle = opts.path ? '<button class="bpw-page-field-refine" data-action="refine" data-refine-path="' + _esc(opts.path) + '" type="button" title="Improve with AI">' + _icon("sparkles") + "</button>" : "";
+      return '<article class="bpw-page-field"><header class="bpw-page-field-head"><h3 class="bpw-page-field-label">' + _esc(opts.label) + '</h3><div class="bpw-page-field-head-actions">' + sparkle + remove + '</div></header><div class="bpw-page-field-body">' + opts.body + "</div></article>";
     }
-    function renderDetail(W2, selectedId) {
-      if (!selectedId) return "";
+    function _renderItem(item, idx) {
+      var base2 = "offerings.items[" + idx + "].";
+      var body = "" + _E().renderText({ label: "Name", path: base2 + "name", value: item.name }) + _E().renderText({ label: "Category", path: base2 + "category", value: item.category }) + _E().renderTextarea({ label: "Description", path: base2 + "description", value: item.description }) + _E().renderChips({ label: "Features", path: base2 + "features", value: item.features, addLabel: "feature" }) + _E().renderChips({ label: "Benefits", path: base2 + "benefits", value: item.benefits, addLabel: "benefit" }) + _E().renderText({ label: "Target audience", path: base2 + "target_audience", value: item.target_audience }) + _E().renderText({ label: "Status", path: base2 + "status", value: item.status, placeholder: "active / coming soon / sunset" });
+      return _fieldCard({
+        label: item.name || "Offering " + (idx + 1),
+        path: "offerings.items[" + idx + "]",
+        body,
+        removeAction: "offerings-remove-item",
+        removeIdx: idx
+      });
+    }
+    function _renderProgram(prog, idx) {
+      var base2 = "offerings.programs[" + idx + "].";
+      var body = "" + _E().renderText({ label: "Name", path: base2 + "name", value: prog.name }) + _E().renderText({ label: "Category", path: base2 + "category", value: prog.category }) + _E().renderTextarea({ label: "Description", path: base2 + "description", value: prog.description }) + _E().renderChips({ label: "Features", path: base2 + "features", value: prog.features }) + _E().renderText({ label: "Target audience", path: base2 + "target_audience", value: prog.target_audience });
+      return _fieldCard({
+        label: prog.name || "Program " + (idx + 1),
+        path: "offerings.programs[" + idx + "]",
+        body,
+        removeAction: "offerings-remove-program",
+        removeIdx: idx
+      });
+    }
+    function renderList() {
+      return "";
+    }
+    function renderDetail(W2) {
       var o = _off(W2);
-      var E = window._bpwEditors;
-      if (selectedId === "revenue") {
-        return '<div class="bpw-shell-detail-card"><h3>Revenue streams</h3>' + E.renderList({
+      var items = o.items || [];
+      var programs = o.programs || [];
+      var html = '<section class="bpw-shell-detail bpw-shell-detail--page" aria-label="Offerings">';
+      html += '<header class="bpw-shell-detail-head">';
+      html += "<h1>Offerings</h1>";
+      html += '<p class="bpw-shell-detail-sub">Products, services, programs, revenue, pricing, and content approach. Editable inline.</p>';
+      html += "</header>";
+      html += '<div class="bpw-page-fields">';
+      html += '<div class="bpw-page-collection-head">';
+      html += '<h2 class="bpw-page-collection-title">Offerings</h2>';
+      html += '<button class="bpw-page-collection-add" data-action="offerings-add-item" type="button">' + _icon("plus") + " Add offering</button>";
+      html += "</div>";
+      if (!items.length) {
+        html += '<div class="bpw-page-collection-empty">No offerings yet.</div>';
+      } else {
+        for (var i = 0; i < items.length; i++) html += _renderItem(items[i], i);
+      }
+      html += '<div class="bpw-page-collection-head">';
+      html += '<h2 class="bpw-page-collection-title">Programs</h2>';
+      html += '<button class="bpw-page-collection-add" data-action="offerings-add-program" type="button">' + _icon("plus") + " Add program</button>";
+      html += "</div>";
+      if (!programs.length) {
+        html += '<div class="bpw-page-collection-empty">No programs yet.</div>';
+      } else {
+        for (var j = 0; j < programs.length; j++) html += _renderProgram(programs[j], j);
+      }
+      html += _fieldCard({
+        label: "Revenue streams",
+        path: "offerings.revenue_streams",
+        body: _E().renderList({
           path: "offerings.revenue_streams",
           value: o.revenue_streams || [],
           addLabel: "stream",
@@ -27128,56 +27321,76 @@ ${prefix}
             { key: "stream", label: "Stream", type: "text" },
             { key: "description", label: "Description", type: "textarea" }
           ]
-        }) + "</div>";
-      }
-      if (selectedId === "pricing") {
-        return '<div class="bpw-shell-detail-card"><h3>Pricing model</h3>' + E.renderField({ type: "prose", label: "Description", path: "offerings.pricing_model", value: o.pricing_model }) + "</div>";
-      }
-      if (selectedId === "content_desc") {
-        return '<div class="bpw-shell-detail-card"><h3>Content approach</h3>' + E.renderField({ type: "prose", label: "Description", path: "offerings.content_description", value: o.content_description }) + "</div>";
-      }
-      var parts = selectedId.split(":");
-      var type = parts[0], idx = parseInt(parts[1] || "0", 10);
-      if (type === "item") {
-        var it = (o.items || [])[idx];
-        if (!it) return '<div class="bpw-shell-detail-empty">Item not found.</div>';
-        var base2 = "offerings.items[" + idx + "].";
-        return '<div class="bpw-shell-detail-card"><h3>' + _esc(it.name || "Offering " + (idx + 1)) + "</h3>" + E.renderText({ label: "Name", path: base2 + "name", value: it.name }) + E.renderText({ label: "Category", path: base2 + "category", value: it.category }) + E.renderTextarea({ label: "Description", path: base2 + "description", value: it.description }) + E.renderChips({ label: "Features", path: base2 + "features", value: it.features, addLabel: "feature" }) + E.renderChips({ label: "Benefits", path: base2 + "benefits", value: it.benefits, addLabel: "benefit" }) + E.renderText({ label: "Target audience", path: base2 + "target_audience", value: it.target_audience }) + E.renderText({ label: "Status", path: base2 + "status", value: it.status, placeholder: "active / coming soon / sunset" }) + "</div>";
-      }
-      if (type === "program") {
-        var p = (o.programs || [])[idx];
-        if (!p) return '<div class="bpw-shell-detail-empty">Program not found.</div>';
-        var pbase = "offerings.programs[" + idx + "].";
-        return '<div class="bpw-shell-detail-card"><h3>' + _esc(p.name || "Program " + (idx + 1)) + "</h3>" + E.renderText({ label: "Name", path: pbase + "name", value: p.name }) + E.renderText({ label: "Category", path: pbase + "category", value: p.category }) + E.renderTextarea({ label: "Description", path: pbase + "description", value: p.description }) + E.renderChips({ label: "Features", path: pbase + "features", value: p.features }) + E.renderText({ label: "Target audience", path: pbase + "target_audience", value: p.target_audience }) + "</div>";
-      }
-      return "";
+        })
+      });
+      html += _fieldCard({
+        label: "Pricing model",
+        path: "offerings.pricing_model",
+        body: _E().renderField({ type: "prose", path: "offerings.pricing_model", value: o.pricing_model })
+      });
+      html += _fieldCard({
+        label: "Content approach",
+        path: "offerings.content_description",
+        body: _E().renderField({ type: "prose", path: "offerings.content_description", value: o.content_description })
+      });
+      html += "</div>";
+      html += "</section>";
+      return html;
     }
+    function _refresh() {
+      if (window._bpwExportSync) window._bpwExportSync.syncAll();
+      if (window._bpwSyncToTextarea) window._bpwSyncToTextarea();
+      if (window._bpwAutoSave) window._bpwAutoSave();
+      if (window._bpwAppShell) window._bpwAppShell.render();
+      if (window._bpwSetup && window._bpwSetup.render) window._bpwSetup.render();
+    }
+    $(document).off("click.bpw-off-add-item").on("click.bpw-off-add-item", '[data-action="offerings-add-item"]', function(e) {
+      e.preventDefault();
+      var W2 = window._bpwState;
+      W2.acceptedSections = W2.acceptedSections || {};
+      W2.acceptedSections.offerings = W2.acceptedSections.offerings || {};
+      W2.acceptedSections.offerings.items = W2.acceptedSections.offerings.items || [];
+      W2.acceptedSections.offerings.items.push({ name: "", category: "", description: "", features: [], benefits: [], target_audience: "", status: "active" });
+      _refresh();
+    });
+    $(document).off("click.bpw-off-rm-item").on("click.bpw-off-rm-item", '[data-action="offerings-remove-item"]', function(e) {
+      e.preventDefault();
+      var idx = parseInt($(this).attr("data-idx"), 10);
+      if (isNaN(idx)) return;
+      var W2 = window._bpwState;
+      var arr = W2.acceptedSections && W2.acceptedSections.offerings && W2.acceptedSections.offerings.items;
+      if (!arr) return;
+      arr.splice(idx, 1);
+      _refresh();
+    });
+    $(document).off("click.bpw-off-add-prog").on("click.bpw-off-add-prog", '[data-action="offerings-add-program"]', function(e) {
+      e.preventDefault();
+      var W2 = window._bpwState;
+      W2.acceptedSections = W2.acceptedSections || {};
+      W2.acceptedSections.offerings = W2.acceptedSections.offerings || {};
+      W2.acceptedSections.offerings.programs = W2.acceptedSections.offerings.programs || [];
+      W2.acceptedSections.offerings.programs.push({ name: "", category: "", description: "", features: [], target_audience: "" });
+      _refresh();
+    });
+    $(document).off("click.bpw-off-rm-prog").on("click.bpw-off-rm-prog", '[data-action="offerings-remove-program"]', function(e) {
+      e.preventDefault();
+      var idx = parseInt($(this).attr("data-idx"), 10);
+      if (isNaN(idx)) return;
+      var W2 = window._bpwState;
+      var arr = W2.acceptedSections && W2.acceptedSections.offerings && W2.acceptedSections.offerings.programs;
+      if (!arr) return;
+      arr.splice(idx, 1);
+      _refresh();
+    });
     window._bpwUIViews = window._bpwUIViews || {};
     window._bpwUIViews.offerings = {
       id: "offerings",
       title: "Offerings",
       minLevel: "new",
-      listMode: "variable-items",
+      listMode: "none",
       renderList,
       renderDetail,
-      inlineActions: [
-        {
-          type: "add-row",
-          label: "Add offering",
-          icon: "plus",
-          listPath: "offerings.items",
-          itemPrefix: "item",
-          itemTemplate: { name: "", category: "", description: "", features: [], benefits: [], target_audience: "", status: "active" }
-        },
-        {
-          type: "add-row",
-          label: "Add program",
-          icon: "plus",
-          listPath: "offerings.programs",
-          itemPrefix: "program",
-          itemTemplate: { name: "", category: "", description: "", features: [], target_audience: "" }
-        }
-      ]
+      inlineActions: []
     };
   })();
 
@@ -27197,85 +27410,141 @@ ${prefix}
         return '<i class="fa-solid fa-' + name + '"></i>';
       })(n);
     }
+    function _E() {
+      return window._bpwEditors;
+    }
     function _mkt(W2) {
       return W2.acceptedSections && W2.acceptedSections.market || {};
     }
-    function renderList(W2) {
-      var m = _mkt(W2);
-      var active = W2.ui && W2.ui.itemId || null;
-      var html = "";
-      var cCls = active === "category" ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-      html += '<article class="' + cCls + '" data-item-id="category" role="button" tabindex="0">';
-      html += '<div class="bpw-shell-card-title">' + _icon("compass") + " Category & positioning</div>";
-      html += '<div class="bpw-shell-card-snippet">' + (m.category ? _esc(m.category) : '<em class="bpw-shell-detail-value-empty">Not set yet</em>') + "</div>";
-      html += "</article>";
-      var competitors = m.competitors || [];
-      if (competitors.length) html += '<div class="bpw-shell-card-divider">Competitors</div>';
-      for (var i = 0; i < competitors.length; i++) {
-        var c = competitors[i];
-        var id = "competitor:" + i;
-        var cls = active === id ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + cls + '" data-item-id="' + _esc(id) + '" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _esc(c.name || "Competitor " + (i + 1)) + "</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(c.description || c.comparison || "") + "</div>";
-        html += "</article>";
-      }
-      var diffs = m.differentiators || [];
-      if (diffs.length) html += '<div class="bpw-shell-card-divider">Differentiators</div>';
-      for (var j = 0; j < diffs.length; j++) {
-        var d = diffs[j];
-        var did = "differentiator:" + j;
-        var dcls = active === did ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + dcls + '" data-item-id="' + _esc(did) + '" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _esc(d.point || "Differentiator " + (j + 1)) + "</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(d.evidence || "") + "</div>";
-        html += "</article>";
-      }
-      if ((m.trends || []).length) {
-        var tCls = active === "trends" ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + tCls + '" data-item-id="trends" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _icon("arrow-trend-up") + " Trends</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc((m.trends || []).slice(0, 3).join(" \xB7 ")) + "</div>";
-        html += "</article>";
-      }
-      if ((m.opportunities || []).length) {
-        var oCls = active === "opportunities" ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + oCls + '" data-item-id="opportunities" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _icon("lightbulb") + " Opportunities</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc((m.opportunities || []).slice(0, 3).join(" \xB7 ")) + "</div>";
-        html += "</article>";
-      }
-      return html;
+    function _fieldCard(opts) {
+      var remove = opts.removeAction ? '<button class="bpw-page-field-remove" data-action="' + _esc(opts.removeAction) + '" data-idx="' + opts.removeIdx + '" type="button" title="Remove">' + _icon("xmark") + "</button>" : "";
+      var sparkle = opts.path ? '<button class="bpw-page-field-refine" data-action="refine" data-refine-path="' + _esc(opts.path) + '" type="button" title="Improve with AI">' + _icon("sparkles") + "</button>" : "";
+      return '<article class="bpw-page-field"><header class="bpw-page-field-head"><h3 class="bpw-page-field-label">' + _esc(opts.label) + '</h3><div class="bpw-page-field-head-actions">' + sparkle + remove + '</div></header><div class="bpw-page-field-body">' + opts.body + "</div></article>";
     }
-    function renderDetail(W2, selectedId) {
-      if (!selectedId) return "";
-      var m = _mkt(W2);
-      var E = window._bpwEditors;
-      if (selectedId === "category") {
-        return '<div class="bpw-shell-detail-card"><h3>Category & positioning</h3>' + E.renderText({ label: "Market category", path: "market.category", value: m.category }) + E.renderField({ type: "prose", label: "Positioning", path: "market.positioning", value: m.positioning }) + "</div>";
-      }
-      if (selectedId === "trends") {
-        return '<div class="bpw-shell-detail-card"><h3>Trends</h3>' + E.renderChips({ label: "Trends", path: "market.trends", value: m.trends || [], addLabel: "trend" }) + "</div>";
-      }
-      if (selectedId === "opportunities") {
-        return '<div class="bpw-shell-detail-card"><h3>Opportunities</h3>' + E.renderChips({ label: "Opportunities", path: "market.opportunities", value: m.opportunities || [], addLabel: "opportunity" }) + "</div>";
-      }
-      var parts = selectedId.split(":");
-      var type = parts[0], idx = parseInt(parts[1] || "0", 10);
-      if (type === "competitor") {
-        var c = (m.competitors || [])[idx];
-        if (!c) return '<div class="bpw-shell-detail-empty">Competitor not found.</div>';
-        var base2 = "market.competitors[" + idx + "].";
-        return '<div class="bpw-shell-detail-card"><h3>' + _esc(c.name || "Competitor " + (idx + 1)) + "</h3>" + E.renderText({ label: "Name", path: base2 + "name", value: c.name }) + E.renderText({ label: "URL", path: base2 + "url", value: c.url, placeholder: "https://\u2026" }) + E.renderTextarea({ label: "Description", path: base2 + "description", value: c.description }) + E.renderChips({ label: "Strengths", path: base2 + "strengths", value: c.strengths }) + E.renderChips({ label: "Weaknesses", path: base2 + "weaknesses", value: c.weaknesses }) + E.renderTextarea({ label: "How we compare", path: base2 + "comparison", value: c.comparison }) + "</div>";
-      }
-      if (type === "differentiator") {
-        var d = (m.differentiators || [])[idx];
-        if (!d) return '<div class="bpw-shell-detail-empty">Differentiator not found.</div>';
-        var dbase = "market.differentiators[" + idx + "].";
-        return '<div class="bpw-shell-detail-card"><h3>' + _esc(d.point || "Differentiator " + (idx + 1)) + "</h3>" + E.renderText({ label: "Point", path: dbase + "point", value: d.point }) + E.renderTextarea({ label: "Evidence", path: dbase + "evidence", value: d.evidence }) + "</div>";
-      }
+    function _renderCompetitor(c, idx) {
+      var base2 = "market.competitors[" + idx + "].";
+      var body = "" + _E().renderText({ label: "Name", path: base2 + "name", value: c.name }) + _E().renderText({ label: "URL", path: base2 + "url", value: c.url, placeholder: "https://\u2026" }) + _E().renderTextarea({ label: "Description", path: base2 + "description", value: c.description }) + _E().renderChips({ label: "Strengths", path: base2 + "strengths", value: c.strengths }) + _E().renderChips({ label: "Weaknesses", path: base2 + "weaknesses", value: c.weaknesses }) + _E().renderTextarea({ label: "How we compare", path: base2 + "comparison", value: c.comparison });
+      return _fieldCard({
+        label: c.name || "Competitor " + (idx + 1),
+        path: "market.competitors[" + idx + "]",
+        body,
+        removeAction: "market-remove-competitor",
+        removeIdx: idx
+      });
+    }
+    function _renderDifferentiator(d, idx) {
+      var base2 = "market.differentiators[" + idx + "].";
+      var body = "" + _E().renderText({ label: "Point", path: base2 + "point", value: d.point }) + _E().renderTextarea({ label: "Evidence", path: base2 + "evidence", value: d.evidence });
+      return _fieldCard({
+        label: d.point || "Differentiator " + (idx + 1),
+        path: "market.differentiators[" + idx + "]",
+        body,
+        removeAction: "market-remove-differentiator",
+        removeIdx: idx
+      });
+    }
+    function renderList() {
       return "";
     }
+    function renderDetail(W2) {
+      var m = _mkt(W2);
+      var competitors = m.competitors || [];
+      var diffs = m.differentiators || [];
+      var html = '<section class="bpw-shell-detail bpw-shell-detail--page" aria-label="Market">';
+      html += '<header class="bpw-shell-detail-head">';
+      html += "<h1>Market</h1>";
+      html += '<p class="bpw-shell-detail-sub">Category, positioning, competitive landscape, differentiators, trends, and opportunities.</p>';
+      html += "</header>";
+      html += '<div class="bpw-page-fields">';
+      html += _fieldCard({
+        label: "Market category",
+        path: "market.category",
+        body: _E().renderText({ path: "market.category", value: m.category, placeholder: "e.g. independent design studios" })
+      });
+      html += _fieldCard({
+        label: "Positioning",
+        path: "market.positioning",
+        body: _E().renderField({ type: "prose", path: "market.positioning", value: m.positioning })
+      });
+      html += '<div class="bpw-page-collection-head">';
+      html += '<h2 class="bpw-page-collection-title">Competitors</h2>';
+      html += '<div class="bpw-page-collection-actions">';
+      html += '<button class="bpw-page-collection-add" data-action="market-add-competitor" type="button">' + _icon("plus") + " Add competitor</button>";
+      html += '<button class="bpw-page-collection-add bpw-page-collection-add--ai" data-action="find-more-competitors" type="button">' + _icon("sparkles") + " Find more</button>";
+      html += "</div></div>";
+      if (!competitors.length) {
+        html += '<div class="bpw-page-collection-empty">No competitors yet.</div>';
+      } else {
+        for (var i = 0; i < competitors.length; i++) html += _renderCompetitor(competitors[i], i);
+      }
+      html += '<div class="bpw-page-collection-head">';
+      html += '<h2 class="bpw-page-collection-title">Differentiators</h2>';
+      html += '<button class="bpw-page-collection-add" data-action="market-add-differentiator" type="button">' + _icon("plus") + " Add differentiator</button>";
+      html += "</div>";
+      if (!diffs.length) {
+        html += '<div class="bpw-page-collection-empty">No differentiators yet.</div>';
+      } else {
+        for (var j = 0; j < diffs.length; j++) html += _renderDifferentiator(diffs[j], j);
+      }
+      html += _fieldCard({
+        label: "Trends",
+        path: "market.trends",
+        body: _E().renderChips({ path: "market.trends", value: m.trends || [], addLabel: "trend" })
+      });
+      html += _fieldCard({
+        label: "Opportunities",
+        path: "market.opportunities",
+        body: _E().renderChips({ path: "market.opportunities", value: m.opportunities || [], addLabel: "opportunity" })
+      });
+      html += "</div>";
+      html += "</section>";
+      return html;
+    }
+    function _refresh() {
+      if (window._bpwExportSync) window._bpwExportSync.syncAll();
+      if (window._bpwSyncToTextarea) window._bpwSyncToTextarea();
+      if (window._bpwAutoSave) window._bpwAutoSave();
+      if (window._bpwAppShell) window._bpwAppShell.render();
+      if (window._bpwSetup && window._bpwSetup.render) window._bpwSetup.render();
+    }
+    $(document).off("click.bpw-mkt-add-comp").on("click.bpw-mkt-add-comp", '[data-action="market-add-competitor"]', function(e) {
+      e.preventDefault();
+      var W2 = window._bpwState;
+      W2.acceptedSections = W2.acceptedSections || {};
+      W2.acceptedSections.market = W2.acceptedSections.market || {};
+      W2.acceptedSections.market.competitors = W2.acceptedSections.market.competitors || [];
+      W2.acceptedSections.market.competitors.push({ name: "", url: "", description: "", strengths: [], weaknesses: [], comparison: "" });
+      _refresh();
+    });
+    $(document).off("click.bpw-mkt-rm-comp").on("click.bpw-mkt-rm-comp", '[data-action="market-remove-competitor"]', function(e) {
+      e.preventDefault();
+      var idx = parseInt($(this).attr("data-idx"), 10);
+      if (isNaN(idx)) return;
+      var W2 = window._bpwState;
+      var arr = W2.acceptedSections && W2.acceptedSections.market && W2.acceptedSections.market.competitors;
+      if (!arr) return;
+      arr.splice(idx, 1);
+      _refresh();
+    });
+    $(document).off("click.bpw-mkt-add-diff").on("click.bpw-mkt-add-diff", '[data-action="market-add-differentiator"]', function(e) {
+      e.preventDefault();
+      var W2 = window._bpwState;
+      W2.acceptedSections = W2.acceptedSections || {};
+      W2.acceptedSections.market = W2.acceptedSections.market || {};
+      W2.acceptedSections.market.differentiators = W2.acceptedSections.market.differentiators || [];
+      W2.acceptedSections.market.differentiators.push({ point: "", evidence: "" });
+      _refresh();
+    });
+    $(document).off("click.bpw-mkt-rm-diff").on("click.bpw-mkt-rm-diff", '[data-action="market-remove-differentiator"]', function(e) {
+      e.preventDefault();
+      var idx = parseInt($(this).attr("data-idx"), 10);
+      if (isNaN(idx)) return;
+      var W2 = window._bpwState;
+      var arr = W2.acceptedSections && W2.acceptedSections.market && W2.acceptedSections.market.differentiators;
+      if (!arr) return;
+      arr.splice(idx, 1);
+      _refresh();
+    });
     $(document).off("click.bpw-comp-more").on("click.bpw-comp-more", '[data-action="find-more-competitors"]', function(e) {
       e.preventDefault();
       var W2 = window._bpwState;
@@ -27286,20 +27555,17 @@ ${prefix}
       }
       var $btn = $(this).prop("disabled", true).html(_icon("spinner fa-spin") + " Finding\u2026");
       action("", function(res) {
-        $btn.prop("disabled", false).html(_icon("sparkles") + " Find more competitors");
+        $btn.prop("disabled", false).html(_icon("sparkles") + " Find more");
         if (!res || !res.success) {
           if (window._bpwToast) window._bpwToast(res && res.error || "Failed", "error");
           return;
         }
-        var competitors = res.data && res.data.competitors || [];
+        var comps = res.data && res.data.competitors || [];
         W2.acceptedSections = W2.acceptedSections || {};
         W2.acceptedSections.market = W2.acceptedSections.market || {};
-        W2.acceptedSections.market.competitors = (W2.acceptedSections.market.competitors || []).concat(competitors);
-        if (window._bpwExportSync) window._bpwExportSync.syncAll();
-        if (window._bpwSyncToTextarea) window._bpwSyncToTextarea();
-        if (window._bpwAutoSave) window._bpwAutoSave();
-        if (window._bpwAppShell) window._bpwAppShell.render();
-        if (window._bpwToast) window._bpwToast("Added " + competitors.length + " competitors", "success");
+        W2.acceptedSections.market.competitors = (W2.acceptedSections.market.competitors || []).concat(comps);
+        _refresh();
+        if (window._bpwToast) window._bpwToast("Added " + comps.length + " competitors", "success");
       });
     });
     window._bpwUIViews = window._bpwUIViews || {};
@@ -27307,34 +27573,17 @@ ${prefix}
       id: "market",
       title: "Market",
       minLevel: "growing",
-      listMode: "variable-items",
+      listMode: "none",
       renderList,
       renderDetail,
-      inlineActions: [
-        { id: "find-more-competitors", label: "Find more competitors", icon: "sparkles" },
-        {
-          type: "add-row",
-          label: "Add competitor",
-          icon: "plus",
-          listPath: "market.competitors",
-          itemPrefix: "competitor",
-          itemTemplate: { name: "", url: "", description: "", strengths: [], weaknesses: [], comparison: "" }
-        },
-        {
-          type: "add-row",
-          label: "Add differentiator",
-          icon: "plus",
-          listPath: "market.differentiators",
-          itemPrefix: "differentiator",
-          itemTemplate: { point: "", evidence: "" }
-        }
-      ]
+      inlineActions: []
     };
   })();
 
   // src/ui/views/competitors.js
   (function() {
     "use strict";
+    var $ = window.jQuery;
     function _esc(s) {
       return (window._bpwEsc || function(x) {
         return x == null ? "" : String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -27347,82 +27596,64 @@ ${prefix}
         return '<i class="fa-solid fa-' + name + '"></i>';
       })(n);
     }
-    function _competitors(W2) {
+    function _E() {
+      return window._bpwEditors;
+    }
+    function _comps(W2) {
       var market = (W2.acceptedSections || {}).market || {};
       return Array.isArray(market.competitors) ? market.competitors : [];
     }
-    function renderList(W2) {
-      var comps = _competitors(W2);
-      var html = '<aside class="bpw-shell-list" aria-label="Competitors list">';
-      html += '<header class="bpw-shell-list-head"><h3>Competitors</h3><button class="bpw-shell-list-action" data-action="ai-find-more-competitors" type="button">' + _icon("plus") + " Find more</button></header>";
-      if (!comps.length) {
-        html += '<div class="bpw-shell-list-empty">' + _icon("crosshairs") + '<p>No competitors yet.</p><button class="bpw-btn bpw-btn-primary" data-action="ai-find-more-competitors" type="button">' + _icon("sparkles") + " Research competitors</button></div>";
-      } else {
-        html += '<ul class="bpw-shell-list-items">';
-        for (var i = 0; i < comps.length; i++) {
-          var c = comps[i] || {};
-          html += '<li class="bpw-shell-list-item" data-item-id="' + _esc("comp-" + i) + '">';
-          html += '<div class="bpw-shell-list-item-title">' + _esc(c.name || "Untitled") + "</div>";
-          if (c.description) html += '<div class="bpw-shell-list-item-sub">' + _esc(c.description) + "</div>";
-          html += "</li>";
-        }
-        html += "</ul>";
-      }
-      html += "</aside>";
-      return html;
+    function _fieldCard(label, path, body, removeIdx) {
+      var remove = removeIdx != null ? '<button class="bpw-page-field-remove" data-action="market-remove-competitor" data-idx="' + removeIdx + '" type="button" title="Remove">' + _icon("xmark") + "</button>" : "";
+      var sparkle = path ? '<button class="bpw-page-field-refine" data-action="refine" data-refine-path="' + _esc(path) + '" type="button" title="Improve with AI">' + _icon("sparkles") + "</button>" : "";
+      return '<article class="bpw-page-field"><header class="bpw-page-field-head"><h3 class="bpw-page-field-label">' + _esc(label) + '</h3><div class="bpw-page-field-head-actions">' + sparkle + remove + '</div></header><div class="bpw-page-field-body">' + body + "</div></article>";
     }
-    function _renderCard(c, idx) {
-      var html = '<article class="bpw-comp-card" data-idx="' + idx + '">';
-      html += '<header class="bpw-comp-card-head">';
-      html += '<h3 class="bpw-comp-card-name">' + _esc(c.name || "Untitled") + "</h3>";
-      if (c.url) html += '<a class="bpw-comp-card-link" href="' + _esc(c.url) + '" target="_blank" rel="noopener">' + _icon("arrow-up-right-from-square") + "</a>";
-      html += "</header>";
-      if (c.description) html += '<p class="bpw-comp-card-desc">' + _esc(c.description) + "</p>";
-      var rows = [
-        ["Strengths", Array.isArray(c.strengths) ? c.strengths.join("; ") : c.strengths || ""],
-        ["Weaknesses", Array.isArray(c.weaknesses) ? c.weaknesses.join("; ") : c.weaknesses || ""],
-        ["vs. you", c.comparison || ""]
-      ];
-      for (var r = 0; r < rows.length; r++) {
-        if (!rows[r][1]) continue;
-        html += '<div class="bpw-comp-card-row">';
-        html += '<span class="bpw-comp-card-k">' + _esc(rows[r][0]) + "</span>";
-        html += '<span class="bpw-comp-card-v">' + _esc(rows[r][1]) + "</span>";
-        html += "</div>";
-      }
-      html += "</article>";
-      return html;
+    function _renderCompetitor(c, idx) {
+      var base2 = "market.competitors[" + idx + "].";
+      var body = "" + _E().renderText({ label: "Name", path: base2 + "name", value: c.name }) + _E().renderText({ label: "URL", path: base2 + "url", value: c.url, placeholder: "https://\u2026" }) + _E().renderTextarea({ label: "Description", path: base2 + "description", value: c.description }) + _E().renderChips({ label: "Strengths", path: base2 + "strengths", value: c.strengths }) + _E().renderChips({ label: "Weaknesses", path: base2 + "weaknesses", value: c.weaknesses }) + _E().renderTextarea({ label: "How we compare", path: base2 + "comparison", value: c.comparison });
+      return _fieldCard(c.name || "Competitor " + (idx + 1), "market.competitors[" + idx + "]", body, idx);
+    }
+    function renderList() {
+      return "";
     }
     function renderDetail(W2) {
-      var comps = _competitors(W2);
-      var html = '<section class="bpw-shell-detail" aria-label="Competitors">';
+      var comps = _comps(W2);
+      var html = '<section class="bpw-shell-detail bpw-shell-detail--page" aria-label="Competitors">';
       html += '<header class="bpw-shell-detail-head">';
       html += "<h1>Competitors</h1>";
-      html += '<button class="bpw-btn bpw-btn-ghost" data-action="ai-find-more-competitors" type="button">' + _icon("sparkles") + " Find more competitors</button>";
+      html += '<p class="bpw-shell-detail-sub">Same data as Market \u2192 Competitors, focused for deeper editing.</p>';
       html += "</header>";
+      html += '<div class="bpw-page-fields">';
+      html += '<div class="bpw-page-collection-head">';
+      html += '<h2 class="bpw-page-collection-title">' + comps.length + " competitor" + (comps.length === 1 ? "" : "s") + "</h2>";
+      html += '<div class="bpw-page-collection-actions">';
+      html += '<button class="bpw-page-collection-add" data-action="market-add-competitor" type="button">' + _icon("plus") + " Add competitor</button>";
+      html += '<button class="bpw-page-collection-add bpw-page-collection-add--ai" data-action="find-more-competitors" type="button">' + _icon("sparkles") + " Find more</button>";
+      html += "</div></div>";
       if (!comps.length) {
-        html += '<div class="bpw-shell-detail-empty">' + _icon("crosshairs") + '<h3>No competitors logged</h3><p>Run the Competitors stage from setup, or click "Find more" to research now.</p></div>';
+        html += '<div class="bpw-page-collection-empty">No competitors yet. Click "Find more" to research with AI.</div>';
       } else {
-        html += '<div class="bpw-comp-grid">';
-        for (var i = 0; i < comps.length; i++) {
-          html += _renderCard(comps[i] || {}, i);
-        }
-        html += "</div>";
+        for (var i = 0; i < comps.length; i++) html += _renderCompetitor(comps[i], i);
       }
+      html += "</div>";
       html += "</section>";
       return html;
     }
     window._bpwUIViews = window._bpwUIViews || {};
     window._bpwUIViews.competitors = {
+      id: "competitors",
+      title: "Competitors",
+      listMode: "none",
       renderList,
       renderDetail,
-      listMode: "variable-items"
+      inlineActions: []
     };
   })();
 
   // src/ui/views/content.js
   (function() {
     "use strict";
+    var $ = window.jQuery;
     function _esc(s) {
       return (window._bpwEsc || function(x) {
         return x == null ? "" : String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -27435,105 +27666,132 @@ ${prefix}
         return '<i class="fa-solid fa-' + name + '"></i>';
       })(n);
     }
+    function _E() {
+      return window._bpwEditors;
+    }
     function _content(W2) {
       return W2.acceptedSections && W2.acceptedSections.content_strategy || {};
     }
-    function renderList(W2) {
-      var c = _content(W2);
-      var active = W2.ui && W2.ui.itemId || null;
-      var html = "";
-      var pillars = c.pillars || [];
-      if (pillars.length) html += '<div class="bpw-shell-card-divider">Pillars</div>';
-      for (var i = 0; i < pillars.length; i++) {
-        var p = pillars[i];
-        var id = "pillar:" + i;
-        var cls = active === id ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + cls + '" data-item-id="' + _esc(id) + '" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _esc(p.pillar || "Pillar " + (i + 1)) + "</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(p.description || "") + "</div>";
-        html += "</article>";
-      }
-      var channels = c.channels || [];
-      if (channels.length) html += '<div class="bpw-shell-card-divider">Channels</div>';
-      for (var j = 0; j < channels.length; j++) {
-        var ch = channels[j];
-        var cid = "channel:" + j;
-        var ccls = active === cid ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + ccls + '" data-item-id="' + _esc(cid) + '" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _esc(ch.channel || "Channel " + (j + 1)) + "</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(ch.purpose || "") + (ch.frequency ? " \xB7 " + _esc(ch.frequency) : "") + "</div>";
-        html += "</article>";
-      }
-      var seo = c.seo_keywords || [];
-      if (seo.length) {
-        var sCls = active === "seo" ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + sCls + '" data-item-id="seo" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _icon("magnifying-glass") + " SEO keywords (" + seo.length + ")</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(seo.slice(0, 6).join(", ")) + "</div>";
-        html += "</article>";
-      }
-      var tags = c.hashtags || [];
-      if (tags.length) {
-        var hCls = active === "hashtags" ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + hCls + '" data-item-id="hashtags" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _icon("hashtag") + " Hashtags (" + tags.length + ")</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(tags.slice(0, 6).join(" ")) + "</div>";
-        html += "</article>";
-      }
-      return html || '<div class="bpw-shell-list-empty">' + _icon("pen-nib") + "<p>No content strategy yet.</p></div>";
+    function _fieldCard(opts) {
+      var remove = opts.removeAction ? '<button class="bpw-page-field-remove" data-action="' + _esc(opts.removeAction) + '" data-idx="' + opts.removeIdx + '" type="button" title="Remove">' + _icon("xmark") + "</button>" : "";
+      var sparkle = opts.path ? '<button class="bpw-page-field-refine" data-action="refine" data-refine-path="' + _esc(opts.path) + '" type="button" title="Improve with AI">' + _icon("sparkles") + "</button>" : "";
+      return '<article class="bpw-page-field"><header class="bpw-page-field-head"><h3 class="bpw-page-field-label">' + _esc(opts.label) + '</h3><div class="bpw-page-field-head-actions">' + sparkle + remove + '</div></header><div class="bpw-page-field-body">' + opts.body + "</div></article>";
     }
-    function renderDetail(W2, selectedId) {
-      if (!selectedId) return "";
-      var c = _content(W2);
-      var E = window._bpwEditors;
-      if (selectedId === "seo") {
-        return '<div class="bpw-shell-detail-card"><h3>SEO keywords</h3>' + E.renderChips({ label: "Keywords", path: "content_strategy.seo_keywords", value: c.seo_keywords || [], addLabel: "keyword" }) + "</div>";
-      }
-      if (selectedId === "hashtags") {
-        return '<div class="bpw-shell-detail-card"><h3>Hashtags</h3>' + E.renderChips({ label: "Tags", path: "content_strategy.hashtags", value: c.hashtags || [], addLabel: "tag" }) + "</div>";
-      }
-      var parts = selectedId.split(":");
-      var type = parts[0], idx = parseInt(parts[1] || "0", 10);
-      if (type === "pillar") {
-        var p = (c.pillars || [])[idx];
-        if (!p) return '<div class="bpw-shell-detail-empty">Pillar not found.</div>';
-        var base2 = "content_strategy.pillars[" + idx + "].";
-        return '<div class="bpw-shell-detail-card"><h3>' + _esc(p.pillar || "Pillar " + (idx + 1)) + "</h3>" + E.renderText({ label: "Pillar", path: base2 + "pillar", value: p.pillar }) + E.renderTextarea({ label: "Description", path: base2 + "description", value: p.description }) + E.renderChips({ label: "Topics", path: base2 + "topics", value: p.topics, addLabel: "topic" }) + "</div>";
-      }
-      if (type === "channel") {
-        var ch = (c.channels || [])[idx];
-        if (!ch) return '<div class="bpw-shell-detail-empty">Channel not found.</div>';
-        var cbase = "content_strategy.channels[" + idx + "].";
-        return '<div class="bpw-shell-detail-card"><h3>' + _esc(ch.channel || "Channel " + (idx + 1)) + "</h3>" + E.renderText({ label: "Channel", path: cbase + "channel", value: ch.channel }) + E.renderTextarea({ label: "Purpose", path: cbase + "purpose", value: ch.purpose }) + E.renderText({ label: "Frequency", path: cbase + "frequency", value: ch.frequency, placeholder: "e.g. 3x/week" }) + E.renderText({ label: "Format", path: cbase + "format", value: ch.format, placeholder: "e.g. short-form video" }) + "</div>";
-      }
+    function _renderPillar(p, idx) {
+      var base2 = "content_strategy.pillars[" + idx + "].";
+      var body = "" + _E().renderText({ label: "Pillar", path: base2 + "pillar", value: p.pillar }) + _E().renderTextarea({ label: "Description", path: base2 + "description", value: p.description }) + _E().renderChips({ label: "Topics", path: base2 + "topics", value: p.topics, addLabel: "topic" });
+      return _fieldCard({
+        label: p.pillar || "Pillar " + (idx + 1),
+        path: "content_strategy.pillars[" + idx + "]",
+        body,
+        removeAction: "content-remove-pillar",
+        removeIdx: idx
+      });
+    }
+    function _renderChannel(ch, idx) {
+      var base2 = "content_strategy.channels[" + idx + "].";
+      var body = "" + _E().renderText({ label: "Channel", path: base2 + "channel", value: ch.channel }) + _E().renderTextarea({ label: "Purpose", path: base2 + "purpose", value: ch.purpose }) + _E().renderText({ label: "Frequency", path: base2 + "frequency", value: ch.frequency, placeholder: "e.g. 3x/week" }) + _E().renderText({ label: "Format", path: base2 + "format", value: ch.format, placeholder: "e.g. short-form video" });
+      return _fieldCard({
+        label: ch.channel || "Channel " + (idx + 1),
+        path: "content_strategy.channels[" + idx + "]",
+        body,
+        removeAction: "content-remove-channel",
+        removeIdx: idx
+      });
+    }
+    function renderList() {
       return "";
     }
+    function renderDetail(W2) {
+      var c = _content(W2);
+      var pillars = c.pillars || [];
+      var channels = c.channels || [];
+      var html = '<section class="bpw-shell-detail bpw-shell-detail--page" aria-label="Content strategy">';
+      html += '<header class="bpw-shell-detail-head">';
+      html += "<h1>Content strategy</h1>";
+      html += '<p class="bpw-shell-detail-sub">Pillars, channels, SEO keywords, and hashtags.</p>';
+      html += "</header>";
+      html += '<div class="bpw-page-fields">';
+      html += '<div class="bpw-page-collection-head">';
+      html += '<h2 class="bpw-page-collection-title">Pillars</h2>';
+      html += '<button class="bpw-page-collection-add" data-action="content-add-pillar" type="button">' + _icon("plus") + " Add pillar</button>";
+      html += "</div>";
+      if (!pillars.length) html += '<div class="bpw-page-collection-empty">No pillars yet.</div>';
+      else for (var i = 0; i < pillars.length; i++) html += _renderPillar(pillars[i], i);
+      html += '<div class="bpw-page-collection-head">';
+      html += '<h2 class="bpw-page-collection-title">Channels</h2>';
+      html += '<button class="bpw-page-collection-add" data-action="content-add-channel" type="button">' + _icon("plus") + " Add channel</button>";
+      html += "</div>";
+      if (!channels.length) html += '<div class="bpw-page-collection-empty">No channels yet.</div>';
+      else for (var j = 0; j < channels.length; j++) html += _renderChannel(channels[j], j);
+      html += _fieldCard({
+        label: "SEO keywords",
+        path: "content_strategy.seo_keywords",
+        body: _E().renderChips({ path: "content_strategy.seo_keywords", value: c.seo_keywords || [], addLabel: "keyword" })
+      });
+      html += _fieldCard({
+        label: "Hashtags",
+        path: "content_strategy.hashtags",
+        body: _E().renderChips({ path: "content_strategy.hashtags", value: c.hashtags || [], addLabel: "tag" })
+      });
+      html += "</div>";
+      html += "</section>";
+      return html;
+    }
+    function _refresh() {
+      if (window._bpwExportSync) window._bpwExportSync.syncAll();
+      if (window._bpwSyncToTextarea) window._bpwSyncToTextarea();
+      if (window._bpwAutoSave) window._bpwAutoSave();
+      if (window._bpwAppShell) window._bpwAppShell.render();
+      if (window._bpwSetup && window._bpwSetup.render) window._bpwSetup.render();
+    }
+    $(document).off("click.bpw-cnt-add-p").on("click.bpw-cnt-add-p", '[data-action="content-add-pillar"]', function(e) {
+      e.preventDefault();
+      var W2 = window._bpwState;
+      W2.acceptedSections = W2.acceptedSections || {};
+      W2.acceptedSections.content_strategy = W2.acceptedSections.content_strategy || {};
+      W2.acceptedSections.content_strategy.pillars = W2.acceptedSections.content_strategy.pillars || [];
+      W2.acceptedSections.content_strategy.pillars.push({ pillar: "", description: "", topics: [] });
+      _refresh();
+    });
+    $(document).off("click.bpw-cnt-rm-p").on("click.bpw-cnt-rm-p", '[data-action="content-remove-pillar"]', function(e) {
+      e.preventDefault();
+      var idx = parseInt($(this).attr("data-idx"), 10);
+      if (isNaN(idx)) return;
+      var W2 = window._bpwState;
+      var arr = W2.acceptedSections && W2.acceptedSections.content_strategy && W2.acceptedSections.content_strategy.pillars;
+      if (!arr) return;
+      arr.splice(idx, 1);
+      _refresh();
+    });
+    $(document).off("click.bpw-cnt-add-c").on("click.bpw-cnt-add-c", '[data-action="content-add-channel"]', function(e) {
+      e.preventDefault();
+      var W2 = window._bpwState;
+      W2.acceptedSections = W2.acceptedSections || {};
+      W2.acceptedSections.content_strategy = W2.acceptedSections.content_strategy || {};
+      W2.acceptedSections.content_strategy.channels = W2.acceptedSections.content_strategy.channels || [];
+      W2.acceptedSections.content_strategy.channels.push({ channel: "", purpose: "", frequency: "", format: "" });
+      _refresh();
+    });
+    $(document).off("click.bpw-cnt-rm-c").on("click.bpw-cnt-rm-c", '[data-action="content-remove-channel"]', function(e) {
+      e.preventDefault();
+      var idx = parseInt($(this).attr("data-idx"), 10);
+      if (isNaN(idx)) return;
+      var W2 = window._bpwState;
+      var arr = W2.acceptedSections && W2.acceptedSections.content_strategy && W2.acceptedSections.content_strategy.channels;
+      if (!arr) return;
+      arr.splice(idx, 1);
+      _refresh();
+    });
     window._bpwUIViews = window._bpwUIViews || {};
     window._bpwUIViews.content = {
       id: "content",
       title: "Content strategy",
       minLevel: "new",
-      listMode: "variable-items",
+      listMode: "none",
       renderList,
       renderDetail,
-      inlineActions: [
-        {
-          type: "add-row",
-          label: "Add pillar",
-          icon: "plus",
-          listPath: "content_strategy.pillars",
-          itemPrefix: "pillar",
-          itemTemplate: { pillar: "", description: "", topics: [] }
-        },
-        {
-          type: "add-row",
-          label: "Add channel",
-          icon: "plus",
-          listPath: "content_strategy.channels",
-          itemPrefix: "channel",
-          itemTemplate: { channel: "", purpose: "", frequency: "", format: "" }
-        }
-      ]
+      inlineActions: []
     };
   })();
 
@@ -27553,74 +27811,144 @@ ${prefix}
         return '<i class="fa-solid fa-' + name + '"></i>';
       })(n);
     }
+    function _E() {
+      return window._bpwEditors;
+    }
     function _seo(W2) {
       return W2.acceptedSections && W2.acceptedSections.seo || {};
     }
-    function renderList(W2) {
-      var s = _seo(W2);
-      var active = W2.ui && W2.ui.itemId || null;
-      var html = "";
-      var clusters = s.keyword_clusters || [];
-      if (clusters.length) html += '<div class="bpw-shell-card-divider">Keyword clusters</div>';
-      for (var i = 0; i < clusters.length; i++) {
-        var kc = clusters[i];
-        var id = "cluster:" + i;
-        var cls = active === id ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + cls + '" data-item-id="' + _esc(id) + '" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _esc(kc.cluster || kc.seed_keyword || "Cluster " + (i + 1)) + "</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc((kc.keywords || []).slice(0, 5).join(", ")) + (kc.difficulty ? " \xB7 " + _esc(kc.difficulty) : "") + "</div>";
-        html += "</article>";
-      }
-      var gaps = s.content_gaps || [];
-      if (gaps.length) html += '<div class="bpw-shell-card-divider">Content gaps</div>';
-      for (var j = 0; j < gaps.length; j++) {
-        var g = gaps[j];
-        var gid = "gap:" + j;
-        var gcls = active === gid ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + gcls + '" data-item-id="' + _esc(gid) + '" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _esc(g.topic || "Gap " + (j + 1)) + "</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(g.why_it_matters || "") + "</div>";
-        html += "</article>";
-      }
-      var quickWins = s.quick_wins || [];
-      if (quickWins.length) html += '<div class="bpw-shell-card-divider">Quick wins</div>';
-      for (var k = 0; k < quickWins.length; k++) {
-        var qw = quickWins[k];
-        var qid = "quickwin:" + k;
-        var qcls = active === qid ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + qcls + '" data-item-id="' + _esc(qid) + '" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _esc(qw.action || "Quick win " + (k + 1)) + "</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc("Impact: " + (qw.impact || "?") + " \xB7 Effort: " + (qw.effort || "?")) + "</div>";
-        html += "</article>";
-      }
-      return html || '<div class="bpw-shell-list-empty">' + _icon("magnifying-glass") + "<p>No SEO audit yet. Click <strong>Run SEO audit</strong> above.</p></div>";
+    function _fieldCard(opts) {
+      var remove = opts.removeAction ? '<button class="bpw-page-field-remove" data-action="' + _esc(opts.removeAction) + '" data-idx="' + opts.removeIdx + '" type="button" title="Remove">' + _icon("xmark") + "</button>" : "";
+      var sparkle = opts.path ? '<button class="bpw-page-field-refine" data-action="refine" data-refine-path="' + _esc(opts.path) + '" type="button" title="Improve with AI">' + _icon("sparkles") + "</button>" : "";
+      return '<article class="bpw-page-field"><header class="bpw-page-field-head"><h3 class="bpw-page-field-label">' + _esc(opts.label) + '</h3><div class="bpw-page-field-head-actions">' + sparkle + remove + '</div></header><div class="bpw-page-field-body">' + opts.body + "</div></article>";
     }
-    function renderDetail(W2, selectedId) {
-      if (!selectedId) return "";
-      var s = _seo(W2);
-      var E = window._bpwEditors;
-      var parts = selectedId.split(":");
-      var type = parts[0], idx = parseInt(parts[1] || "0", 10);
-      if (type === "cluster") {
-        var kc = (s.keyword_clusters || [])[idx];
-        if (!kc) return '<div class="bpw-shell-detail-empty">Cluster not found.</div>';
-        var base2 = "seo.keyword_clusters[" + idx + "].";
-        return '<div class="bpw-shell-detail-card"><h3>' + _esc(kc.cluster || "Keyword cluster " + (idx + 1)) + "</h3>" + E.renderText({ label: "Cluster", path: base2 + "cluster", value: kc.cluster }) + E.renderText({ label: "Seed keyword", path: base2 + "seed_keyword", value: kc.seed_keyword }) + E.renderText({ label: "Intent", path: base2 + "intent", value: kc.intent, placeholder: "informational / commercial / navigational" }) + E.renderText({ label: "Difficulty", path: base2 + "difficulty", value: kc.difficulty, placeholder: "low / medium / high" }) + E.renderChips({ label: "Keywords", path: base2 + "keywords", value: kc.keywords, addLabel: "keyword" }) + "</div>";
-      }
-      if (type === "gap") {
-        var g = (s.content_gaps || [])[idx];
-        if (!g) return '<div class="bpw-shell-detail-empty">Gap not found.</div>';
-        var gbase = "seo.content_gaps[" + idx + "].";
-        return '<div class="bpw-shell-detail-card"><h3>' + _esc(g.topic || "Content gap " + (idx + 1)) + "</h3>" + E.renderText({ label: "Topic", path: gbase + "topic", value: g.topic }) + E.renderTextarea({ label: "Why it matters", path: gbase + "why_it_matters", value: g.why_it_matters }) + E.renderField({ type: "prose", label: "Suggested angle", path: gbase + "suggested_angle", value: g.suggested_angle }) + "</div>";
-      }
-      if (type === "quickwin") {
-        var qw = (s.quick_wins || [])[idx];
-        if (!qw) return '<div class="bpw-shell-detail-empty">Quick win not found.</div>';
-        var qbase = "seo.quick_wins[" + idx + "].";
-        return '<div class="bpw-shell-detail-card"><h3>' + _esc(qw.action || "Quick win " + (idx + 1)) + "</h3>" + E.renderText({ label: "Action", path: qbase + "action", value: qw.action }) + E.renderText({ label: "Impact", path: qbase + "impact", value: qw.impact, placeholder: "low / medium / high" }) + E.renderText({ label: "Effort", path: qbase + "effort", value: qw.effort, placeholder: "low / medium / high" }) + "</div>";
-      }
+    function _renderCluster(kc, idx) {
+      var base2 = "seo.keyword_clusters[" + idx + "].";
+      var body = "" + _E().renderText({ label: "Cluster", path: base2 + "cluster", value: kc.cluster }) + _E().renderText({ label: "Seed keyword", path: base2 + "seed_keyword", value: kc.seed_keyword }) + _E().renderText({ label: "Intent", path: base2 + "intent", value: kc.intent, placeholder: "informational / commercial / navigational" }) + _E().renderText({ label: "Difficulty", path: base2 + "difficulty", value: kc.difficulty, placeholder: "low / medium / high" }) + _E().renderChips({ label: "Keywords", path: base2 + "keywords", value: kc.keywords, addLabel: "keyword" });
+      return _fieldCard({
+        label: kc.cluster || "Keyword cluster " + (idx + 1),
+        path: "seo.keyword_clusters[" + idx + "]",
+        body,
+        removeAction: "seo-remove-cluster",
+        removeIdx: idx
+      });
+    }
+    function _renderGap(g, idx) {
+      var base2 = "seo.content_gaps[" + idx + "].";
+      var body = "" + _E().renderText({ label: "Topic", path: base2 + "topic", value: g.topic }) + _E().renderTextarea({ label: "Why it matters", path: base2 + "why_it_matters", value: g.why_it_matters }) + _E().renderField({ type: "prose", label: "Suggested angle", path: base2 + "suggested_angle", value: g.suggested_angle });
+      return _fieldCard({
+        label: g.topic || "Content gap " + (idx + 1),
+        path: "seo.content_gaps[" + idx + "]",
+        body,
+        removeAction: "seo-remove-gap",
+        removeIdx: idx
+      });
+    }
+    function _renderQuickWin(qw, idx) {
+      var base2 = "seo.quick_wins[" + idx + "].";
+      var body = "" + _E().renderText({ label: "Action", path: base2 + "action", value: qw.action }) + _E().renderText({ label: "Impact", path: base2 + "impact", value: qw.impact, placeholder: "low / medium / high" }) + _E().renderText({ label: "Effort", path: base2 + "effort", value: qw.effort, placeholder: "low / medium / high" });
+      return _fieldCard({
+        label: qw.action || "Quick win " + (idx + 1),
+        path: "seo.quick_wins[" + idx + "]",
+        body,
+        removeAction: "seo-remove-quickwin",
+        removeIdx: idx
+      });
+    }
+    function renderList() {
       return "";
     }
+    function renderDetail(W2) {
+      var s = _seo(W2);
+      var clusters = s.keyword_clusters || [];
+      var gaps = s.content_gaps || [];
+      var wins = s.quick_wins || [];
+      var html = '<section class="bpw-shell-detail bpw-shell-detail--page" aria-label="SEO">';
+      html += '<header class="bpw-shell-detail-head">';
+      html += "<h1>SEO</h1>";
+      html += '<p class="bpw-shell-detail-sub">Keyword clusters, content gaps, and quick wins.</p>';
+      html += '<button class="bpw-page-collection-add bpw-page-collection-add--ai" data-action="run-seo-audit" type="button">' + _icon("sparkles") + " Run SEO audit</button>";
+      html += "</header>";
+      html += '<div class="bpw-page-fields">';
+      html += '<div class="bpw-page-collection-head">';
+      html += '<h2 class="bpw-page-collection-title">Keyword clusters</h2>';
+      html += '<button class="bpw-page-collection-add" data-action="seo-add-cluster" type="button">' + _icon("plus") + " Add cluster</button>";
+      html += "</div>";
+      if (!clusters.length) html += '<div class="bpw-page-collection-empty">No clusters yet. Run an audit to populate.</div>';
+      else for (var i = 0; i < clusters.length; i++) html += _renderCluster(clusters[i], i);
+      html += '<div class="bpw-page-collection-head">';
+      html += '<h2 class="bpw-page-collection-title">Content gaps</h2>';
+      html += '<button class="bpw-page-collection-add" data-action="seo-add-gap" type="button">' + _icon("plus") + " Add gap</button>";
+      html += "</div>";
+      if (!gaps.length) html += '<div class="bpw-page-collection-empty">No gaps yet.</div>';
+      else for (var j = 0; j < gaps.length; j++) html += _renderGap(gaps[j], j);
+      html += '<div class="bpw-page-collection-head">';
+      html += '<h2 class="bpw-page-collection-title">Quick wins</h2>';
+      html += '<button class="bpw-page-collection-add" data-action="seo-add-quickwin" type="button">' + _icon("plus") + " Add quick win</button>";
+      html += "</div>";
+      if (!wins.length) html += '<div class="bpw-page-collection-empty">No quick wins yet.</div>';
+      else for (var k = 0; k < wins.length; k++) html += _renderQuickWin(wins[k], k);
+      html += "</div>";
+      html += "</section>";
+      return html;
+    }
+    function _refresh() {
+      if (window._bpwExportSync) window._bpwExportSync.syncAll();
+      if (window._bpwSyncToTextarea) window._bpwSyncToTextarea();
+      if (window._bpwAutoSave) window._bpwAutoSave();
+      if (window._bpwAppShell) window._bpwAppShell.render();
+      if (window._bpwSetup && window._bpwSetup.render) window._bpwSetup.render();
+    }
+    function _ensureSeo() {
+      var W2 = window._bpwState;
+      W2.acceptedSections = W2.acceptedSections || {};
+      W2.acceptedSections.seo = W2.acceptedSections.seo || {};
+      return W2.acceptedSections.seo;
+    }
+    function _removeAt(arrPath, idx) {
+      var W2 = window._bpwState;
+      var seo = (W2.acceptedSections || {}).seo || {};
+      var arr = seo[arrPath];
+      if (!Array.isArray(arr)) return;
+      arr.splice(idx, 1);
+      _refresh();
+    }
+    $(document).off("click.bpw-seo-add-cluster").on("click.bpw-seo-add-cluster", '[data-action="seo-add-cluster"]', function(e) {
+      e.preventDefault();
+      var seo = _ensureSeo();
+      seo.keyword_clusters = seo.keyword_clusters || [];
+      seo.keyword_clusters.push({ cluster: "", seed_keyword: "", intent: "", difficulty: "", keywords: [] });
+      _refresh();
+    });
+    $(document).off("click.bpw-seo-rm-cluster").on("click.bpw-seo-rm-cluster", '[data-action="seo-remove-cluster"]', function(e) {
+      e.preventDefault();
+      var idx = parseInt($(this).attr("data-idx"), 10);
+      if (!isNaN(idx)) _removeAt("keyword_clusters", idx);
+    });
+    $(document).off("click.bpw-seo-add-gap").on("click.bpw-seo-add-gap", '[data-action="seo-add-gap"]', function(e) {
+      e.preventDefault();
+      var seo = _ensureSeo();
+      seo.content_gaps = seo.content_gaps || [];
+      seo.content_gaps.push({ topic: "", why_it_matters: "", suggested_angle: "" });
+      _refresh();
+    });
+    $(document).off("click.bpw-seo-rm-gap").on("click.bpw-seo-rm-gap", '[data-action="seo-remove-gap"]', function(e) {
+      e.preventDefault();
+      var idx = parseInt($(this).attr("data-idx"), 10);
+      if (!isNaN(idx)) _removeAt("content_gaps", idx);
+    });
+    $(document).off("click.bpw-seo-add-qw").on("click.bpw-seo-add-qw", '[data-action="seo-add-quickwin"]', function(e) {
+      e.preventDefault();
+      var seo = _ensureSeo();
+      seo.quick_wins = seo.quick_wins || [];
+      seo.quick_wins.push({ action: "", impact: "", effort: "" });
+      _refresh();
+    });
+    $(document).off("click.bpw-seo-rm-qw").on("click.bpw-seo-rm-qw", '[data-action="seo-remove-quickwin"]', function(e) {
+      e.preventDefault();
+      var idx = parseInt($(this).attr("data-idx"), 10);
+      if (!isNaN(idx)) _removeAt("quick_wins", idx);
+    });
     $(document).off("click.bpw-seo-audit").on("click.bpw-seo-audit", '[data-action="run-seo-audit"]', function(e) {
       e.preventDefault();
       var W2 = window._bpwState;
@@ -27638,10 +27966,7 @@ ${prefix}
         }
         W2.acceptedSections = W2.acceptedSections || {};
         W2.acceptedSections.seo = res.data || {};
-        if (window._bpwExportSync) window._bpwExportSync.syncAll();
-        if (window._bpwSyncToTextarea) window._bpwSyncToTextarea();
-        if (window._bpwAutoSave) window._bpwAutoSave();
-        if (window._bpwAppShell) window._bpwAppShell.render();
+        _refresh();
         if (window._bpwToast) window._bpwToast("SEO audit complete", "success");
       });
     });
@@ -27650,36 +27975,10 @@ ${prefix}
       id: "seo",
       title: "SEO",
       minLevel: "growing",
-      listMode: "variable-items",
+      listMode: "none",
       renderList,
       renderDetail,
-      inlineActions: [
-        { id: "run-seo-audit", label: "Run SEO audit", icon: "sparkles" },
-        {
-          type: "add-row",
-          label: "Add keyword cluster",
-          icon: "plus",
-          listPath: "seo.keyword_clusters",
-          itemPrefix: "cluster",
-          itemTemplate: { cluster: "", seed_keyword: "", intent: "", difficulty: "", keywords: [] }
-        },
-        {
-          type: "add-row",
-          label: "Add content gap",
-          icon: "plus",
-          listPath: "seo.content_gaps",
-          itemPrefix: "gap",
-          itemTemplate: { topic: "", why_it_matters: "", suggested_angle: "" }
-        },
-        {
-          type: "add-row",
-          label: "Add quick win",
-          icon: "plus",
-          listPath: "seo.quick_wins",
-          itemPrefix: "quickwin",
-          itemTemplate: { action: "", impact: "", effort: "" }
-        }
-      ]
+      inlineActions: []
     };
   })();
 
@@ -27720,38 +28019,28 @@ ${prefix}
       if (!Array.isArray(W2.acceptedSections.social.profiles)) W2.acceptedSections.social.profiles = [];
       return W2.acceptedSections.social.profiles;
     }
-    function renderList(W2) {
-      var profiles = _profiles(W2);
-      var active = W2.ui && W2.ui.itemId || null;
-      if (!profiles.length) {
-        return '<div class="bpw-shell-list-empty">' + _icon("share-nodes") + '<div>No social profiles yet.</div><div style="font-size:var(--bpw-font-xs);color:var(--bpw-text-muted);margin-top:var(--bpw-sp-1);">Use Add profile below to add one.</div></div>';
-      }
-      var html = "";
-      for (var i = 0; i < profiles.length; i++) {
-        var p = profiles[i] || {};
-        var id = "profile:" + i;
-        var cls = active === id ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        var label = PLATFORM_LABELS[p.platform] || p.platform || "Profile " + (i + 1);
-        html += '<article class="' + cls + '" data-item-id="' + _esc(id) + '" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _esc(label) + "</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(p.handle || p.url || "\u2014") + "</div>";
-        html += "</article>";
-      }
-      return html;
+    function renderList() {
+      return "";
     }
-    function renderDetail(W2, selectedId) {
+    function renderDetail(W2) {
       var profiles = _profiles(W2);
-      var html = '<div class="bpw-shell-detail-card">';
-      html += "<h3>" + _icon("share-nodes") + " Social profiles</h3>";
-      html += '<p style="margin:0 0 var(--bpw-sp-4);color:var(--bpw-text-sec);font-size:var(--bpw-font-sm);">Add and edit the social accounts the brand publishes on. These ship out as <code>field_brand_social</code>.</p>';
+      var html = '<section class="bpw-shell-detail bpw-shell-detail--page" aria-label="Social profiles">';
+      html += '<header class="bpw-shell-detail-head">';
+      html += "<h1>Social profiles</h1>";
+      html += '<p class="bpw-shell-detail-sub">Accounts the brand publishes on. Ship out as <code>field_brand_social</code>.</p>';
+      html += "</header>";
+      html += '<div class="bpw-page-fields">';
+      html += '<div class="bpw-page-collection-head">';
+      html += '<h2 class="bpw-page-collection-title">' + profiles.length + " profile" + (profiles.length === 1 ? "" : "s") + "</h2>";
+      html += '<button class="bpw-page-collection-add" data-action="bpw-social-add" type="button">' + _icon("plus") + " Add profile</button>";
+      html += "</div>";
       if (!profiles.length) {
-        html += '<div class="bpw-shell-detail-value bpw-shell-detail-value-empty">No profiles yet.</div>';
+        html += '<div class="bpw-page-collection-empty">No social profiles yet. Click Add profile to add one.</div>';
       } else {
         html += '<div class="bpw-social-rows">';
         for (var i = 0; i < profiles.length; i++) {
           var p = profiles[i] || {};
-          var hi = selectedId === "profile:" + i;
-          html += '<div class="bpw-social-row' + (hi ? " is-active" : "") + '" data-profile-idx="' + i + '">';
+          html += '<div class="bpw-social-row" data-profile-idx="' + i + '">';
           html += '<select class="bpw-social-platform" data-profile-field="platform">';
           for (var k = 0; k < PLATFORMS.length; k++) {
             var key = PLATFORMS[k];
@@ -27765,10 +28054,8 @@ ${prefix}
         }
         html += "</div>";
       }
-      html += '<div class="bpw-social-actions">';
-      html += '<button class="bpw-shell-action-btn" data-action="bpw-social-add" type="button">' + _icon("plus") + " Add profile</button>";
       html += "</div>";
-      html += "</div>";
+      html += "</section>";
       return html;
     }
     function _persist(W2) {
@@ -27776,6 +28063,7 @@ ${prefix}
       if (window._bpwSyncToTextarea) window._bpwSyncToTextarea();
       if (window._bpwAutoSave) window._bpwAutoSave();
       if (window._bpwAppShell) window._bpwAppShell.render();
+      if (window._bpwSetup && window._bpwSetup.render) window._bpwSetup.render();
     }
     $(document).off("input.bpw-social change.bpw-social", "[data-profile-field]").on("input.bpw-social change.bpw-social", "[data-profile-field]", function() {
       var W2 = window._bpwState;
@@ -27814,19 +28102,10 @@ ${prefix}
       id: "social",
       title: "Social",
       minLevel: "new",
-      listMode: "variable-items",
+      listMode: "none",
       renderList,
       renderDetail,
-      inlineActions: [
-        {
-          type: "add-row",
-          label: "Add profile",
-          icon: "plus",
-          listPath: "social.profiles",
-          itemPrefix: "profile",
-          itemTemplate: { platform: "other", handle: "", url: "" }
-        }
-      ]
+      inlineActions: []
     };
   })();
 
@@ -28124,14 +28403,21 @@ ${prefix}
     function _shellHTML() {
       var section = W2.ui && W2.ui.section || "dashboard";
       var view = (window._bpwUIViews || {})[section];
-      var singlePane = view && view.listMode === "none";
-      var bodyCls = singlePane ? "bpw-shell-body bpw-shell-body--single" : "bpw-shell-body";
       var topbar = window._bpwTopbar && window._bpwTopbar.render && window._bpwTopbar.render(W2) || "";
       var sidebar = window._bpwSidebar && window._bpwSidebar.render && window._bpwSidebar.render(W2) || "";
-      var list = singlePane ? "" : window._bpwSectionList && window._bpwSectionList.render && window._bpwSectionList.render(W2) || "";
-      var detail = window._bpwDetailPane && window._bpwDetailPane.render && window._bpwDetailPane.render(W2) || "";
+      var detail = "";
+      if (view && typeof view.renderDetail === "function") {
+        try {
+          detail = view.renderDetail(W2) || "";
+        } catch (e) {
+          console.error(LOG, "view renderDetail threw", section, e);
+          detail = '<section class="bpw-shell-detail bpw-shell-detail--page"><div class="bpw-shell-detail-empty">Failed to render: ' + (e.message || e) + "</div></section>";
+        }
+      } else {
+        detail = '<section class="bpw-shell-detail bpw-shell-detail--page"><div class="bpw-shell-detail-empty">Unknown section: ' + section + "</div></section>";
+      }
       var drawer = window._bpwActivityDrawer && window._bpwActivityDrawer.render && window._bpwActivityDrawer.render(W2) || "";
-      return topbar + '<div class="' + bodyCls + '">' + sidebar + list + detail + "</div>" + drawer;
+      return topbar + '<div class="bpw-shell-body bpw-shell-body--single">' + sidebar + detail + "</div>" + drawer;
     }
     function _wireEvents() {
       var ns = ".bpw-shell";

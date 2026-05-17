@@ -1,25 +1,20 @@
 /**
  * @category    ui
- * @purpose     Competitors view — surfaces the competitor cards that
- *              the Market section already stores in
- *              W.acceptedSections.market.competitors as their own
- *              top-level navigation item.
+ * @purpose     Competitors view — v3 page-style focused editor.
  *
- *              v2 elevates competitors out of the buried Market sub-list
- *              into a first-class section with its own page. Data lives
- *              under market.competitors (no schema change) so the Market
- *              view's competitor editor and this view stay in sync.
+ *              Surfaces W.acceptedSections.market.competitors as its
+ *              own page. Same data slot as market.js — edits here
+ *              propagate to the Market view and the wizard pane.
  *
- * @exports     window._bpwUIViews.competitors = { renderList, renderDetail }
- *
- * @depends-on  window._bpwState, window.BrandService, window._bpwIcon
+ * @exports     window._bpwUIViews.competitors
+ * @depends-on  window._bpwState, window._bpwEditors, window._bpwIcon
  */
 (function() {
   'use strict';
 
-  function _esc(s) {
-    return (window._bpwEsc || function(x) { return x == null ? '' : String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); })(s);
-  }
+  var $ = window.jQuery;
+
+  function _esc(s) { return (window._bpwEsc || function(x) { return x == null ? '' : String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); })(s); }
   function _icon(n) {
     return (window._bpwIcon || function(name) {
       if (!name) return '';
@@ -27,87 +22,75 @@
       return '<i class="fa-solid fa-' + name + '"></i>';
     })(n);
   }
+  function _E() { return window._bpwEditors; }
 
-  function _competitors(W) {
+  function _comps(W) {
     var market = ((W.acceptedSections || {}).market) || {};
     return Array.isArray(market.competitors) ? market.competitors : [];
   }
 
-  function renderList(W) {
-    var comps = _competitors(W);
-    var html = '<aside class="bpw-shell-list" aria-label="Competitors list">';
-    html += '<header class="bpw-shell-list-head"><h3>Competitors</h3>'
-         + '<button class="bpw-shell-list-action" data-action="ai-find-more-competitors" type="button">'
-         + _icon('plus') + ' Find more</button></header>';
-    if (!comps.length) {
-      html += '<div class="bpw-shell-list-empty">' + _icon('crosshairs') + '<p>No competitors yet.</p>'
-           + '<button class="bpw-btn bpw-btn-primary" data-action="ai-find-more-competitors" type="button">'
-           + _icon('sparkles') + ' Research competitors</button></div>';
-    } else {
-      html += '<ul class="bpw-shell-list-items">';
-      for (var i = 0; i < comps.length; i++) {
-        var c = comps[i] || {};
-        html += '<li class="bpw-shell-list-item" data-item-id="' + _esc('comp-' + i) + '">';
-        html += '<div class="bpw-shell-list-item-title">' + _esc(c.name || 'Untitled') + '</div>';
-        if (c.description) html += '<div class="bpw-shell-list-item-sub">' + _esc(c.description) + '</div>';
-        html += '</li>';
-      }
-      html += '</ul>';
-    }
-    html += '</aside>';
-    return html;
+  function _fieldCard(label, path, body, removeIdx) {
+    var remove = (removeIdx != null)
+      ? '<button class="bpw-page-field-remove" data-action="market-remove-competitor" data-idx="' + removeIdx + '" type="button" title="Remove">' + _icon('xmark') + '</button>'
+      : '';
+    var sparkle = path
+      ? '<button class="bpw-page-field-refine" data-action="refine" data-refine-path="' + _esc(path) + '" type="button" title="Improve with AI">' + _icon('sparkles') + '</button>'
+      : '';
+    return '<article class="bpw-page-field">'
+      + '<header class="bpw-page-field-head">'
+      +   '<h3 class="bpw-page-field-label">' + _esc(label) + '</h3>'
+      +   '<div class="bpw-page-field-head-actions">' + sparkle + remove + '</div>'
+      + '</header>'
+      + '<div class="bpw-page-field-body">' + body + '</div>'
+      + '</article>';
   }
 
-  function _renderCard(c, idx) {
-    var html = '<article class="bpw-comp-card" data-idx="' + idx + '">';
-    html += '<header class="bpw-comp-card-head">';
-    html += '<h3 class="bpw-comp-card-name">' + _esc(c.name || 'Untitled') + '</h3>';
-    if (c.url) html += '<a class="bpw-comp-card-link" href="' + _esc(c.url) + '" target="_blank" rel="noopener">' + _icon('arrow-up-right-from-square') + '</a>';
-    html += '</header>';
-    if (c.description) html += '<p class="bpw-comp-card-desc">' + _esc(c.description) + '</p>';
-    var rows = [
-      ['Strengths',  Array.isArray(c.strengths)  ? c.strengths.join('; ')  : (c.strengths  || '')],
-      ['Weaknesses', Array.isArray(c.weaknesses) ? c.weaknesses.join('; ') : (c.weaknesses || '')],
-      ['vs. you',    c.comparison || '']
-    ];
-    for (var r = 0; r < rows.length; r++) {
-      if (!rows[r][1]) continue;
-      html += '<div class="bpw-comp-card-row">';
-      html += '<span class="bpw-comp-card-k">' + _esc(rows[r][0]) + '</span>';
-      html += '<span class="bpw-comp-card-v">' + _esc(rows[r][1]) + '</span>';
-      html += '</div>';
-    }
-    html += '</article>';
-    return html;
+  function _renderCompetitor(c, idx) {
+    var base = 'market.competitors[' + idx + '].';
+    var body = ''
+      + _E().renderText({ label: 'Name', path: base + 'name', value: c.name })
+      + _E().renderText({ label: 'URL', path: base + 'url', value: c.url, placeholder: 'https://…' })
+      + _E().renderTextarea({ label: 'Description', path: base + 'description', value: c.description })
+      + _E().renderChips({ label: 'Strengths', path: base + 'strengths', value: c.strengths })
+      + _E().renderChips({ label: 'Weaknesses', path: base + 'weaknesses', value: c.weaknesses })
+      + _E().renderTextarea({ label: 'How we compare', path: base + 'comparison', value: c.comparison });
+    return _fieldCard(c.name || 'Competitor ' + (idx + 1), 'market.competitors[' + idx + ']', body, idx);
   }
+
+  function renderList() { return ''; }
 
   function renderDetail(W) {
-    var comps = _competitors(W);
-    var html = '<section class="bpw-shell-detail" aria-label="Competitors">';
+    var comps = _comps(W);
+    var html = '<section class="bpw-shell-detail bpw-shell-detail--page" aria-label="Competitors">';
     html += '<header class="bpw-shell-detail-head">';
     html += '<h1>Competitors</h1>';
-    html += '<button class="bpw-btn bpw-btn-ghost" data-action="ai-find-more-competitors" type="button">' + _icon('sparkles') + ' Find more competitors</button>';
+    html += '<p class="bpw-shell-detail-sub">Same data as Market → Competitors, focused for deeper editing.</p>';
     html += '</header>';
+
+    html += '<div class="bpw-page-fields">';
+    html += '<div class="bpw-page-collection-head">';
+    html += '<h2 class="bpw-page-collection-title">' + comps.length + ' competitor' + (comps.length === 1 ? '' : 's') + '</h2>';
+    html += '<div class="bpw-page-collection-actions">';
+    html += '<button class="bpw-page-collection-add" data-action="market-add-competitor" type="button">' + _icon('plus') + ' Add competitor</button>';
+    html += '<button class="bpw-page-collection-add bpw-page-collection-add--ai" data-action="find-more-competitors" type="button">' + _icon('sparkles') + ' Find more</button>';
+    html += '</div></div>';
     if (!comps.length) {
-      html += '<div class="bpw-shell-detail-empty">' + _icon('crosshairs')
-           + '<h3>No competitors logged</h3>'
-           + '<p>Run the Competitors stage from setup, or click "Find more" to research now.</p>'
-           + '</div>';
+      html += '<div class="bpw-page-collection-empty">No competitors yet. Click "Find more" to research with AI.</div>';
     } else {
-      html += '<div class="bpw-comp-grid">';
-      for (var i = 0; i < comps.length; i++) {
-        html += _renderCard(comps[i] || {}, i);
-      }
-      html += '</div>';
+      for (var i = 0; i < comps.length; i++) html += _renderCompetitor(comps[i], i);
     }
+    html += '</div>';
     html += '</section>';
     return html;
   }
 
   window._bpwUIViews = window._bpwUIViews || {};
   window._bpwUIViews.competitors = {
+    id: 'competitors',
+    title: 'Competitors',
+    listMode: 'none',
     renderList: renderList,
     renderDetail: renderDetail,
-    listMode: 'variable-items'
+    inlineActions: []
   };
 })();

@@ -95,17 +95,16 @@ body.bpw-app-shell-active { overflow: hidden; }
   cursor: progress;
 }
 
-/* ── Body (three-pane) ──────────────────────────────────────────── */
+/* ── Body (sidebar + page) ──────────────────────────────────────── */
 .bpw-shell-body {
   display: grid;
-  grid-template-columns: 210px 320px 1fr;
+  grid-template-columns: 210px 1fr;
   min-height: 0;
   overflow: hidden;
 }
-/* v2 single-pane (used by the dashboard view): sidebar + main only. */
-.bpw-shell-body--single {
-  grid-template-columns: 210px 1fr;
-}
+/* v3: legacy single-pane modifier kept as a no-op alias so any
+ * external markup referencing it still works. */
+.bpw-shell-body--single { grid-template-columns: 210px 1fr; }
 
 /* ── Sidebar ────────────────────────────────────────────────────── */
 .bpw-shell-sidebar {
@@ -828,14 +827,12 @@ body.bpw-app-shell-active { overflow: hidden; }
 
 /* ── Responsive ─────────────────────────────────────────────────── */
 @media (max-width: 1100px) {
-  .bpw-shell-body { grid-template-columns: 180px 280px 1fr; }
+  .bpw-shell-body { grid-template-columns: 180px 1fr; }
   .bpw-shell-sidebar { width: 180px; }
-  .bpw-shell-list { width: 280px; }
 }
 @media (max-width: 768px) {
   .bpw-shell-body { grid-template-columns: 1fr; }
-  .bpw-shell-sidebar,
-  .bpw-shell-list { display: none; }
+  .bpw-shell-sidebar { display: none; }
   /* Mobile UX is a follow-up — for now show the detail pane only. */
 }
 
@@ -1045,6 +1042,73 @@ body.bpw-app-shell-active { overflow: hidden; }
 .bpw-page-field:hover .bpw-page-field-refine,
 .bpw-page-field:focus-within .bpw-page-field-refine { opacity: 1; }
 .bpw-page-field-refine:hover { background: var(--bpw-primary-subtle); }
+
+/* Field card head actions container (sparkle + optional remove). */
+.bpw-page-field-head-actions {
+  display: inline-flex; align-items: center; gap: var(--bpw-sp-1);
+}
+.bpw-page-field-remove {
+  width: 28px; height: 28px;
+  border: 1px solid var(--bpw-border);
+  background: var(--bpw-white);
+  border-radius: var(--bpw-radius-md);
+  color: var(--bpw-text-muted);
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  opacity: 0;
+  transition: opacity var(--bpw-tr-fast), background var(--bpw-tr-fast), color var(--bpw-tr-fast);
+}
+.bpw-page-field:hover .bpw-page-field-remove,
+.bpw-page-field:focus-within .bpw-page-field-remove { opacity: 1; }
+.bpw-page-field-remove:hover { background: var(--bpw-error-light); color: var(--bpw-error); }
+@media (pointer: coarse) {
+  .bpw-page-field-remove { opacity: 1 !important; }
+}
+
+/* Collection heading + add button row inside a page. */
+.bpw-page-collection-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--bpw-sp-3);
+  margin-top: var(--bpw-sp-4);
+  padding-top: var(--bpw-sp-3);
+  border-top: 1px dashed var(--bpw-border);
+}
+.bpw-page-collection-head:first-child { margin-top: 0; border-top: 0; padding-top: 0; }
+.bpw-page-collection-title {
+  margin: 0;
+  font-family: var(--bpw-font-heading);
+  font-size: var(--bpw-font-lg);
+  font-weight: 700;
+}
+.bpw-page-collection-actions {
+  display: inline-flex; align-items: center; gap: var(--bpw-sp-2);
+}
+.bpw-page-collection-add {
+  background: var(--bpw-white);
+  color: var(--bpw-primary);
+  border: 1px solid var(--bpw-border);
+  border-radius: var(--bpw-radius-md);
+  padding: var(--bpw-sp-1) var(--bpw-sp-3);
+  font-family: var(--bpw-font-body);
+  font-size: var(--bpw-font-sm);
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex; align-items: center; gap: var(--bpw-sp-1);
+  transition: background var(--bpw-tr-fast), border-color var(--bpw-tr-fast);
+}
+.bpw-page-collection-add:hover {
+  background: var(--bpw-primary-subtle);
+  border-color: var(--bpw-primary);
+}
+.bpw-page-collection-add--ai { color: var(--bpw-primary); border-color: var(--bpw-primary); }
+.bpw-page-collection-add--ai:hover { background: var(--bpw-primary); color: var(--bpw-white); }
+.bpw-page-collection-empty {
+  padding: var(--bpw-sp-3);
+  border: 1px dashed var(--bpw-border);
+  border-radius: var(--bpw-radius-md);
+  color: var(--bpw-text-muted);
+  font-size: var(--bpw-font-sm);
+}
 .bpw-page-field-body input,
 .bpw-page-field-body textarea {
   border-color: transparent;
@@ -1264,4 +1328,37 @@ body.bpw-app-shell-active { overflow: hidden; }
   .bpw-modal { animation: none; }
   .bpw-modal-backdrop { animation: none; }
   .bpw-dash-card { transition: none; }
+}
+
+/* ── Per-field menu popover ─────────────────────────────────────── */
+.bpw-field-menu {
+  z-index: 10000;
+  background: var(--bpw-white);
+  border: 1px solid var(--bpw-border);
+  border-radius: var(--bpw-radius-md);
+  box-shadow: var(--bpw-shadow-lg);
+  padding: var(--bpw-sp-1);
+  min-width: 180px;
+  display: grid;
+}
+.bpw-field-menu-item {
+  background: transparent;
+  border: 0;
+  text-align: left;
+  padding: var(--bpw-sp-2) var(--bpw-sp-3);
+  font-family: var(--bpw-font-body);
+  font-size: var(--bpw-font-sm);
+  color: var(--bpw-text);
+  cursor: pointer;
+  display: inline-flex; align-items: center; gap: var(--bpw-sp-2);
+  border-radius: var(--bpw-radius-sm);
+  transition: background var(--bpw-tr-fast);
+}
+.bpw-field-menu-item:hover { background: var(--bpw-primary-subtle); }
+.bpw-field-menu-item .fa-solid { color: var(--bpw-primary); width: 14px; text-align: center; }
+
+/* On coarse-pointer devices the sparkle button should always be
+ * visible (hover doesn't exist on touch). */
+@media (pointer: coarse) {
+  .bpw-page-field-refine { opacity: 1 !important; }
 }

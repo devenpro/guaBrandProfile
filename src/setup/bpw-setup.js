@@ -149,6 +149,7 @@
   }
 
   // ── RENDER ──────────────────────────────────────────────────────────
+  var _tickTimer = null;
   function _render() {
     $('body').addClass('bpw-setup-open');
     var $existing = $('.bpw-setup');
@@ -162,6 +163,26 @@
     } else {
       $('body').append('<div class="bpw-setup" role="application" aria-label="Brand profile autopilot setup">' + html + '</div>');
     }
+    _scheduleTick();
+  }
+
+  // While a stage is loading, repaint every second so the elapsed time
+  // in the loading interlude and the topbar progress stay live. We
+  // stop the timer once we leave the loading state.
+  function _scheduleTick() {
+    if (_tickTimer) { clearInterval(_tickTimer); _tickTimer = null; }
+    var stage = _workflowStage();
+    if (stage !== 'stage_loading' && stage !== 'ai_run') return;
+    _tickTimer = setInterval(function() {
+      if (!$('.bpw-setup').length) { clearInterval(_tickTimer); _tickTimer = null; return; }
+      var s = _workflowStage();
+      if (s !== 'stage_loading' && s !== 'ai_run') {
+        clearInterval(_tickTimer);
+        _tickTimer = null;
+        return;
+      }
+      _render();
+    }, 1000);
   }
 
   function _renderShell() {
@@ -170,18 +191,23 @@
   }
 
   // Derive which of the three workflow stages we're in.
-  //   inputs   → user is filling in basics / hasn't started, OR is between
-  //              autopilot runs with no review gate active
-  //   website  → autopilot paused at the scrape review gate; user reviews
-  //              extracted summary + socials before AI runs continue
-  //   ai_run   → autopilot running through the rest of the queue
-  //   done     → setup finished (the shell will close shortly after)
+  //   inputs        → user is filling in basics / hasn't started
+  //   website       → scrape review pane
+  //   stage_loading → v3 full-pane "Drafting your X…" interlude
+  //   stage_review  → v3 dedicated full-pane review for an AI stage
+  //   ai_run        → orchestrator running, no review gate active
+  //   done          → setup finished (the shell will close shortly after)
   function _workflowStage() {
     var s = W.setup || {};
     if (s.finishedAt) return 'done';
     if (!s.open) return 'inputs';
     if (s.awaitingReview === 'scrape') return 'website';
-    if (s.currentStageId === 'scrape') return 'website';
+    if (s.currentStageId === 'scrape' && !s.awaitingReview) return 'website';
+    if (s.awaitingReview) return 'stage_review';
+    if (s.currentStageId) {
+      var st = (s.stageStatus[s.currentStageId] || {}).state;
+      if (st === 'running') return 'stage_loading';
+    }
     return 'ai_run';
   }
 
@@ -237,12 +263,130 @@
       html += _renderForm(running);
     } else if (stage === 'website') {
       html += _renderWebsiteStage();
+    } else if (stage === 'stage_review') {
+      html += _renderStagePane(W.setup.awaitingReview);
+    } else if (stage === 'stage_loading') {
+      html += _renderStageLoading(W.setup.currentStageId);
     } else {
       // ai_run / done — AI stage rail with the form collapsed as a
       // context card so users can still see (and refine) the inputs.
       html += _renderAIRunStage();
     }
     html += '</div></div>';
+    return html;
+  }
+
+  // v3 stage review pane: full-pane editor for the AI stage currently
+  // awaiting confirmation. Reuses the post-setup view module
+  // (window._bpwUIViews[stageId].renderDetail) when the view is
+  // page-style (listMode === 'none'); otherwise falls back to the
+  // stage's expandRenderer so non-page-style stages still get a full
+  // pane with the same action header.
+  function _renderStagePane(stageId) {
+    var stagesMod = window._bpwSetupStages;
+    var stage = stagesMod && stagesMod.findStage(stageId);
+    if (!stage) return '';
+    var queue = (W.setup && W.setup.stagesQueue) || [];
+    var idx = queue.indexOf(stageId);
+    var prevId = null, nextId = null;
+    for (var i = idx - 1; i >= 0; i--) {
+      var prevState = (W.setup.stageStatus[queue[i]] || {}).state;
+      if (prevState === 'done') { prevId = queue[i]; break; }
+    }
+    for (var j = idx + 1; j < queue.length; j++) { nextId = queue[j]; break; }
+    var prevStage = prevId ? stagesMod.findStage(prevId) : null;
+    var nextStage = nextId ? stagesMod.findStage(nextId) : null;
+
+    var views = window._bpwUIViews || {};
+    var view = views[stageId];
+    var body = '';
+    if (view && view.listMode === 'none' && typeof view.renderDetail === 'function') {
+      try { body = view.renderDetail(W); }
+      catch (e) { body = '<div class="bpw-setup-stage-pane-fallback">Failed to render: ' + _esc(e.message) + '</div>'; }
+    } else {
+      // Fallback: read-only summary from the stage's expandRenderer.
+      // Phase E converts each remaining view to page-style, after
+      // which this branch is never taken.
+      var fallback = '';
+      try { fallback = (stage.expandRenderer && stage.expandRenderer(W)) || ''; } catch (eRender) { fallback = ''; }
+      body = '<section class="bpw-shell-detail bpw-shell-detail--page">'
+        + '<header class="bpw-shell-detail-head"><h1>' + _esc(stage.label) + '</h1>'
+        + '<p class="bpw-shell-detail-sub">Page-style editing for this section is coming soon. For now, review the AI draft below and continue.</p>'
+        + '</header>'
+        + (fallback || '<div class="bpw-setup-stage-pane-fallback">No draft data.</div>')
+        + '</section>';
+    }
+
+    var html = '<section class="bpw-setup-stage-pane bpw-setup-stage-pane--review" data-stage-id="' + _esc(stageId) + '">';
+    html += '<header class="bpw-setup-stage-pane-header">';
+    html += '<div class="bpw-setup-stage-pane-titles">';
+    html += '<div class="bpw-setup-stage-pane-eyebrow">' + _icon('sparkles') + ' Drafted by AI · ' + _esc(_phaseLabel()) + '</div>';
+    html += '<h2 class="bpw-setup-stage-pane-title">Review your ' + _esc(stage.label) + '</h2>';
+    html += '<p class="bpw-setup-stage-pane-desc">Edit any field inline, regenerate the whole stage, or approve to continue.</p>';
+    html += '</div>';
+    html += '<div class="bpw-setup-stage-pane-actions">';
+    html += '<button class="bpw-setup-stage-pane-regen" data-action="bpw-setup-rerun-stage" data-stage-id="' + _esc(stageId) + '" type="button">' + _icon('rotate-right') + ' Regenerate all</button>';
+    if (nextStage) {
+      html += '<button class="bpw-setup-stage-pane-approve" data-action="bpw-setup-continue-review" type="button">' + _icon('circle-check') + ' Approve &amp; continue <span class="bpw-setup-stage-pane-approve-next">→ ' + _esc(nextStage.label) + '</span></button>';
+    } else {
+      html += '<button class="bpw-setup-stage-pane-approve" data-action="bpw-setup-continue-review" type="button">' + _icon('circle-check') + ' Approve &amp; finish</button>';
+    }
+    html += '</div>';
+    html += '</header>';
+
+    html += '<div class="bpw-setup-stage-pane-body">' + body + '</div>';
+
+    html += '<footer class="bpw-setup-stage-pane-footer">';
+    if (prevStage) {
+      html += '<button class="bpw-setup-stage-pane-back" data-action="bpw-setup-go-back" type="button">' + _icon('arrow-left') + ' Back to ' + _esc(prevStage.label) + '</button>';
+    } else {
+      html += '<span></span>';
+    }
+    html += '<button class="bpw-setup-stage-pane-skip" data-action="bpw-setup-skip-review" data-stage-id="' + _esc(stageId) + '" type="button">' + _icon('forward') + ' Skip stage</button>';
+    html += '</footer>';
+    html += '</section>';
+    return html;
+  }
+
+  function _phaseLabel() {
+    var map = { new: 'New brand', growing: 'Growing brand', deep: 'Established brand' };
+    return map[W.brandLevel] || (W.brandLevel || '');
+  }
+
+  // v3 loading interlude — full-pane "Drafting your X…" while the AI
+  // works on the current stage. Replaces the bare progress bar between
+  // stages with a focused status read-out.
+  function _renderStageLoading(stageId) {
+    var stagesMod = window._bpwSetupStages;
+    var stage = stagesMod && stagesMod.findStage(stageId);
+    if (!stage) return '';
+    var queue = (W.setup && W.setup.stagesQueue) || [];
+    var idx = queue.indexOf(stageId);
+    var remaining = [];
+    for (var i = idx + 1; i < queue.length; i++) {
+      var s = stagesMod.findStage(queue[i]);
+      if (s) remaining.push(s.label);
+    }
+    var status = (W.setup.stageStatus[stageId] || {});
+    var elapsed = status.startedAt ? _fmtElapsed(Date.now() - status.startedAt) : '';
+    var summaryLine = '';
+    try { summaryLine = (stage.summaryLine && stage.summaryLine(W)) || ''; } catch (e) { summaryLine = ''; }
+
+    var html = '<section class="bpw-setup-stage-pane bpw-setup-stage-pane--loading">';
+    html += '<div class="bpw-setup-stage-loading">';
+    html += '<div class="bpw-setup-stage-loading-ring" aria-hidden="true"></div>';
+    html += '<h2 class="bpw-setup-stage-loading-title">Drafting your ' + _esc(stage.label) + '…</h2>';
+    html += '<p class="bpw-setup-stage-loading-desc">' + _esc(summaryLine || 'Working with the AI provider on your brand context.') + '</p>';
+    if (elapsed) {
+      html += '<p class="bpw-setup-stage-loading-elapsed">' + _icon('clock') + ' ' + _esc(elapsed) + ' elapsed · typically 8–15 seconds</p>';
+    }
+    if (remaining.length) {
+      html += '<p class="bpw-setup-stage-loading-next">Up next: ' + _esc(remaining.join(' → ')) + '. You\'ll review each before the next starts.</p>';
+    } else {
+      html += '<p class="bpw-setup-stage-loading-next">Last stage — you\'ll review the output and finish setup.</p>';
+    }
+    html += '</div>';
+    html += '</section>';
     return html;
   }
 
@@ -744,6 +888,15 @@
         if (!orch) return;
         // Mark current review-gated stage as skipped and move on.
         orch.skipCurrent();
+        _render();
+      });
+
+    $(document).off('click' + ns, '.bpw-setup [data-action="bpw-setup-go-back"]')
+      .on('click' + ns, '.bpw-setup [data-action="bpw-setup-go-back"]', function(e) {
+        e.preventDefault();
+        var orch = window._bpwSetupOrchestrator;
+        if (!orch || !orch.goBack) return;
+        orch.goBack();
         _render();
       });
 

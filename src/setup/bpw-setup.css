@@ -343,6 +343,176 @@ body.bpw-setup-open #bpwApp { display: none !important; }
 }
 .bpw-setup-pane-actions .bpw-setup-review-skip:hover { background: var(--bpw-gray-50); }
 
+/* ── v3 dedicated stage review pane ─────────────────────────────── */
+.bpw-setup-stage-pane--review {
+  padding: var(--bpw-sp-5) var(--bpw-sp-6);
+}
+.bpw-setup-stage-pane-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--bpw-sp-4);
+  padding-bottom: var(--bpw-sp-4);
+  border-bottom: 1px solid var(--bpw-border);
+}
+.bpw-setup-stage-pane-titles { display: grid; gap: var(--bpw-sp-1); min-width: 0; flex: 1; }
+.bpw-setup-stage-pane-eyebrow {
+  font-size: var(--bpw-font-xs);
+  font-weight: 600;
+  color: var(--bpw-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: inline-flex; align-items: center; gap: var(--bpw-sp-1);
+}
+.bpw-setup-stage-pane-title {
+  margin: 0;
+  font-family: var(--bpw-font-heading);
+  font-size: var(--bpw-font-2xl);
+  font-weight: 700;
+}
+.bpw-setup-stage-pane-desc {
+  margin: 0;
+  font-size: var(--bpw-font-sm);
+  color: var(--bpw-text-sec);
+  line-height: 1.5;
+}
+.bpw-setup-stage-pane-actions {
+  display: flex; flex-wrap: wrap; gap: var(--bpw-sp-2);
+  flex-shrink: 0;
+}
+.bpw-setup-stage-pane-actions button {
+  padding: var(--bpw-sp-2) var(--bpw-sp-3);
+  border-radius: var(--bpw-radius-md);
+  font-family: var(--bpw-font-body);
+  font-size: var(--bpw-font-sm);
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--bpw-border);
+  background: var(--bpw-white);
+  color: var(--bpw-text);
+  display: inline-flex; align-items: center; gap: var(--bpw-sp-1);
+  transition: background var(--bpw-tr-fast), border-color var(--bpw-tr-fast);
+}
+.bpw-setup-stage-pane-regen:hover { background: var(--bpw-gray-50); }
+.bpw-setup-stage-pane-approve {
+  background: var(--bpw-primary) !important;
+  color: var(--bpw-white) !important;
+  border-color: var(--bpw-primary) !important;
+}
+.bpw-setup-stage-pane-approve:hover {
+  background: var(--bpw-primary-hover) !important;
+  border-color: var(--bpw-primary-hover) !important;
+}
+.bpw-setup-stage-pane-approve-next {
+  font-weight: 500;
+  opacity: 0.85;
+  margin-left: var(--bpw-sp-1);
+}
+.bpw-setup-stage-pane-body {
+  /* The pane's body is rendered by the view module's renderDetail. It
+   * supplies its own .bpw-shell-detail container, so we just provide
+   * vertical rhythm here. */
+  display: grid;
+  gap: var(--bpw-sp-4);
+}
+.bpw-setup-stage-pane-body .bpw-shell-detail {
+  /* When a post-setup view renders inside the wizard pane, drop the
+   * default outer padding (the pane already provides it) and remove
+   * the redundant top heading — the stage-pane header replaces it. */
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.bpw-setup-stage-pane-body .bpw-shell-detail-head { display: none; }
+.bpw-setup-stage-pane-fallback {
+  padding: var(--bpw-sp-4);
+  border: 1px dashed var(--bpw-border);
+  border-radius: var(--bpw-radius-md);
+  color: var(--bpw-text-sec);
+  font-size: var(--bpw-font-sm);
+}
+.bpw-setup-stage-pane-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--bpw-sp-3);
+  padding-top: var(--bpw-sp-4);
+  border-top: 1px solid var(--bpw-border);
+}
+.bpw-setup-stage-pane-back,
+.bpw-setup-stage-pane-skip {
+  background: transparent;
+  border: 0;
+  color: var(--bpw-text-sec);
+  font-family: var(--bpw-font-body);
+  font-size: var(--bpw-font-sm);
+  font-weight: 600;
+  cursor: pointer;
+  padding: var(--bpw-sp-2) var(--bpw-sp-3);
+  border-radius: var(--bpw-radius-md);
+  display: inline-flex; align-items: center; gap: var(--bpw-sp-1);
+  transition: background var(--bpw-tr-fast), color var(--bpw-tr-fast);
+}
+.bpw-setup-stage-pane-back:hover,
+.bpw-setup-stage-pane-skip:hover { background: var(--bpw-gray-50); color: var(--bpw-text); }
+
+@media (max-width: 720px) {
+  .bpw-setup-stage-pane--review { padding: var(--bpw-sp-4); }
+  .bpw-setup-stage-pane-header { flex-direction: column; align-items: stretch; }
+  .bpw-setup-stage-pane-actions { justify-content: stretch; }
+  .bpw-setup-stage-pane-actions button { flex: 1; justify-content: center; }
+  .bpw-setup-stage-pane-approve-next { display: none; }
+}
+
+/* ── Loading interlude ──────────────────────────────────────────── */
+.bpw-setup-stage-pane--loading {
+  padding: var(--bpw-sp-8) var(--bpw-sp-6);
+  min-height: 380px;
+  display: flex; align-items: center; justify-content: center;
+}
+.bpw-setup-stage-loading {
+  max-width: 520px;
+  text-align: center;
+  display: grid; gap: var(--bpw-sp-3);
+  justify-items: center;
+}
+.bpw-setup-stage-loading-ring {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  border: 3px solid var(--bpw-border);
+  border-top-color: var(--bpw-primary);
+  animation: bpw-setup-spin 0.8s linear infinite;
+  margin-bottom: var(--bpw-sp-2);
+}
+@keyframes bpw-setup-spin {
+  to { transform: rotate(360deg); }
+}
+.bpw-setup-stage-loading-title {
+  margin: 0;
+  font-family: var(--bpw-font-heading);
+  font-size: var(--bpw-font-2xl);
+  font-weight: 700;
+}
+.bpw-setup-stage-loading-desc {
+  margin: 0;
+  font-size: var(--bpw-font-md);
+  color: var(--bpw-text-sec);
+  line-height: 1.5;
+}
+.bpw-setup-stage-loading-elapsed {
+  margin: 0;
+  font-size: var(--bpw-font-sm);
+  color: var(--bpw-text-muted);
+  display: inline-flex; align-items: center; gap: var(--bpw-sp-1);
+}
+.bpw-setup-stage-loading-next {
+  margin: var(--bpw-sp-3) 0 0;
+  font-size: var(--bpw-font-xs);
+  color: var(--bpw-text-muted);
+  line-height: 1.5;
+}
+
 /* Collapsed inputs form below the workflow-stage main content. */
 .bpw-setup-context-card {
   background: var(--bpw-white);

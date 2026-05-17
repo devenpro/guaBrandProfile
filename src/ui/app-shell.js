@@ -1,17 +1,19 @@
 /**
  * @category    ui
- * @purpose     Three-pane app shell rendered after autopilot finishes.
- *              Sidebar (210px) + section list pane (320px) + detail pane.
+ * @purpose     App shell rendered after autopilot finishes. Sidebar
+ *              (210px) + single full-width page (the active view's
+ *              renderDetail). v3 collapsed the legacy 3-pane layout —
+ *              every view is now page-style (listMode === 'none').
+ *
  *              While active, body.bpw-app-shell-active hides legacy
  *              #bpwApp so this shell is the only post-setup surface.
- *
  *              Defers to setup module if autopilot is open or unfinished.
  *
  * @exports     window._bpwAppShell
  *                = { renderIfReady, render, setActiveSection, setActiveItem,
  *                    state }
  *
- * @depends-on  window._bpwState, window._bpwUIViews (Phase 4.2),
+ * @depends-on  window._bpwState, window._bpwUIViews,
  *              window._bpwAcceptSection (legacy assembly bridge),
  *              window._bpwSyncAllExportFields, window.jQuery
  */
@@ -98,24 +100,26 @@
 
   // ── RENDER ──────────────────────────────────────────────────────────
   function _shellHTML() {
+    // v3: every view is page-style. The shell renders topbar + sidebar
+    // + the active view's renderDetail (no section-list pane).
     var section = (W.ui && W.ui.section) || 'dashboard';
-    // v2: any view that declares listMode === 'none' renders as a single
-    // page (sidebar + main). Dashboard, Identity, Voice opt into this in
-    // Phases 5–6. Other views still use the legacy 3-pane layout.
     var view = (window._bpwUIViews || {})[section];
-    var singlePane = view && view.listMode === 'none';
-    var bodyCls = singlePane ? 'bpw-shell-body bpw-shell-body--single' : 'bpw-shell-body';
     var topbar = (window._bpwTopbar && window._bpwTopbar.render && window._bpwTopbar.render(W)) || '';
     var sidebar = (window._bpwSidebar && window._bpwSidebar.render && window._bpwSidebar.render(W)) || '';
-    var list = singlePane
-      ? ''
-      : ((window._bpwSectionList && window._bpwSectionList.render && window._bpwSectionList.render(W)) || '');
-    var detail = (window._bpwDetailPane && window._bpwDetailPane.render && window._bpwDetailPane.render(W)) || '';
+    var detail = '';
+    if (view && typeof view.renderDetail === 'function') {
+      try { detail = view.renderDetail(W) || ''; }
+      catch (e) {
+        console.error(LOG, 'view renderDetail threw', section, e);
+        detail = '<section class="bpw-shell-detail bpw-shell-detail--page"><div class="bpw-shell-detail-empty">Failed to render: ' + (e.message || e) + '</div></section>';
+      }
+    } else {
+      detail = '<section class="bpw-shell-detail bpw-shell-detail--page"><div class="bpw-shell-detail-empty">Unknown section: ' + section + '</div></section>';
+    }
     var drawer = (window._bpwActivityDrawer && window._bpwActivityDrawer.render && window._bpwActivityDrawer.render(W)) || '';
     return topbar +
-      '<div class="' + bodyCls + '">' +
+      '<div class="bpw-shell-body bpw-shell-body--single">' +
         sidebar +
-        list +
         detail +
       '</div>' +
       drawer;
