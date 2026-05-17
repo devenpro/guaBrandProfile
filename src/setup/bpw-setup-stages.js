@@ -127,6 +127,10 @@
       gate: { growthPhase: ['growing', 'deep'], brandTypes: ['commercial', 'local'] },
       dependsOn: ['scrape'],
       aiActionRef: 'market.run',
+      // v2 per-stage review: every AI stage pauses for user confirmation
+      // before moving on. The orchestrator's needsReview / awaitingReview
+      // machinery already handles this — we just flip the flag.
+      needsReview: true,
       summaryLine: function() { return 'Analysing market category and competitors…'; },
       summary: function(state) {
         var category = _flat(state, 'market_category');
@@ -154,6 +158,7 @@
       gate: { growthPhase: ['new', 'growing'] },
       dependsOn: ['scrape'],
       aiActionRef: 'identity.runMergedIdentityVoice',
+      needsReview: true,
       summaryLine: function() { return 'Generating mission, voice, and tone…'; },
       summary: function(state) {
         var mission = _flat(state, 'identity_mission');
@@ -179,6 +184,7 @@
       gate: { growthPhase: ['deep'] },
       dependsOn: ['scrape'],
       aiActionRef: 'identity.runIdentity',
+      needsReview: true,
       summaryLine: function() { return 'Generating mission, vision, values, archetype…'; },
       summary: function(state) {
         var mission = _flat(state, 'identity_mission');
@@ -204,6 +210,7 @@
       gate: { growthPhase: ['deep'] },
       dependsOn: ['identity'],
       aiActionRef: 'voice.run',
+      needsReview: true,
       summaryLine: function() { return 'Generating tone, vocabulary, messaging…'; },
       summary: function(state) {
         var tone = _flat(state, 'voice_tone');
@@ -228,6 +235,7 @@
       gate: { growthPhase: ['new', 'growing'] },
       dependsOn: ['identity_voice'],
       aiActionRef: 'audience.runMergedAudienceOfferings',
+      needsReview: true,
       summaryLine: function() { return 'Profiling audience and structuring offerings…'; },
       summary: function(state) {
         var aud = _flat(state, 'audience_primary');
@@ -251,6 +259,7 @@
       gate: { growthPhase: ['deep'] },
       dependsOn: ['voice'],
       aiActionRef: 'audience.run',
+      needsReview: true,
       summaryLine: function() { return 'Profiling audience and personas…'; },
       summary: function(state) {
         var aud = _flat(state, 'audience_primary');
@@ -274,6 +283,7 @@
       gate: { growthPhase: ['deep'], brandTypes: ['commercial', 'local', 'nonprofit'] },
       dependsOn: ['audience'],
       aiActionRef: 'offerings.run',
+      needsReview: true,
       summaryLine: function() { return 'Structuring offerings…'; },
       summary: function(state) {
         var items = _list(state, 'offerings_items', 4);
@@ -289,6 +299,39 @@
       }
     },
 
+    // v2 dedicated competitor research stage. Runs after market (where
+    // category + positioning are set) so the AI can frame each competitor
+    // relative to the brand's own positioning. The competitors action
+    // normalises output to the same { competitors: [...] } shape that
+    // Market stores, so the existing schema slot accepts it as-is.
+    {
+      id: 'competitors',
+      label: 'Competitors',
+      group: 'market',
+      gate: { growthPhase: ['growing', 'deep'], brandTypes: ['commercial', 'local', 'nonprofit', 'creator'] },
+      dependsOn: ['market'],
+      aiActionRef: 'competitors.run',
+      needsReview: true,
+      summaryLine: function() { return 'Researching competitive landscape…'; },
+      summary: function(state) {
+        var comps = _list(state, 'market_competitors', 4);
+        return comps.length
+          ? 'Competitors: ' + comps.map(function(c) { return c.name || c; }).filter(Boolean).join(', ')
+          : 'Competitors drafted.';
+      },
+      expandRenderer: function(state) {
+        var comps = _list(state, 'market_competitors', 10) || [];
+        if (!comps.length) return '<div class="bpw-setup-stage-detail"><div class="bpw-setup-readonly">No competitors yet.</div></div>';
+        var rows = comps.map(function(c) {
+          return '<li><strong>' + _esc(c.name || '') + '</strong>'
+               + (c.description ? ' — ' + _esc(c.description) : '')
+               + (c.comparison ? '<br><small>' + _esc(c.comparison) + '</small>' : '')
+               + '</li>';
+        }).join('');
+        return '<div class="bpw-setup-stage-detail"><ul class="bpw-setup-list">' + rows + '</ul></div>';
+      }
+    },
+
     {
       id: 'content',
       label: 'Content strategy',
@@ -296,6 +339,7 @@
       gate: { growthPhase: ['new', 'growing', 'deep'], brandTypes: ['creator', 'commercial'] },
       dependsOn: [],   // Soft dependency — runs after audience but can stand alone.
       aiActionRef: 'content.run',
+      needsReview: true,
       summaryLine: function() { return 'Building pillars, channels, SEO seeds…'; },
       summary: function(state) {
         var pillars = _list(state, 'content_pillars', 4);
