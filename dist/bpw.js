@@ -1,4 +1,4 @@
-window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T05:26:16.560Z";try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}
+window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T05:28:27.257Z";try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}
 (() => {
   // src/ai/providers/registry.js
   (function() {
@@ -27786,6 +27786,7 @@ ${prefix}
   // src/ui/views/content.js
   (function() {
     "use strict";
+    var $ = window.jQuery;
     function _esc(s) {
       return (window._bpwEsc || function(x) {
         return x == null ? "" : String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -27798,105 +27799,132 @@ ${prefix}
         return '<i class="fa-solid fa-' + name + '"></i>';
       })(n);
     }
+    function _E() {
+      return window._bpwEditors;
+    }
     function _content(W2) {
       return W2.acceptedSections && W2.acceptedSections.content_strategy || {};
     }
-    function renderList(W2) {
-      var c = _content(W2);
-      var active = W2.ui && W2.ui.itemId || null;
-      var html = "";
-      var pillars = c.pillars || [];
-      if (pillars.length) html += '<div class="bpw-shell-card-divider">Pillars</div>';
-      for (var i = 0; i < pillars.length; i++) {
-        var p = pillars[i];
-        var id = "pillar:" + i;
-        var cls = active === id ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + cls + '" data-item-id="' + _esc(id) + '" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _esc(p.pillar || "Pillar " + (i + 1)) + "</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(p.description || "") + "</div>";
-        html += "</article>";
-      }
-      var channels = c.channels || [];
-      if (channels.length) html += '<div class="bpw-shell-card-divider">Channels</div>';
-      for (var j = 0; j < channels.length; j++) {
-        var ch = channels[j];
-        var cid = "channel:" + j;
-        var ccls = active === cid ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + ccls + '" data-item-id="' + _esc(cid) + '" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _esc(ch.channel || "Channel " + (j + 1)) + "</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(ch.purpose || "") + (ch.frequency ? " \xB7 " + _esc(ch.frequency) : "") + "</div>";
-        html += "</article>";
-      }
-      var seo = c.seo_keywords || [];
-      if (seo.length) {
-        var sCls = active === "seo" ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + sCls + '" data-item-id="seo" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _icon("magnifying-glass") + " SEO keywords (" + seo.length + ")</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(seo.slice(0, 6).join(", ")) + "</div>";
-        html += "</article>";
-      }
-      var tags = c.hashtags || [];
-      if (tags.length) {
-        var hCls = active === "hashtags" ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + hCls + '" data-item-id="hashtags" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _icon("hashtag") + " Hashtags (" + tags.length + ")</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(tags.slice(0, 6).join(" ")) + "</div>";
-        html += "</article>";
-      }
-      return html || '<div class="bpw-shell-list-empty">' + _icon("pen-nib") + "<p>No content strategy yet.</p></div>";
+    function _fieldCard(opts) {
+      var remove = opts.removeAction ? '<button class="bpw-page-field-remove" data-action="' + _esc(opts.removeAction) + '" data-idx="' + opts.removeIdx + '" type="button" title="Remove">' + _icon("xmark") + "</button>" : "";
+      var sparkle = opts.path ? '<button class="bpw-page-field-refine" data-action="refine" data-refine-path="' + _esc(opts.path) + '" type="button" title="Improve with AI">' + _icon("sparkles") + "</button>" : "";
+      return '<article class="bpw-page-field"><header class="bpw-page-field-head"><h3 class="bpw-page-field-label">' + _esc(opts.label) + '</h3><div class="bpw-page-field-head-actions">' + sparkle + remove + '</div></header><div class="bpw-page-field-body">' + opts.body + "</div></article>";
     }
-    function renderDetail(W2, selectedId) {
-      if (!selectedId) return "";
-      var c = _content(W2);
-      var E = window._bpwEditors;
-      if (selectedId === "seo") {
-        return '<div class="bpw-shell-detail-card"><h3>SEO keywords</h3>' + E.renderChips({ label: "Keywords", path: "content_strategy.seo_keywords", value: c.seo_keywords || [], addLabel: "keyword" }) + "</div>";
-      }
-      if (selectedId === "hashtags") {
-        return '<div class="bpw-shell-detail-card"><h3>Hashtags</h3>' + E.renderChips({ label: "Tags", path: "content_strategy.hashtags", value: c.hashtags || [], addLabel: "tag" }) + "</div>";
-      }
-      var parts = selectedId.split(":");
-      var type = parts[0], idx = parseInt(parts[1] || "0", 10);
-      if (type === "pillar") {
-        var p = (c.pillars || [])[idx];
-        if (!p) return '<div class="bpw-shell-detail-empty">Pillar not found.</div>';
-        var base2 = "content_strategy.pillars[" + idx + "].";
-        return '<div class="bpw-shell-detail-card"><h3>' + _esc(p.pillar || "Pillar " + (idx + 1)) + "</h3>" + E.renderText({ label: "Pillar", path: base2 + "pillar", value: p.pillar }) + E.renderTextarea({ label: "Description", path: base2 + "description", value: p.description }) + E.renderChips({ label: "Topics", path: base2 + "topics", value: p.topics, addLabel: "topic" }) + "</div>";
-      }
-      if (type === "channel") {
-        var ch = (c.channels || [])[idx];
-        if (!ch) return '<div class="bpw-shell-detail-empty">Channel not found.</div>';
-        var cbase = "content_strategy.channels[" + idx + "].";
-        return '<div class="bpw-shell-detail-card"><h3>' + _esc(ch.channel || "Channel " + (idx + 1)) + "</h3>" + E.renderText({ label: "Channel", path: cbase + "channel", value: ch.channel }) + E.renderTextarea({ label: "Purpose", path: cbase + "purpose", value: ch.purpose }) + E.renderText({ label: "Frequency", path: cbase + "frequency", value: ch.frequency, placeholder: "e.g. 3x/week" }) + E.renderText({ label: "Format", path: cbase + "format", value: ch.format, placeholder: "e.g. short-form video" }) + "</div>";
-      }
+    function _renderPillar(p, idx) {
+      var base2 = "content_strategy.pillars[" + idx + "].";
+      var body = "" + _E().renderText({ label: "Pillar", path: base2 + "pillar", value: p.pillar }) + _E().renderTextarea({ label: "Description", path: base2 + "description", value: p.description }) + _E().renderChips({ label: "Topics", path: base2 + "topics", value: p.topics, addLabel: "topic" });
+      return _fieldCard({
+        label: p.pillar || "Pillar " + (idx + 1),
+        path: "content_strategy.pillars[" + idx + "]",
+        body,
+        removeAction: "content-remove-pillar",
+        removeIdx: idx
+      });
+    }
+    function _renderChannel(ch, idx) {
+      var base2 = "content_strategy.channels[" + idx + "].";
+      var body = "" + _E().renderText({ label: "Channel", path: base2 + "channel", value: ch.channel }) + _E().renderTextarea({ label: "Purpose", path: base2 + "purpose", value: ch.purpose }) + _E().renderText({ label: "Frequency", path: base2 + "frequency", value: ch.frequency, placeholder: "e.g. 3x/week" }) + _E().renderText({ label: "Format", path: base2 + "format", value: ch.format, placeholder: "e.g. short-form video" });
+      return _fieldCard({
+        label: ch.channel || "Channel " + (idx + 1),
+        path: "content_strategy.channels[" + idx + "]",
+        body,
+        removeAction: "content-remove-channel",
+        removeIdx: idx
+      });
+    }
+    function renderList() {
       return "";
     }
+    function renderDetail(W2) {
+      var c = _content(W2);
+      var pillars = c.pillars || [];
+      var channels = c.channels || [];
+      var html = '<section class="bpw-shell-detail bpw-shell-detail--page" aria-label="Content strategy">';
+      html += '<header class="bpw-shell-detail-head">';
+      html += "<h1>Content strategy</h1>";
+      html += '<p class="bpw-shell-detail-sub">Pillars, channels, SEO keywords, and hashtags.</p>';
+      html += "</header>";
+      html += '<div class="bpw-page-fields">';
+      html += '<div class="bpw-page-collection-head">';
+      html += '<h2 class="bpw-page-collection-title">Pillars</h2>';
+      html += '<button class="bpw-page-collection-add" data-action="content-add-pillar" type="button">' + _icon("plus") + " Add pillar</button>";
+      html += "</div>";
+      if (!pillars.length) html += '<div class="bpw-page-collection-empty">No pillars yet.</div>';
+      else for (var i = 0; i < pillars.length; i++) html += _renderPillar(pillars[i], i);
+      html += '<div class="bpw-page-collection-head">';
+      html += '<h2 class="bpw-page-collection-title">Channels</h2>';
+      html += '<button class="bpw-page-collection-add" data-action="content-add-channel" type="button">' + _icon("plus") + " Add channel</button>";
+      html += "</div>";
+      if (!channels.length) html += '<div class="bpw-page-collection-empty">No channels yet.</div>';
+      else for (var j = 0; j < channels.length; j++) html += _renderChannel(channels[j], j);
+      html += _fieldCard({
+        label: "SEO keywords",
+        path: "content_strategy.seo_keywords",
+        body: _E().renderChips({ path: "content_strategy.seo_keywords", value: c.seo_keywords || [], addLabel: "keyword" })
+      });
+      html += _fieldCard({
+        label: "Hashtags",
+        path: "content_strategy.hashtags",
+        body: _E().renderChips({ path: "content_strategy.hashtags", value: c.hashtags || [], addLabel: "tag" })
+      });
+      html += "</div>";
+      html += "</section>";
+      return html;
+    }
+    function _refresh() {
+      if (window._bpwExportSync) window._bpwExportSync.syncAll();
+      if (window._bpwSyncToTextarea) window._bpwSyncToTextarea();
+      if (window._bpwAutoSave) window._bpwAutoSave();
+      if (window._bpwAppShell) window._bpwAppShell.render();
+      if (window._bpwSetup && window._bpwSetup.render) window._bpwSetup.render();
+    }
+    $(document).off("click.bpw-cnt-add-p").on("click.bpw-cnt-add-p", '[data-action="content-add-pillar"]', function(e) {
+      e.preventDefault();
+      var W2 = window._bpwState;
+      W2.acceptedSections = W2.acceptedSections || {};
+      W2.acceptedSections.content_strategy = W2.acceptedSections.content_strategy || {};
+      W2.acceptedSections.content_strategy.pillars = W2.acceptedSections.content_strategy.pillars || [];
+      W2.acceptedSections.content_strategy.pillars.push({ pillar: "", description: "", topics: [] });
+      _refresh();
+    });
+    $(document).off("click.bpw-cnt-rm-p").on("click.bpw-cnt-rm-p", '[data-action="content-remove-pillar"]', function(e) {
+      e.preventDefault();
+      var idx = parseInt($(this).attr("data-idx"), 10);
+      if (isNaN(idx)) return;
+      var W2 = window._bpwState;
+      var arr = W2.acceptedSections && W2.acceptedSections.content_strategy && W2.acceptedSections.content_strategy.pillars;
+      if (!arr) return;
+      arr.splice(idx, 1);
+      _refresh();
+    });
+    $(document).off("click.bpw-cnt-add-c").on("click.bpw-cnt-add-c", '[data-action="content-add-channel"]', function(e) {
+      e.preventDefault();
+      var W2 = window._bpwState;
+      W2.acceptedSections = W2.acceptedSections || {};
+      W2.acceptedSections.content_strategy = W2.acceptedSections.content_strategy || {};
+      W2.acceptedSections.content_strategy.channels = W2.acceptedSections.content_strategy.channels || [];
+      W2.acceptedSections.content_strategy.channels.push({ channel: "", purpose: "", frequency: "", format: "" });
+      _refresh();
+    });
+    $(document).off("click.bpw-cnt-rm-c").on("click.bpw-cnt-rm-c", '[data-action="content-remove-channel"]', function(e) {
+      e.preventDefault();
+      var idx = parseInt($(this).attr("data-idx"), 10);
+      if (isNaN(idx)) return;
+      var W2 = window._bpwState;
+      var arr = W2.acceptedSections && W2.acceptedSections.content_strategy && W2.acceptedSections.content_strategy.channels;
+      if (!arr) return;
+      arr.splice(idx, 1);
+      _refresh();
+    });
     window._bpwUIViews = window._bpwUIViews || {};
     window._bpwUIViews.content = {
       id: "content",
       title: "Content strategy",
       minLevel: "new",
-      listMode: "variable-items",
+      listMode: "none",
       renderList,
       renderDetail,
-      inlineActions: [
-        {
-          type: "add-row",
-          label: "Add pillar",
-          icon: "plus",
-          listPath: "content_strategy.pillars",
-          itemPrefix: "pillar",
-          itemTemplate: { pillar: "", description: "", topics: [] }
-        },
-        {
-          type: "add-row",
-          label: "Add channel",
-          icon: "plus",
-          listPath: "content_strategy.channels",
-          itemPrefix: "channel",
-          itemTemplate: { channel: "", purpose: "", frequency: "", format: "" }
-        }
-      ]
+      inlineActions: []
     };
   })();
 
@@ -27916,74 +27944,144 @@ ${prefix}
         return '<i class="fa-solid fa-' + name + '"></i>';
       })(n);
     }
+    function _E() {
+      return window._bpwEditors;
+    }
     function _seo(W2) {
       return W2.acceptedSections && W2.acceptedSections.seo || {};
     }
-    function renderList(W2) {
-      var s = _seo(W2);
-      var active = W2.ui && W2.ui.itemId || null;
-      var html = "";
-      var clusters = s.keyword_clusters || [];
-      if (clusters.length) html += '<div class="bpw-shell-card-divider">Keyword clusters</div>';
-      for (var i = 0; i < clusters.length; i++) {
-        var kc = clusters[i];
-        var id = "cluster:" + i;
-        var cls = active === id ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + cls + '" data-item-id="' + _esc(id) + '" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _esc(kc.cluster || kc.seed_keyword || "Cluster " + (i + 1)) + "</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc((kc.keywords || []).slice(0, 5).join(", ")) + (kc.difficulty ? " \xB7 " + _esc(kc.difficulty) : "") + "</div>";
-        html += "</article>";
-      }
-      var gaps = s.content_gaps || [];
-      if (gaps.length) html += '<div class="bpw-shell-card-divider">Content gaps</div>';
-      for (var j = 0; j < gaps.length; j++) {
-        var g = gaps[j];
-        var gid = "gap:" + j;
-        var gcls = active === gid ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + gcls + '" data-item-id="' + _esc(gid) + '" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _esc(g.topic || "Gap " + (j + 1)) + "</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(g.why_it_matters || "") + "</div>";
-        html += "</article>";
-      }
-      var quickWins = s.quick_wins || [];
-      if (quickWins.length) html += '<div class="bpw-shell-card-divider">Quick wins</div>';
-      for (var k = 0; k < quickWins.length; k++) {
-        var qw = quickWins[k];
-        var qid = "quickwin:" + k;
-        var qcls = active === qid ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        html += '<article class="' + qcls + '" data-item-id="' + _esc(qid) + '" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _esc(qw.action || "Quick win " + (k + 1)) + "</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc("Impact: " + (qw.impact || "?") + " \xB7 Effort: " + (qw.effort || "?")) + "</div>";
-        html += "</article>";
-      }
-      return html || '<div class="bpw-shell-list-empty">' + _icon("magnifying-glass") + "<p>No SEO audit yet. Click <strong>Run SEO audit</strong> above.</p></div>";
+    function _fieldCard(opts) {
+      var remove = opts.removeAction ? '<button class="bpw-page-field-remove" data-action="' + _esc(opts.removeAction) + '" data-idx="' + opts.removeIdx + '" type="button" title="Remove">' + _icon("xmark") + "</button>" : "";
+      var sparkle = opts.path ? '<button class="bpw-page-field-refine" data-action="refine" data-refine-path="' + _esc(opts.path) + '" type="button" title="Improve with AI">' + _icon("sparkles") + "</button>" : "";
+      return '<article class="bpw-page-field"><header class="bpw-page-field-head"><h3 class="bpw-page-field-label">' + _esc(opts.label) + '</h3><div class="bpw-page-field-head-actions">' + sparkle + remove + '</div></header><div class="bpw-page-field-body">' + opts.body + "</div></article>";
     }
-    function renderDetail(W2, selectedId) {
-      if (!selectedId) return "";
-      var s = _seo(W2);
-      var E = window._bpwEditors;
-      var parts = selectedId.split(":");
-      var type = parts[0], idx = parseInt(parts[1] || "0", 10);
-      if (type === "cluster") {
-        var kc = (s.keyword_clusters || [])[idx];
-        if (!kc) return '<div class="bpw-shell-detail-empty">Cluster not found.</div>';
-        var base2 = "seo.keyword_clusters[" + idx + "].";
-        return '<div class="bpw-shell-detail-card"><h3>' + _esc(kc.cluster || "Keyword cluster " + (idx + 1)) + "</h3>" + E.renderText({ label: "Cluster", path: base2 + "cluster", value: kc.cluster }) + E.renderText({ label: "Seed keyword", path: base2 + "seed_keyword", value: kc.seed_keyword }) + E.renderText({ label: "Intent", path: base2 + "intent", value: kc.intent, placeholder: "informational / commercial / navigational" }) + E.renderText({ label: "Difficulty", path: base2 + "difficulty", value: kc.difficulty, placeholder: "low / medium / high" }) + E.renderChips({ label: "Keywords", path: base2 + "keywords", value: kc.keywords, addLabel: "keyword" }) + "</div>";
-      }
-      if (type === "gap") {
-        var g = (s.content_gaps || [])[idx];
-        if (!g) return '<div class="bpw-shell-detail-empty">Gap not found.</div>';
-        var gbase = "seo.content_gaps[" + idx + "].";
-        return '<div class="bpw-shell-detail-card"><h3>' + _esc(g.topic || "Content gap " + (idx + 1)) + "</h3>" + E.renderText({ label: "Topic", path: gbase + "topic", value: g.topic }) + E.renderTextarea({ label: "Why it matters", path: gbase + "why_it_matters", value: g.why_it_matters }) + E.renderField({ type: "prose", label: "Suggested angle", path: gbase + "suggested_angle", value: g.suggested_angle }) + "</div>";
-      }
-      if (type === "quickwin") {
-        var qw = (s.quick_wins || [])[idx];
-        if (!qw) return '<div class="bpw-shell-detail-empty">Quick win not found.</div>';
-        var qbase = "seo.quick_wins[" + idx + "].";
-        return '<div class="bpw-shell-detail-card"><h3>' + _esc(qw.action || "Quick win " + (idx + 1)) + "</h3>" + E.renderText({ label: "Action", path: qbase + "action", value: qw.action }) + E.renderText({ label: "Impact", path: qbase + "impact", value: qw.impact, placeholder: "low / medium / high" }) + E.renderText({ label: "Effort", path: qbase + "effort", value: qw.effort, placeholder: "low / medium / high" }) + "</div>";
-      }
+    function _renderCluster(kc, idx) {
+      var base2 = "seo.keyword_clusters[" + idx + "].";
+      var body = "" + _E().renderText({ label: "Cluster", path: base2 + "cluster", value: kc.cluster }) + _E().renderText({ label: "Seed keyword", path: base2 + "seed_keyword", value: kc.seed_keyword }) + _E().renderText({ label: "Intent", path: base2 + "intent", value: kc.intent, placeholder: "informational / commercial / navigational" }) + _E().renderText({ label: "Difficulty", path: base2 + "difficulty", value: kc.difficulty, placeholder: "low / medium / high" }) + _E().renderChips({ label: "Keywords", path: base2 + "keywords", value: kc.keywords, addLabel: "keyword" });
+      return _fieldCard({
+        label: kc.cluster || "Keyword cluster " + (idx + 1),
+        path: "seo.keyword_clusters[" + idx + "]",
+        body,
+        removeAction: "seo-remove-cluster",
+        removeIdx: idx
+      });
+    }
+    function _renderGap(g, idx) {
+      var base2 = "seo.content_gaps[" + idx + "].";
+      var body = "" + _E().renderText({ label: "Topic", path: base2 + "topic", value: g.topic }) + _E().renderTextarea({ label: "Why it matters", path: base2 + "why_it_matters", value: g.why_it_matters }) + _E().renderField({ type: "prose", label: "Suggested angle", path: base2 + "suggested_angle", value: g.suggested_angle });
+      return _fieldCard({
+        label: g.topic || "Content gap " + (idx + 1),
+        path: "seo.content_gaps[" + idx + "]",
+        body,
+        removeAction: "seo-remove-gap",
+        removeIdx: idx
+      });
+    }
+    function _renderQuickWin(qw, idx) {
+      var base2 = "seo.quick_wins[" + idx + "].";
+      var body = "" + _E().renderText({ label: "Action", path: base2 + "action", value: qw.action }) + _E().renderText({ label: "Impact", path: base2 + "impact", value: qw.impact, placeholder: "low / medium / high" }) + _E().renderText({ label: "Effort", path: base2 + "effort", value: qw.effort, placeholder: "low / medium / high" });
+      return _fieldCard({
+        label: qw.action || "Quick win " + (idx + 1),
+        path: "seo.quick_wins[" + idx + "]",
+        body,
+        removeAction: "seo-remove-quickwin",
+        removeIdx: idx
+      });
+    }
+    function renderList() {
       return "";
     }
+    function renderDetail(W2) {
+      var s = _seo(W2);
+      var clusters = s.keyword_clusters || [];
+      var gaps = s.content_gaps || [];
+      var wins = s.quick_wins || [];
+      var html = '<section class="bpw-shell-detail bpw-shell-detail--page" aria-label="SEO">';
+      html += '<header class="bpw-shell-detail-head">';
+      html += "<h1>SEO</h1>";
+      html += '<p class="bpw-shell-detail-sub">Keyword clusters, content gaps, and quick wins.</p>';
+      html += '<button class="bpw-page-collection-add bpw-page-collection-add--ai" data-action="run-seo-audit" type="button">' + _icon("sparkles") + " Run SEO audit</button>";
+      html += "</header>";
+      html += '<div class="bpw-page-fields">';
+      html += '<div class="bpw-page-collection-head">';
+      html += '<h2 class="bpw-page-collection-title">Keyword clusters</h2>';
+      html += '<button class="bpw-page-collection-add" data-action="seo-add-cluster" type="button">' + _icon("plus") + " Add cluster</button>";
+      html += "</div>";
+      if (!clusters.length) html += '<div class="bpw-page-collection-empty">No clusters yet. Run an audit to populate.</div>';
+      else for (var i = 0; i < clusters.length; i++) html += _renderCluster(clusters[i], i);
+      html += '<div class="bpw-page-collection-head">';
+      html += '<h2 class="bpw-page-collection-title">Content gaps</h2>';
+      html += '<button class="bpw-page-collection-add" data-action="seo-add-gap" type="button">' + _icon("plus") + " Add gap</button>";
+      html += "</div>";
+      if (!gaps.length) html += '<div class="bpw-page-collection-empty">No gaps yet.</div>';
+      else for (var j = 0; j < gaps.length; j++) html += _renderGap(gaps[j], j);
+      html += '<div class="bpw-page-collection-head">';
+      html += '<h2 class="bpw-page-collection-title">Quick wins</h2>';
+      html += '<button class="bpw-page-collection-add" data-action="seo-add-quickwin" type="button">' + _icon("plus") + " Add quick win</button>";
+      html += "</div>";
+      if (!wins.length) html += '<div class="bpw-page-collection-empty">No quick wins yet.</div>';
+      else for (var k = 0; k < wins.length; k++) html += _renderQuickWin(wins[k], k);
+      html += "</div>";
+      html += "</section>";
+      return html;
+    }
+    function _refresh() {
+      if (window._bpwExportSync) window._bpwExportSync.syncAll();
+      if (window._bpwSyncToTextarea) window._bpwSyncToTextarea();
+      if (window._bpwAutoSave) window._bpwAutoSave();
+      if (window._bpwAppShell) window._bpwAppShell.render();
+      if (window._bpwSetup && window._bpwSetup.render) window._bpwSetup.render();
+    }
+    function _ensureSeo() {
+      var W2 = window._bpwState;
+      W2.acceptedSections = W2.acceptedSections || {};
+      W2.acceptedSections.seo = W2.acceptedSections.seo || {};
+      return W2.acceptedSections.seo;
+    }
+    function _removeAt(arrPath, idx) {
+      var W2 = window._bpwState;
+      var seo = (W2.acceptedSections || {}).seo || {};
+      var arr = seo[arrPath];
+      if (!Array.isArray(arr)) return;
+      arr.splice(idx, 1);
+      _refresh();
+    }
+    $(document).off("click.bpw-seo-add-cluster").on("click.bpw-seo-add-cluster", '[data-action="seo-add-cluster"]', function(e) {
+      e.preventDefault();
+      var seo = _ensureSeo();
+      seo.keyword_clusters = seo.keyword_clusters || [];
+      seo.keyword_clusters.push({ cluster: "", seed_keyword: "", intent: "", difficulty: "", keywords: [] });
+      _refresh();
+    });
+    $(document).off("click.bpw-seo-rm-cluster").on("click.bpw-seo-rm-cluster", '[data-action="seo-remove-cluster"]', function(e) {
+      e.preventDefault();
+      var idx = parseInt($(this).attr("data-idx"), 10);
+      if (!isNaN(idx)) _removeAt("keyword_clusters", idx);
+    });
+    $(document).off("click.bpw-seo-add-gap").on("click.bpw-seo-add-gap", '[data-action="seo-add-gap"]', function(e) {
+      e.preventDefault();
+      var seo = _ensureSeo();
+      seo.content_gaps = seo.content_gaps || [];
+      seo.content_gaps.push({ topic: "", why_it_matters: "", suggested_angle: "" });
+      _refresh();
+    });
+    $(document).off("click.bpw-seo-rm-gap").on("click.bpw-seo-rm-gap", '[data-action="seo-remove-gap"]', function(e) {
+      e.preventDefault();
+      var idx = parseInt($(this).attr("data-idx"), 10);
+      if (!isNaN(idx)) _removeAt("content_gaps", idx);
+    });
+    $(document).off("click.bpw-seo-add-qw").on("click.bpw-seo-add-qw", '[data-action="seo-add-quickwin"]', function(e) {
+      e.preventDefault();
+      var seo = _ensureSeo();
+      seo.quick_wins = seo.quick_wins || [];
+      seo.quick_wins.push({ action: "", impact: "", effort: "" });
+      _refresh();
+    });
+    $(document).off("click.bpw-seo-rm-qw").on("click.bpw-seo-rm-qw", '[data-action="seo-remove-quickwin"]', function(e) {
+      e.preventDefault();
+      var idx = parseInt($(this).attr("data-idx"), 10);
+      if (!isNaN(idx)) _removeAt("quick_wins", idx);
+    });
     $(document).off("click.bpw-seo-audit").on("click.bpw-seo-audit", '[data-action="run-seo-audit"]', function(e) {
       e.preventDefault();
       var W2 = window._bpwState;
@@ -28001,10 +28099,7 @@ ${prefix}
         }
         W2.acceptedSections = W2.acceptedSections || {};
         W2.acceptedSections.seo = res.data || {};
-        if (window._bpwExportSync) window._bpwExportSync.syncAll();
-        if (window._bpwSyncToTextarea) window._bpwSyncToTextarea();
-        if (window._bpwAutoSave) window._bpwAutoSave();
-        if (window._bpwAppShell) window._bpwAppShell.render();
+        _refresh();
         if (window._bpwToast) window._bpwToast("SEO audit complete", "success");
       });
     });
@@ -28013,36 +28108,10 @@ ${prefix}
       id: "seo",
       title: "SEO",
       minLevel: "growing",
-      listMode: "variable-items",
+      listMode: "none",
       renderList,
       renderDetail,
-      inlineActions: [
-        { id: "run-seo-audit", label: "Run SEO audit", icon: "sparkles" },
-        {
-          type: "add-row",
-          label: "Add keyword cluster",
-          icon: "plus",
-          listPath: "seo.keyword_clusters",
-          itemPrefix: "cluster",
-          itemTemplate: { cluster: "", seed_keyword: "", intent: "", difficulty: "", keywords: [] }
-        },
-        {
-          type: "add-row",
-          label: "Add content gap",
-          icon: "plus",
-          listPath: "seo.content_gaps",
-          itemPrefix: "gap",
-          itemTemplate: { topic: "", why_it_matters: "", suggested_angle: "" }
-        },
-        {
-          type: "add-row",
-          label: "Add quick win",
-          icon: "plus",
-          listPath: "seo.quick_wins",
-          itemPrefix: "quickwin",
-          itemTemplate: { action: "", impact: "", effort: "" }
-        }
-      ]
+      inlineActions: []
     };
   })();
 
@@ -28083,38 +28152,28 @@ ${prefix}
       if (!Array.isArray(W2.acceptedSections.social.profiles)) W2.acceptedSections.social.profiles = [];
       return W2.acceptedSections.social.profiles;
     }
-    function renderList(W2) {
-      var profiles = _profiles(W2);
-      var active = W2.ui && W2.ui.itemId || null;
-      if (!profiles.length) {
-        return '<div class="bpw-shell-list-empty">' + _icon("share-nodes") + '<div>No social profiles yet.</div><div style="font-size:var(--bpw-font-xs);color:var(--bpw-text-muted);margin-top:var(--bpw-sp-1);">Use Add profile below to add one.</div></div>';
-      }
-      var html = "";
-      for (var i = 0; i < profiles.length; i++) {
-        var p = profiles[i] || {};
-        var id = "profile:" + i;
-        var cls = active === id ? "bpw-shell-card bpw-shell-card-active" : "bpw-shell-card";
-        var label = PLATFORM_LABELS[p.platform] || p.platform || "Profile " + (i + 1);
-        html += '<article class="' + cls + '" data-item-id="' + _esc(id) + '" role="button" tabindex="0">';
-        html += '<div class="bpw-shell-card-title">' + _esc(label) + "</div>";
-        html += '<div class="bpw-shell-card-snippet">' + _esc(p.handle || p.url || "\u2014") + "</div>";
-        html += "</article>";
-      }
-      return html;
+    function renderList() {
+      return "";
     }
-    function renderDetail(W2, selectedId) {
+    function renderDetail(W2) {
       var profiles = _profiles(W2);
-      var html = '<div class="bpw-shell-detail-card">';
-      html += "<h3>" + _icon("share-nodes") + " Social profiles</h3>";
-      html += '<p style="margin:0 0 var(--bpw-sp-4);color:var(--bpw-text-sec);font-size:var(--bpw-font-sm);">Add and edit the social accounts the brand publishes on. These ship out as <code>field_brand_social</code>.</p>';
+      var html = '<section class="bpw-shell-detail bpw-shell-detail--page" aria-label="Social profiles">';
+      html += '<header class="bpw-shell-detail-head">';
+      html += "<h1>Social profiles</h1>";
+      html += '<p class="bpw-shell-detail-sub">Accounts the brand publishes on. Ship out as <code>field_brand_social</code>.</p>';
+      html += "</header>";
+      html += '<div class="bpw-page-fields">';
+      html += '<div class="bpw-page-collection-head">';
+      html += '<h2 class="bpw-page-collection-title">' + profiles.length + " profile" + (profiles.length === 1 ? "" : "s") + "</h2>";
+      html += '<button class="bpw-page-collection-add" data-action="bpw-social-add" type="button">' + _icon("plus") + " Add profile</button>";
+      html += "</div>";
       if (!profiles.length) {
-        html += '<div class="bpw-shell-detail-value bpw-shell-detail-value-empty">No profiles yet.</div>';
+        html += '<div class="bpw-page-collection-empty">No social profiles yet. Click Add profile to add one.</div>';
       } else {
         html += '<div class="bpw-social-rows">';
         for (var i = 0; i < profiles.length; i++) {
           var p = profiles[i] || {};
-          var hi = selectedId === "profile:" + i;
-          html += '<div class="bpw-social-row' + (hi ? " is-active" : "") + '" data-profile-idx="' + i + '">';
+          html += '<div class="bpw-social-row" data-profile-idx="' + i + '">';
           html += '<select class="bpw-social-platform" data-profile-field="platform">';
           for (var k = 0; k < PLATFORMS.length; k++) {
             var key = PLATFORMS[k];
@@ -28128,10 +28187,8 @@ ${prefix}
         }
         html += "</div>";
       }
-      html += '<div class="bpw-social-actions">';
-      html += '<button class="bpw-shell-action-btn" data-action="bpw-social-add" type="button">' + _icon("plus") + " Add profile</button>";
       html += "</div>";
-      html += "</div>";
+      html += "</section>";
       return html;
     }
     function _persist(W2) {
@@ -28139,6 +28196,7 @@ ${prefix}
       if (window._bpwSyncToTextarea) window._bpwSyncToTextarea();
       if (window._bpwAutoSave) window._bpwAutoSave();
       if (window._bpwAppShell) window._bpwAppShell.render();
+      if (window._bpwSetup && window._bpwSetup.render) window._bpwSetup.render();
     }
     $(document).off("input.bpw-social change.bpw-social", "[data-profile-field]").on("input.bpw-social change.bpw-social", "[data-profile-field]", function() {
       var W2 = window._bpwState;
@@ -28177,19 +28235,10 @@ ${prefix}
       id: "social",
       title: "Social",
       minLevel: "new",
-      listMode: "variable-items",
+      listMode: "none",
       renderList,
       renderDetail,
-      inlineActions: [
-        {
-          type: "add-row",
-          label: "Add profile",
-          icon: "plus",
-          listPath: "social.profiles",
-          itemPrefix: "profile",
-          itemTemplate: { platform: "other", handle: "", url: "" }
-        }
-      ]
+      inlineActions: []
     };
   })();
 

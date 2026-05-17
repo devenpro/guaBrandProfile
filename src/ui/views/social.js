@@ -1,10 +1,12 @@
 /**
  * @category    ui
- * @purpose     Social section view. variable-items mode.
- *              Lists every social profile saved on the brand (platform,
- *              handle, URL). Inline editing + add/remove rows. Writes
- *              into W.acceptedSections.social.profiles which Phase 4's
- *              export-sync hook funnels into field_brand_social.
+ * @purpose     Social section view — v3 page-style layout.
+ *
+ *              Lists every social profile inline on one page with
+ *              platform select, handle/URL inputs, remove buttons,
+ *              and an Add profile button. Same data slot as the
+ *              scrape review pane (W.acceptedSections.social.profiles).
+ *
  * @exports     window._bpwUIViews.social
  */
 (function() {
@@ -40,44 +42,29 @@
     return W.acceptedSections.social.profiles;
   }
 
-  function renderList(W) {
-    var profiles = _profiles(W);
-    var active = (W.ui && W.ui.itemId) || null;
-    if (!profiles.length) {
-      return '<div class="bpw-shell-list-empty">'
-        + _icon('share-nodes')
-        + '<div>No social profiles yet.</div>'
-        + '<div style="font-size:var(--bpw-font-xs);color:var(--bpw-text-muted);margin-top:var(--bpw-sp-1);">Use Add profile below to add one.</div>'
-        + '</div>';
-    }
-    var html = '';
-    for (var i = 0; i < profiles.length; i++) {
-      var p = profiles[i] || {};
-      var id = 'profile:' + i;
-      var cls = active === id ? 'bpw-shell-card bpw-shell-card-active' : 'bpw-shell-card';
-      var label = PLATFORM_LABELS[p.platform] || p.platform || 'Profile ' + (i + 1);
-      html += '<article class="' + cls + '" data-item-id="' + _esc(id) + '" role="button" tabindex="0">';
-      html += '<div class="bpw-shell-card-title">' + _esc(label) + '</div>';
-      html += '<div class="bpw-shell-card-snippet">' + _esc(p.handle || p.url || '—') + '</div>';
-      html += '</article>';
-    }
-    return html;
-  }
+  function renderList() { return ''; }
 
-  function renderDetail(W, selectedId) {
+  function renderDetail(W) {
     var profiles = _profiles(W);
-    var html = '<div class="bpw-shell-detail-card">';
-    html += '<h3>' + _icon('share-nodes') + ' Social profiles</h3>';
-    html += '<p style="margin:0 0 var(--bpw-sp-4);color:var(--bpw-text-sec);font-size:var(--bpw-font-sm);">Add and edit the social accounts the brand publishes on. These ship out as <code>field_brand_social</code>.</p>';
+    var html = '<section class="bpw-shell-detail bpw-shell-detail--page" aria-label="Social profiles">';
+    html += '<header class="bpw-shell-detail-head">';
+    html += '<h1>Social profiles</h1>';
+    html += '<p class="bpw-shell-detail-sub">Accounts the brand publishes on. Ship out as <code>field_brand_social</code>.</p>';
+    html += '</header>';
+
+    html += '<div class="bpw-page-fields">';
+    html += '<div class="bpw-page-collection-head">';
+    html += '<h2 class="bpw-page-collection-title">' + profiles.length + ' profile' + (profiles.length === 1 ? '' : 's') + '</h2>';
+    html += '<button class="bpw-page-collection-add" data-action="bpw-social-add" type="button">' + _icon('plus') + ' Add profile</button>';
+    html += '</div>';
 
     if (!profiles.length) {
-      html += '<div class="bpw-shell-detail-value bpw-shell-detail-value-empty">No profiles yet.</div>';
+      html += '<div class="bpw-page-collection-empty">No social profiles yet. Click Add profile to add one.</div>';
     } else {
       html += '<div class="bpw-social-rows">';
       for (var i = 0; i < profiles.length; i++) {
         var p = profiles[i] || {};
-        var hi = selectedId === ('profile:' + i);
-        html += '<div class="bpw-social-row' + (hi ? ' is-active' : '') + '" data-profile-idx="' + i + '">';
+        html += '<div class="bpw-social-row" data-profile-idx="' + i + '">';
         html += '<select class="bpw-social-platform" data-profile-field="platform">';
         for (var k = 0; k < PLATFORMS.length; k++) {
           var key = PLATFORMS[k];
@@ -92,10 +79,8 @@
       html += '</div>';
     }
 
-    html += '<div class="bpw-social-actions">';
-    html += '<button class="bpw-shell-action-btn" data-action="bpw-social-add" type="button">' + _icon('plus') + ' Add profile</button>';
     html += '</div>';
-    html += '</div>';
+    html += '</section>';
     return html;
   }
 
@@ -104,6 +89,7 @@
     if (window._bpwSyncToTextarea) window._bpwSyncToTextarea();
     if (window._bpwAutoSave) window._bpwAutoSave();
     if (window._bpwAppShell) window._bpwAppShell.render();
+    if (window._bpwSetup && window._bpwSetup.render) window._bpwSetup.render();
   }
 
   $(document).off('input.bpw-social change.bpw-social', '[data-profile-field]')
@@ -116,7 +102,6 @@
       var arr = _ensureSlot(W);
       arr[idx] = arr[idx] || {};
       arr[idx][$(this).data('profile-field')] = $(this).val();
-      // Avoid full re-render on every keystroke; just sync state.
       if (window._bpwExportSync) window._bpwExportSync.syncAll();
       if (window._bpwSyncToTextarea) window._bpwSyncToTextarea();
       if (window._bpwAutoSave) window._bpwAutoSave();
@@ -150,13 +135,9 @@
     id: 'social',
     title: 'Social',
     minLevel: 'new',
-    listMode: 'variable-items',
+    listMode: 'none',
     renderList: renderList,
     renderDetail: renderDetail,
-    inlineActions: [
-      { type: 'add-row', label: 'Add profile', icon: 'plus',
-        listPath: 'social.profiles', itemPrefix: 'profile',
-        itemTemplate: { platform: 'other', handle: '', url: '' } }
-    ]
+    inlineActions: []
   };
 })();

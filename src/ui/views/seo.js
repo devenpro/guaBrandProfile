@@ -1,10 +1,11 @@
 /**
  * @category    ui
- * @purpose     SEO section view. variable-items mode.
- *              Reads SEO audit output (stored under
- *              W.acceptedSections.seo when the inline audit action
- *              completes). Lists keyword clusters, content gaps,
- *              quick wins. Inline action: Run SEO audit.
+ * @purpose     SEO section view — v3 page-style layout.
+ *
+ *              Keyword clusters, content gaps, and quick wins all
+ *              inline on one scrollable page. Run-SEO-audit action
+ *              preserved at the top.
+ *
  * @exports     window._bpwUIViews.seo
  */
 (function() {
@@ -20,97 +21,176 @@
       return '<i class="fa-solid fa-' + name + '"></i>';
     })(n);
   }
+  function _E() { return window._bpwEditors; }
   function _seo(W) { return (W.acceptedSections && W.acceptedSections.seo) || {}; }
 
-  function renderList(W) {
-    var s = _seo(W);
-    var active = (W.ui && W.ui.itemId) || null;
-    var html = '';
+  function _fieldCard(opts) {
+    var remove = opts.removeAction
+      ? '<button class="bpw-page-field-remove" data-action="' + _esc(opts.removeAction) + '" data-idx="' + opts.removeIdx + '" type="button" title="Remove">' + _icon('xmark') + '</button>'
+      : '';
+    var sparkle = opts.path
+      ? '<button class="bpw-page-field-refine" data-action="refine" data-refine-path="' + _esc(opts.path) + '" type="button" title="Improve with AI">' + _icon('sparkles') + '</button>'
+      : '';
+    return '<article class="bpw-page-field">'
+      + '<header class="bpw-page-field-head">'
+      +   '<h3 class="bpw-page-field-label">' + _esc(opts.label) + '</h3>'
+      +   '<div class="bpw-page-field-head-actions">' + sparkle + remove + '</div>'
+      + '</header>'
+      + '<div class="bpw-page-field-body">' + opts.body + '</div>'
+      + '</article>';
+  }
 
+  function _renderCluster(kc, idx) {
+    var base = 'seo.keyword_clusters[' + idx + '].';
+    var body = ''
+      + _E().renderText({ label: 'Cluster', path: base + 'cluster', value: kc.cluster })
+      + _E().renderText({ label: 'Seed keyword', path: base + 'seed_keyword', value: kc.seed_keyword })
+      + _E().renderText({ label: 'Intent', path: base + 'intent', value: kc.intent, placeholder: 'informational / commercial / navigational' })
+      + _E().renderText({ label: 'Difficulty', path: base + 'difficulty', value: kc.difficulty, placeholder: 'low / medium / high' })
+      + _E().renderChips({ label: 'Keywords', path: base + 'keywords', value: kc.keywords, addLabel: 'keyword' });
+    return _fieldCard({
+      label: kc.cluster || 'Keyword cluster ' + (idx + 1),
+      path: 'seo.keyword_clusters[' + idx + ']',
+      body: body,
+      removeAction: 'seo-remove-cluster',
+      removeIdx: idx
+    });
+  }
+
+  function _renderGap(g, idx) {
+    var base = 'seo.content_gaps[' + idx + '].';
+    var body = ''
+      + _E().renderText({ label: 'Topic', path: base + 'topic', value: g.topic })
+      + _E().renderTextarea({ label: 'Why it matters', path: base + 'why_it_matters', value: g.why_it_matters })
+      + _E().renderField({ type: 'prose', label: 'Suggested angle', path: base + 'suggested_angle', value: g.suggested_angle });
+    return _fieldCard({
+      label: g.topic || 'Content gap ' + (idx + 1),
+      path: 'seo.content_gaps[' + idx + ']',
+      body: body,
+      removeAction: 'seo-remove-gap',
+      removeIdx: idx
+    });
+  }
+
+  function _renderQuickWin(qw, idx) {
+    var base = 'seo.quick_wins[' + idx + '].';
+    var body = ''
+      + _E().renderText({ label: 'Action', path: base + 'action', value: qw.action })
+      + _E().renderText({ label: 'Impact', path: base + 'impact', value: qw.impact, placeholder: 'low / medium / high' })
+      + _E().renderText({ label: 'Effort', path: base + 'effort', value: qw.effort, placeholder: 'low / medium / high' });
+    return _fieldCard({
+      label: qw.action || 'Quick win ' + (idx + 1),
+      path: 'seo.quick_wins[' + idx + ']',
+      body: body,
+      removeAction: 'seo-remove-quickwin',
+      removeIdx: idx
+    });
+  }
+
+  function renderList() { return ''; }
+
+  function renderDetail(W) {
+    var s = _seo(W);
     var clusters = s.keyword_clusters || [];
-    if (clusters.length) html += '<div class="bpw-shell-card-divider">Keyword clusters</div>';
-    for (var i = 0; i < clusters.length; i++) {
-      var kc = clusters[i];
-      var id = 'cluster:' + i;
-      var cls = active === id ? 'bpw-shell-card bpw-shell-card-active' : 'bpw-shell-card';
-      html += '<article class="' + cls + '" data-item-id="' + _esc(id) + '" role="button" tabindex="0">';
-      html += '<div class="bpw-shell-card-title">' + _esc(kc.cluster || kc.seed_keyword || 'Cluster ' + (i + 1)) + '</div>';
-      html += '<div class="bpw-shell-card-snippet">' + _esc((kc.keywords || []).slice(0, 5).join(', ')) + (kc.difficulty ? ' · ' + _esc(kc.difficulty) : '') + '</div>';
-      html += '</article>';
-    }
-
     var gaps = s.content_gaps || [];
-    if (gaps.length) html += '<div class="bpw-shell-card-divider">Content gaps</div>';
-    for (var j = 0; j < gaps.length; j++) {
-      var g = gaps[j];
-      var gid = 'gap:' + j;
-      var gcls = active === gid ? 'bpw-shell-card bpw-shell-card-active' : 'bpw-shell-card';
-      html += '<article class="' + gcls + '" data-item-id="' + _esc(gid) + '" role="button" tabindex="0">';
-      html += '<div class="bpw-shell-card-title">' + _esc(g.topic || 'Gap ' + (j + 1)) + '</div>';
-      html += '<div class="bpw-shell-card-snippet">' + _esc(g.why_it_matters || '') + '</div>';
-      html += '</article>';
-    }
+    var wins = s.quick_wins || [];
 
-    var quickWins = s.quick_wins || [];
-    if (quickWins.length) html += '<div class="bpw-shell-card-divider">Quick wins</div>';
-    for (var k = 0; k < quickWins.length; k++) {
-      var qw = quickWins[k];
-      var qid = 'quickwin:' + k;
-      var qcls = active === qid ? 'bpw-shell-card bpw-shell-card-active' : 'bpw-shell-card';
-      html += '<article class="' + qcls + '" data-item-id="' + _esc(qid) + '" role="button" tabindex="0">';
-      html += '<div class="bpw-shell-card-title">' + _esc(qw.action || 'Quick win ' + (k + 1)) + '</div>';
-      html += '<div class="bpw-shell-card-snippet">' + _esc('Impact: ' + (qw.impact || '?') + ' · Effort: ' + (qw.effort || '?')) + '</div>';
-      html += '</article>';
-    }
+    var html = '<section class="bpw-shell-detail bpw-shell-detail--page" aria-label="SEO">';
+    html += '<header class="bpw-shell-detail-head">';
+    html += '<h1>SEO</h1>';
+    html += '<p class="bpw-shell-detail-sub">Keyword clusters, content gaps, and quick wins.</p>';
+    html += '<button class="bpw-page-collection-add bpw-page-collection-add--ai" data-action="run-seo-audit" type="button">' + _icon('sparkles') + ' Run SEO audit</button>';
+    html += '</header>';
 
-    return html || '<div class="bpw-shell-list-empty">' + _icon('magnifying-glass') + '<p>No SEO audit yet. Click <strong>Run SEO audit</strong> above.</p></div>';
+    html += '<div class="bpw-page-fields">';
+
+    html += '<div class="bpw-page-collection-head">';
+    html += '<h2 class="bpw-page-collection-title">Keyword clusters</h2>';
+    html += '<button class="bpw-page-collection-add" data-action="seo-add-cluster" type="button">' + _icon('plus') + ' Add cluster</button>';
+    html += '</div>';
+    if (!clusters.length) html += '<div class="bpw-page-collection-empty">No clusters yet. Run an audit to populate.</div>';
+    else for (var i = 0; i < clusters.length; i++) html += _renderCluster(clusters[i], i);
+
+    html += '<div class="bpw-page-collection-head">';
+    html += '<h2 class="bpw-page-collection-title">Content gaps</h2>';
+    html += '<button class="bpw-page-collection-add" data-action="seo-add-gap" type="button">' + _icon('plus') + ' Add gap</button>';
+    html += '</div>';
+    if (!gaps.length) html += '<div class="bpw-page-collection-empty">No gaps yet.</div>';
+    else for (var j = 0; j < gaps.length; j++) html += _renderGap(gaps[j], j);
+
+    html += '<div class="bpw-page-collection-head">';
+    html += '<h2 class="bpw-page-collection-title">Quick wins</h2>';
+    html += '<button class="bpw-page-collection-add" data-action="seo-add-quickwin" type="button">' + _icon('plus') + ' Add quick win</button>';
+    html += '</div>';
+    if (!wins.length) html += '<div class="bpw-page-collection-empty">No quick wins yet.</div>';
+    else for (var k = 0; k < wins.length; k++) html += _renderQuickWin(wins[k], k);
+
+    html += '</div>';
+    html += '</section>';
+    return html;
   }
 
-  function renderDetail(W, selectedId) {
-    if (!selectedId) return '';
-    var s = _seo(W);
-    var E = window._bpwEditors;
-    var parts = selectedId.split(':');
-    var type = parts[0], idx = parseInt(parts[1] || '0', 10);
-    if (type === 'cluster') {
-      var kc = (s.keyword_clusters || [])[idx];
-      if (!kc) return '<div class="bpw-shell-detail-empty">Cluster not found.</div>';
-      var base = 'seo.keyword_clusters[' + idx + '].';
-      return '<div class="bpw-shell-detail-card">'
-        + '<h3>' + _esc(kc.cluster || 'Keyword cluster ' + (idx + 1)) + '</h3>'
-        + E.renderText({ label: 'Cluster', path: base + 'cluster', value: kc.cluster })
-        + E.renderText({ label: 'Seed keyword', path: base + 'seed_keyword', value: kc.seed_keyword })
-        + E.renderText({ label: 'Intent', path: base + 'intent', value: kc.intent, placeholder: 'informational / commercial / navigational' })
-        + E.renderText({ label: 'Difficulty', path: base + 'difficulty', value: kc.difficulty, placeholder: 'low / medium / high' })
-        + E.renderChips({ label: 'Keywords', path: base + 'keywords', value: kc.keywords, addLabel: 'keyword' })
-        + '</div>';
-    }
-    if (type === 'gap') {
-      var g = (s.content_gaps || [])[idx];
-      if (!g) return '<div class="bpw-shell-detail-empty">Gap not found.</div>';
-      var gbase = 'seo.content_gaps[' + idx + '].';
-      return '<div class="bpw-shell-detail-card">'
-        + '<h3>' + _esc(g.topic || 'Content gap ' + (idx + 1)) + '</h3>'
-        + E.renderText({ label: 'Topic', path: gbase + 'topic', value: g.topic })
-        + E.renderTextarea({ label: 'Why it matters', path: gbase + 'why_it_matters', value: g.why_it_matters })
-        + E.renderField({ type: 'prose', label: 'Suggested angle', path: gbase + 'suggested_angle', value: g.suggested_angle })
-        + '</div>';
-    }
-    if (type === 'quickwin') {
-      var qw = (s.quick_wins || [])[idx];
-      if (!qw) return '<div class="bpw-shell-detail-empty">Quick win not found.</div>';
-      var qbase = 'seo.quick_wins[' + idx + '].';
-      return '<div class="bpw-shell-detail-card">'
-        + '<h3>' + _esc(qw.action || 'Quick win ' + (idx + 1)) + '</h3>'
-        + E.renderText({ label: 'Action', path: qbase + 'action', value: qw.action })
-        + E.renderText({ label: 'Impact', path: qbase + 'impact', value: qw.impact, placeholder: 'low / medium / high' })
-        + E.renderText({ label: 'Effort', path: qbase + 'effort', value: qw.effort, placeholder: 'low / medium / high' })
-        + '</div>';
-    }
-    return '';
+  function _refresh() {
+    if (window._bpwExportSync) window._bpwExportSync.syncAll();
+    if (window._bpwSyncToTextarea) window._bpwSyncToTextarea();
+    if (window._bpwAutoSave) window._bpwAutoSave();
+    if (window._bpwAppShell) window._bpwAppShell.render();
+    if (window._bpwSetup && window._bpwSetup.render) window._bpwSetup.render();
   }
 
-  // ── Inline action: Run SEO audit ───────────────────────────────────
+  function _ensureSeo() {
+    var W = window._bpwState;
+    W.acceptedSections = W.acceptedSections || {};
+    W.acceptedSections.seo = W.acceptedSections.seo || {};
+    return W.acceptedSections.seo;
+  }
+  function _removeAt(arrPath, idx) {
+    var W = window._bpwState;
+    var seo = (W.acceptedSections || {}).seo || {};
+    var arr = seo[arrPath];
+    if (!Array.isArray(arr)) return;
+    arr.splice(idx, 1);
+    _refresh();
+  }
+
+  $(document).off('click.bpw-seo-add-cluster').on('click.bpw-seo-add-cluster', '[data-action="seo-add-cluster"]', function(e) {
+    e.preventDefault();
+    var seo = _ensureSeo();
+    seo.keyword_clusters = seo.keyword_clusters || [];
+    seo.keyword_clusters.push({ cluster: '', seed_keyword: '', intent: '', difficulty: '', keywords: [] });
+    _refresh();
+  });
+  $(document).off('click.bpw-seo-rm-cluster').on('click.bpw-seo-rm-cluster', '[data-action="seo-remove-cluster"]', function(e) {
+    e.preventDefault();
+    var idx = parseInt($(this).attr('data-idx'), 10);
+    if (!isNaN(idx)) _removeAt('keyword_clusters', idx);
+  });
+  $(document).off('click.bpw-seo-add-gap').on('click.bpw-seo-add-gap', '[data-action="seo-add-gap"]', function(e) {
+    e.preventDefault();
+    var seo = _ensureSeo();
+    seo.content_gaps = seo.content_gaps || [];
+    seo.content_gaps.push({ topic: '', why_it_matters: '', suggested_angle: '' });
+    _refresh();
+  });
+  $(document).off('click.bpw-seo-rm-gap').on('click.bpw-seo-rm-gap', '[data-action="seo-remove-gap"]', function(e) {
+    e.preventDefault();
+    var idx = parseInt($(this).attr('data-idx'), 10);
+    if (!isNaN(idx)) _removeAt('content_gaps', idx);
+  });
+  $(document).off('click.bpw-seo-add-qw').on('click.bpw-seo-add-qw', '[data-action="seo-add-quickwin"]', function(e) {
+    e.preventDefault();
+    var seo = _ensureSeo();
+    seo.quick_wins = seo.quick_wins || [];
+    seo.quick_wins.push({ action: '', impact: '', effort: '' });
+    _refresh();
+  });
+  $(document).off('click.bpw-seo-rm-qw').on('click.bpw-seo-rm-qw', '[data-action="seo-remove-quickwin"]', function(e) {
+    e.preventDefault();
+    var idx = parseInt($(this).attr('data-idx'), 10);
+    if (!isNaN(idx)) _removeAt('quick_wins', idx);
+  });
+
+  // ── Inline action: Run SEO audit ─────────────────────────────────
   $(document).off('click.bpw-seo-audit').on('click.bpw-seo-audit', '[data-action="run-seo-audit"]', function(e) {
     e.preventDefault();
     var W = window._bpwState;
@@ -122,10 +202,7 @@
       if (!res || !res.success) { if (window._bpwToast) window._bpwToast(res && res.error || 'Failed', 'error'); return; }
       W.acceptedSections = W.acceptedSections || {};
       W.acceptedSections.seo = res.data || {};
-      if (window._bpwExportSync) window._bpwExportSync.syncAll();
-      if (window._bpwSyncToTextarea) window._bpwSyncToTextarea();
-      if (window._bpwAutoSave) window._bpwAutoSave();
-      if (window._bpwAppShell) window._bpwAppShell.render();
+      _refresh();
       if (window._bpwToast) window._bpwToast('SEO audit complete', 'success');
     });
   });
@@ -135,20 +212,9 @@
     id: 'seo',
     title: 'SEO',
     minLevel: 'growing',
-    listMode: 'variable-items',
+    listMode: 'none',
     renderList: renderList,
     renderDetail: renderDetail,
-    inlineActions: [
-      { id: 'run-seo-audit', label: 'Run SEO audit', icon: 'sparkles' },
-      { type: 'add-row', label: 'Add keyword cluster', icon: 'plus',
-        listPath: 'seo.keyword_clusters', itemPrefix: 'cluster',
-        itemTemplate: { cluster: '', seed_keyword: '', intent: '', difficulty: '', keywords: [] } },
-      { type: 'add-row', label: 'Add content gap', icon: 'plus',
-        listPath: 'seo.content_gaps', itemPrefix: 'gap',
-        itemTemplate: { topic: '', why_it_matters: '', suggested_angle: '' } },
-      { type: 'add-row', label: 'Add quick win', icon: 'plus',
-        listPath: 'seo.quick_wins', itemPrefix: 'quickwin',
-        itemTemplate: { action: '', impact: '', effort: '' } }
-    ]
+    inlineActions: []
   };
 })();
