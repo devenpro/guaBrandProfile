@@ -1,4 +1,4 @@
-window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T05:14:39.287Z";try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}
+window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T05:19:22.190Z";try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}
 (() => {
   // src/ai/providers/registry.js
   (function() {
@@ -2180,7 +2180,34 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T05:14:39.287Z";try{
       var W2 = _W();
       if (!W2 || !W2.setup || !W2.setup.awaitingReview) return;
       W2.setup.awaitingReview = null;
+      if (W2.setup.resumeAt) {
+        var resumeId = W2.setup.resumeAt;
+        W2.setup.resumeAt = null;
+        W2.setup.awaitingReview = resumeId;
+        W2.setup.currentStageId = resumeId;
+        return;
+      }
       _advance();
+    }
+    function goBack() {
+      var W2 = _W();
+      if (!W2 || !W2.setup) return;
+      var queue = W2.setup.stagesQueue || [];
+      var currentId = W2.setup.awaitingReview || W2.setup.currentStageId;
+      var idx = queue.indexOf(currentId);
+      if (idx <= 0) return;
+      var prevId = null;
+      for (var i = idx - 1; i >= 0; i--) {
+        var s = (W2.setup.stageStatus[queue[i]] || {}).state;
+        if (s === "done") {
+          prevId = queue[i];
+          break;
+        }
+      }
+      if (!prevId) return;
+      W2.setup.resumeAt = currentId;
+      W2.setup.awaitingReview = prevId;
+      W2.setup.currentStageId = prevId;
     }
     function rerunStage(stageId) {
       var W2 = _W();
@@ -2275,6 +2302,19 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T05:14:39.287Z";try{
           }
           _setStatus(id, statusPatch);
           if (stage.needsReview) {
+            if (id !== "scrape") {
+              var accept = window._bpwAcceptSection;
+              if (accept && res.data) {
+                for (var fk in res.data) {
+                  if (!res.data.hasOwnProperty(fk)) continue;
+                  try {
+                    accept(fk, res.data[fk]);
+                  } catch (acceptErr) {
+                    console.warn(LOG, "accept-on-review failed for", fk, acceptErr);
+                  }
+                }
+              }
+            }
             W2.setup.awaitingReview = id;
             becameReview = true;
           }
@@ -2333,6 +2373,7 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T05:14:39.287Z";try{
       skipCurrent,
       continueReview,
       rerunStage,
+      goBack,
       state
     };
   })();
@@ -2472,7 +2513,8 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T05:14:39.287Z";try{
       if (s.finishedAt) return "done";
       if (!s.open) return "inputs";
       if (s.awaitingReview === "scrape") return "website";
-      if (s.currentStageId === "scrape") return "website";
+      if (s.currentStageId === "scrape" && !s.awaitingReview) return "website";
+      if (s.awaitingReview) return "stage_review";
       return "ai_run";
     }
     var WORKFLOW_STAGES = [
@@ -2520,11 +2562,83 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T05:14:39.287Z";try{
         html += _renderForm(running);
       } else if (stage === "website") {
         html += _renderWebsiteStage();
+      } else if (stage === "stage_review") {
+        html += _renderStagePane(W2.setup.awaitingReview);
       } else {
         html += _renderAIRunStage();
       }
       html += "</div></div>";
       return html;
+    }
+    function _renderStagePane(stageId) {
+      var stagesMod = window._bpwSetupStages;
+      var stage = stagesMod && stagesMod.findStage(stageId);
+      if (!stage) return "";
+      var queue = W2.setup && W2.setup.stagesQueue || [];
+      var idx = queue.indexOf(stageId);
+      var prevId = null, nextId = null;
+      for (var i = idx - 1; i >= 0; i--) {
+        var prevState = (W2.setup.stageStatus[queue[i]] || {}).state;
+        if (prevState === "done") {
+          prevId = queue[i];
+          break;
+        }
+      }
+      for (var j = idx + 1; j < queue.length; j++) {
+        nextId = queue[j];
+        break;
+      }
+      var prevStage = prevId ? stagesMod.findStage(prevId) : null;
+      var nextStage = nextId ? stagesMod.findStage(nextId) : null;
+      var views = window._bpwUIViews || {};
+      var view = views[stageId];
+      var body = "";
+      if (view && view.listMode === "none" && typeof view.renderDetail === "function") {
+        try {
+          body = view.renderDetail(W2);
+        } catch (e) {
+          body = '<div class="bpw-setup-stage-pane-fallback">Failed to render: ' + _esc(e.message) + "</div>";
+        }
+      } else {
+        var fallback = "";
+        try {
+          fallback = stage.expandRenderer && stage.expandRenderer(W2) || "";
+        } catch (eRender) {
+          fallback = "";
+        }
+        body = '<section class="bpw-shell-detail bpw-shell-detail--page"><header class="bpw-shell-detail-head"><h1>' + _esc(stage.label) + '</h1><p class="bpw-shell-detail-sub">Page-style editing for this section is coming soon. For now, review the AI draft below and continue.</p></header>' + (fallback || '<div class="bpw-setup-stage-pane-fallback">No draft data.</div>') + "</section>";
+      }
+      var html = '<section class="bpw-setup-stage-pane bpw-setup-stage-pane--review" data-stage-id="' + _esc(stageId) + '">';
+      html += '<header class="bpw-setup-stage-pane-header">';
+      html += '<div class="bpw-setup-stage-pane-titles">';
+      html += '<div class="bpw-setup-stage-pane-eyebrow">' + _icon("sparkles") + " Drafted by AI \xB7 " + _esc(_phaseLabel()) + "</div>";
+      html += '<h2 class="bpw-setup-stage-pane-title">Review your ' + _esc(stage.label) + "</h2>";
+      html += '<p class="bpw-setup-stage-pane-desc">Edit any field inline, regenerate the whole stage, or approve to continue.</p>';
+      html += "</div>";
+      html += '<div class="bpw-setup-stage-pane-actions">';
+      html += '<button class="bpw-setup-stage-pane-regen" data-action="bpw-setup-rerun-stage" data-stage-id="' + _esc(stageId) + '" type="button">' + _icon("rotate-right") + " Regenerate all</button>";
+      if (nextStage) {
+        html += '<button class="bpw-setup-stage-pane-approve" data-action="bpw-setup-continue-review" type="button">' + _icon("circle-check") + ' Approve &amp; continue <span class="bpw-setup-stage-pane-approve-next">\u2192 ' + _esc(nextStage.label) + "</span></button>";
+      } else {
+        html += '<button class="bpw-setup-stage-pane-approve" data-action="bpw-setup-continue-review" type="button">' + _icon("circle-check") + " Approve &amp; finish</button>";
+      }
+      html += "</div>";
+      html += "</header>";
+      html += '<div class="bpw-setup-stage-pane-body">' + body + "</div>";
+      html += '<footer class="bpw-setup-stage-pane-footer">';
+      if (prevStage) {
+        html += '<button class="bpw-setup-stage-pane-back" data-action="bpw-setup-go-back" type="button">' + _icon("arrow-left") + " Back to " + _esc(prevStage.label) + "</button>";
+      } else {
+        html += "<span></span>";
+      }
+      html += '<button class="bpw-setup-stage-pane-skip" data-action="bpw-setup-skip-review" data-stage-id="' + _esc(stageId) + '" type="button">' + _icon("forward") + " Skip stage</button>";
+      html += "</footer>";
+      html += "</section>";
+      return html;
+    }
+    function _phaseLabel() {
+      var map2 = { new: "New brand", growing: "Growing brand", deep: "Established brand" };
+      return map2[W2.brandLevel] || (W2.brandLevel || "");
     }
     function _renderLeftRail(currentStageId) {
       var s = W2.setup || {};
@@ -2942,6 +3056,13 @@ window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T05:14:39.287Z";try{
         var orch = window._bpwSetupOrchestrator;
         if (!orch) return;
         orch.skipCurrent();
+        _render();
+      });
+      $(document).off("click" + ns, '.bpw-setup [data-action="bpw-setup-go-back"]').on("click" + ns, '.bpw-setup [data-action="bpw-setup-go-back"]', function(e) {
+        e.preventDefault();
+        var orch = window._bpwSetupOrchestrator;
+        if (!orch || !orch.goBack) return;
+        orch.goBack();
         _render();
       });
       function _ensureSocialsSlot() {
@@ -26132,6 +26253,12 @@ ${prefix}
     $(document).off("click.bpw-refine", "[data-refine-close]").on("click.bpw-refine", "[data-refine-close]", function(e) {
       e.preventDefault();
       close2();
+    });
+    $(document).off("click.bpw-refine-trigger", '[data-action="refine"][data-refine-path]').on("click.bpw-refine-trigger", '[data-action="refine"][data-refine-path]', function(e) {
+      e.preventDefault();
+      var path = $(this).attr("data-refine-path");
+      var label = $(this).closest(".bpw-page-field").find(".bpw-page-field-label").text() || path;
+      openField(path, label);
     });
     $(document).off("change.bpw-refine-provider", '.bpw-refine-modal [data-field="ai-provider-setup"]').on("change.bpw-refine-provider", '.bpw-refine-modal [data-field="ai-provider-setup"]', function() {
       var W2 = window._bpwState;

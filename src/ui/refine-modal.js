@@ -128,6 +128,18 @@
       close();
     });
 
+  // Page-style sparkle button (used by identity/voice/etc. views and
+  // by the wizard's review pane). Opens the refine modal pre-pointed
+  // at the field path. Phase D replaces this with a dropdown menu
+  // offering Improve / Regenerate / Copy.
+  $(document).off('click.bpw-refine-trigger', '[data-action="refine"][data-refine-path]')
+    .on('click.bpw-refine-trigger', '[data-action="refine"][data-refine-path]', function(e) {
+      e.preventDefault();
+      var path = $(this).attr('data-refine-path');
+      var label = $(this).closest('.bpw-page-field').find('.bpw-page-field-label').text() || path;
+      openField(path, label);
+    });
+
   // Provider change inside the modal — re-render the model select so
   // the options match the chosen provider. LLMService already wires
   // the data-field="ai-provider-setup" change globally to mutate

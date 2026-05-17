@@ -186,7 +186,39 @@
     var W = _W();
     if (!W || !W.setup || !W.setup.awaitingReview) return;
     W.setup.awaitingReview = null;
+    // If the user previously went Back, resume at the stage they came
+    // from (its data was already accepted) instead of running the next
+    // queued stage. The user wants to keep editing the in-flight stage.
+    if (W.setup.resumeAt) {
+      var resumeId = W.setup.resumeAt;
+      W.setup.resumeAt = null;
+      W.setup.awaitingReview = resumeId;
+      W.setup.currentStageId = resumeId;
+      return;
+    }
     _advance();
+  }
+
+  // Send the user back to the previous done stage's review pane without
+  // re-running it. The current in-flight stage is remembered in
+  // setup.resumeAt so continueReview() returns there. Data already in
+  // acceptedSections is preserved.
+  function goBack() {
+    var W = _W();
+    if (!W || !W.setup) return;
+    var queue = W.setup.stagesQueue || [];
+    var currentId = W.setup.awaitingReview || W.setup.currentStageId;
+    var idx = queue.indexOf(currentId);
+    if (idx <= 0) return;
+    var prevId = null;
+    for (var i = idx - 1; i >= 0; i--) {
+      var s = (W.setup.stageStatus[queue[i]] || {}).state;
+      if (s === 'done') { prevId = queue[i]; break; }
+    }
+    if (!prevId) return;
+    W.setup.resumeAt = currentId;
+    W.setup.awaitingReview = prevId;
+    W.setup.currentStageId = prevId;
   }
 
   // Re-run a specific stage (typically the one awaiting review) so the
@@ -313,6 +345,22 @@
         // user can confirm the extracted data is actually about their
         // brand (not generic info hallucinated from the URL).
         if (stage.needsReview) {
+          // v3: accept-on-review-entry. Push every flat key this stage
+          // produced into W.acceptedSections immediately so the review
+          // pane's view module (which reads acceptedSections) shows the
+          // AI's draft as fully editable fields. Scrape is excluded —
+          // its review pane reads importedAssets.website directly and
+          // we don't want to write scrape's wide schema yet.
+          if (id !== 'scrape') {
+            var accept = window._bpwAcceptSection;
+            if (accept && res.data) {
+              for (var fk in res.data) {
+                if (!res.data.hasOwnProperty(fk)) continue;
+                try { accept(fk, res.data[fk]); }
+                catch (acceptErr) { console.warn(LOG, 'accept-on-review failed for', fk, acceptErr); }
+              }
+            }
+          }
           W.setup.awaitingReview = id;
           becameReview = true;
         }
@@ -372,6 +420,7 @@
     skipCurrent: skipCurrent,
     continueReview: continueReview,
     rerunStage: rerunStage,
+    goBack: goBack,
     state: state
   };
 })();
