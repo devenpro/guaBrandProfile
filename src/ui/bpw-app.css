@@ -95,17 +95,16 @@ body.bpw-app-shell-active { overflow: hidden; }
   cursor: progress;
 }
 
-/* ── Body (three-pane) ──────────────────────────────────────────── */
+/* ── Body (sidebar + page) ──────────────────────────────────────── */
 .bpw-shell-body {
   display: grid;
-  grid-template-columns: 210px 320px 1fr;
+  grid-template-columns: 210px 1fr;
   min-height: 0;
   overflow: hidden;
 }
-/* v2 single-pane (used by the dashboard view): sidebar + main only. */
-.bpw-shell-body--single {
-  grid-template-columns: 210px 1fr;
-}
+/* v3: legacy single-pane modifier kept as a no-op alias so any
+ * external markup referencing it still works. */
+.bpw-shell-body--single { grid-template-columns: 210px 1fr; }
 
 /* ── Sidebar ────────────────────────────────────────────────────── */
 .bpw-shell-sidebar {
@@ -828,14 +827,12 @@ body.bpw-app-shell-active { overflow: hidden; }
 
 /* ── Responsive ─────────────────────────────────────────────────── */
 @media (max-width: 1100px) {
-  .bpw-shell-body { grid-template-columns: 180px 280px 1fr; }
+  .bpw-shell-body { grid-template-columns: 180px 1fr; }
   .bpw-shell-sidebar { width: 180px; }
-  .bpw-shell-list { width: 280px; }
 }
 @media (max-width: 768px) {
   .bpw-shell-body { grid-template-columns: 1fr; }
-  .bpw-shell-sidebar,
-  .bpw-shell-list { display: none; }
+  .bpw-shell-sidebar { display: none; }
   /* Mobile UX is a follow-up — for now show the detail pane only. */
 }
 

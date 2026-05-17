@@ -1,4 +1,4 @@
-window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T05:28:27.257Z";try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}
+window.BPW_VERSION="0.1.0";window.BPW_BUILD_TIME="2026-05-17T05:30:21.058Z";try{console.log("%c[BPW] v"+window.BPW_VERSION+" ("+window.BPW_BUILD_TIME+")","color:#5b8def;font-weight:bold");}catch(e){}
 (() => {
   // src/ai/providers/registry.js
   (function() {
@@ -26624,139 +26624,6 @@ ${prefix}
     window._bpwSidebar = { render, SECTIONS };
   })();
 
-  // src/ui/section-list.js
-  (function() {
-    "use strict";
-    function _esc(s) {
-      return (window._bpwEsc || function(x) {
-        return x == null ? "" : String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-      })(s);
-    }
-    function _icon(n) {
-      return (window._bpwIcon || function(name) {
-        if (!name) return "";
-        if (name.indexOf("fa-") === 0) return '<i class="' + name + '"></i>';
-        return '<i class="fa-solid fa-' + name + '"></i>';
-      })(n);
-    }
-    function render(W2) {
-      var sectionId = W2.ui && W2.ui.section || "identity";
-      var views = window._bpwUIViews || {};
-      var view = views[sectionId];
-      var REFINEABLE_SECTIONS = { identity: 1, voice: 1, audience: 1, offerings: 1, market: 1, content: 1, seo: 1 };
-      var canRefine = !!REFINEABLE_SECTIONS[sectionId];
-      var html = '<section class="bpw-shell-list" aria-label="Section items">';
-      html += '<header class="bpw-shell-list-header">';
-      html += "<h2>" + _esc(view ? view.title : sectionId) + "</h2>";
-      if (canRefine) {
-        html += '<button class="bpw-shell-list-regenerate" data-action="bpw-section-regenerate" data-section-id="' + _esc(sectionId) + '" data-section-label="' + _esc(view ? view.title : sectionId) + '" type="button" title="Regenerate this section with AI">' + _icon("arrows-rotate") + "</button>";
-      }
-      html += "</header>";
-      if (!view) {
-        html += '<div class="bpw-shell-list-empty">' + _icon("flask") + "<p>View module not loaded.</p></div>";
-        html += "</section>";
-        return html;
-      }
-      if (view.inlineActions && view.inlineActions.length) {
-        html += '<div class="bpw-shell-list-actions">';
-        for (var i = 0; i < view.inlineActions.length; i++) {
-          var a = view.inlineActions[i];
-          if (a.type === "add-row") {
-            html += '<button class="bpw-shell-action-btn" data-action="bpw-section-add-row" data-list-path="' + _esc(a.listPath) + `" data-item-template='` + _esc(JSON.stringify(a.itemTemplate || {})) + `' data-item-prefix="` + _esc(a.itemPrefix || "") + '" type="button">' + _icon(a.icon || "plus") + " " + _esc(a.label) + "</button>";
-          } else {
-            html += '<button class="bpw-shell-action-btn" data-action="' + _esc(a.id) + '" type="button">' + _icon(a.icon || "sparkles") + " " + _esc(a.label) + "</button>";
-          }
-        }
-        html += "</div>";
-      }
-      var body = "";
-      try {
-        body = view.renderList ? view.renderList(W2) : "";
-      } catch (e) {
-        console.warn("[BPW-ui] renderList threw for", sectionId, e);
-        body = '<div class="bpw-shell-list-empty">' + _icon("triangle-exclamation") + "<p>Failed to render list.</p></div>";
-      }
-      html += '<div class="bpw-shell-list-body">' + body + "</div>";
-      html += "</section>";
-      return html;
-    }
-    if (window.jQuery) {
-      var $ = window.jQuery;
-      $(document).off("click.bpw-section-regen").on("click.bpw-section-regen", '[data-action="bpw-section-regenerate"]', function(e) {
-        e.preventDefault();
-        var sectionId = $(this).attr("data-section-id");
-        var label = $(this).attr("data-section-label") || sectionId;
-        if (window._bpwRefineModal) window._bpwRefineModal.openSection(sectionId, label);
-      });
-      $(document).off("click.bpw-section-add-row").on("click.bpw-section-add-row", '[data-action="bpw-section-add-row"]', function(e) {
-        e.preventDefault();
-        var path = $(this).attr("data-list-path");
-        var prefix = $(this).attr("data-item-prefix") || "";
-        if (!path) return;
-        var tmpl = {};
-        try {
-          tmpl = JSON.parse($(this).attr("data-item-template") || "{}");
-        } catch (err) {
-        }
-        var store = window._bpwPathStore;
-        if (!store) return;
-        var arr = store.get(path) || [];
-        var idx = arr.length;
-        store.push(path, JSON.parse(JSON.stringify(tmpl)));
-        store.persist();
-        if (window._bpwAppShell && prefix) {
-          window._bpwAppShell.setActiveItem(prefix + ":" + idx);
-        } else if (window._bpwAppShell) {
-          window._bpwAppShell.render();
-        }
-      });
-    }
-    window._bpwSectionList = { render };
-  })();
-
-  // src/ui/detail-pane.js
-  (function() {
-    "use strict";
-    function _esc(s) {
-      return (window._bpwEsc || function(x) {
-        return x == null ? "" : String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-      })(s);
-    }
-    function _icon(n) {
-      return (window._bpwIcon || function(name) {
-        if (!name) return "";
-        if (name.indexOf("fa-") === 0) return '<i class="' + name + '"></i>';
-        return '<i class="fa-solid fa-' + name + '"></i>';
-      })(n);
-    }
-    function render(W2) {
-      var sectionId = W2.ui && W2.ui.section || "identity";
-      var itemId = W2.ui && W2.ui.itemId;
-      var views = window._bpwUIViews || {};
-      var view = views[sectionId];
-      var html = '<section class="bpw-shell-detail" aria-label="Detail editor">';
-      if (!view) {
-        html += '<div class="bpw-shell-detail-empty">' + _icon("flask") + "<h3>View module not loaded</h3><p>Section: " + _esc(sectionId) + "</p></div>";
-        html += "</section>";
-        return html;
-      }
-      var body = "";
-      try {
-        body = view.renderDetail ? view.renderDetail(W2, itemId) : "";
-      } catch (e) {
-        console.warn("[BPW-ui] renderDetail threw for", sectionId, e);
-        body = '<div class="bpw-shell-detail-empty">' + _icon("triangle-exclamation") + "<h3>Failed to render</h3><p>" + _esc(e.message || String(e)) + "</p></div>";
-      }
-      if (!body) {
-        body = '<div class="bpw-shell-detail-empty">' + _icon("hand-pointer") + "<h3>Select an item</h3><p>Pick a card from the list to view or edit it here.</p></div>";
-      }
-      html += body;
-      html += "</section>";
-      return html;
-    }
-    window._bpwDetailPane = { render };
-  })();
-
   // src/ui/activity-drawer.js
   (function() {
     "use strict";
@@ -28536,14 +28403,21 @@ ${prefix}
     function _shellHTML() {
       var section = W2.ui && W2.ui.section || "dashboard";
       var view = (window._bpwUIViews || {})[section];
-      var singlePane = view && view.listMode === "none";
-      var bodyCls = singlePane ? "bpw-shell-body bpw-shell-body--single" : "bpw-shell-body";
       var topbar = window._bpwTopbar && window._bpwTopbar.render && window._bpwTopbar.render(W2) || "";
       var sidebar = window._bpwSidebar && window._bpwSidebar.render && window._bpwSidebar.render(W2) || "";
-      var list = singlePane ? "" : window._bpwSectionList && window._bpwSectionList.render && window._bpwSectionList.render(W2) || "";
-      var detail = window._bpwDetailPane && window._bpwDetailPane.render && window._bpwDetailPane.render(W2) || "";
+      var detail = "";
+      if (view && typeof view.renderDetail === "function") {
+        try {
+          detail = view.renderDetail(W2) || "";
+        } catch (e) {
+          console.error(LOG, "view renderDetail threw", section, e);
+          detail = '<section class="bpw-shell-detail bpw-shell-detail--page"><div class="bpw-shell-detail-empty">Failed to render: ' + (e.message || e) + "</div></section>";
+        }
+      } else {
+        detail = '<section class="bpw-shell-detail bpw-shell-detail--page"><div class="bpw-shell-detail-empty">Unknown section: ' + section + "</div></section>";
+      }
       var drawer = window._bpwActivityDrawer && window._bpwActivityDrawer.render && window._bpwActivityDrawer.render(W2) || "";
-      return topbar + '<div class="' + bodyCls + '">' + sidebar + list + detail + "</div>" + drawer;
+      return topbar + '<div class="bpw-shell-body bpw-shell-body--single">' + sidebar + detail + "</div>" + drawer;
     }
     function _wireEvents() {
       var ns = ".bpw-shell";
